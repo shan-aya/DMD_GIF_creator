@@ -172,15 +172,9 @@
   .props figure.win{ box-shadow:0 0 0 2px var(--led-green), 0 0 30px -6px rgba(62,224,106,.6); }
   .callout{ margin-top:18px; border:1px solid var(--line); border-left:3px solid var(--amber); border-radius:6px; padding:12px 14px; background:var(--panel); }
   .callout p{ font-size:14.5px; max-width:none; }
-
-  /* v2 de la page : propositions AUTO, encadre, fleche */
-  .src{ max-width:420px; margin-inline:auto; }
-  .arrow{ text-align:center; color:var(--muted-dim); font-size:14px; margin:12px 0 0; }
-  .props figure.shot figcaption em{ font-style:normal; color:var(--led-white); font-variant-numeric:tabular-nums; }
-  .props figure.shot figcaption b{ color:var(--led-green); font-weight:700; }
-  .props figure.win{ box-shadow:0 0 0 2px var(--led-green), 0 0 30px -6px rgba(62,224,106,.6); }
-  .callout{ margin-top:18px; border:1px solid var(--line); border-left:3px solid var(--amber); border-radius:6px; padding:12px 14px; background:var(--panel); }
-  .callout p{ font-size:14.5px; max-width:none; }
+  .feat code{ font-size:.92em; color:var(--led-white); }
+  .ratings{ display:flex; flex-wrap:wrap; gap:8px 14px; margin:14px 0 0; font-size:13.5px; color:var(--muted); }
+  .ratings span::before{ content:""; display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; background:var(--c); }
 </style>
 </head>
 <body>
@@ -229,28 +223,42 @@
       <figure class="shot dmd"><img src="media/auto-prop6.gif" alt="Color shift"><figcaption><span data-i18n="p.art">Artistique :</span> Color shift</figcaption></figure>
     </div>
     <div class="callout">
-      <p data-i18n="s1.callout"><strong>Lisibilité d'abord.</strong> Ici, Resize obtient le meilleur score (3.96 contre 3.47), mais réduit à 32 pixels de haut, le lettrage deviendrait illisible sur le panneau. L'application le détecte et <strong>impose Fill</strong> : le logo reste grand et défile. C'est la mesure de la hauteur des lettres après réduction qui décide, pas seulement le score.</p>
+      <p data-i18n="s1.callout"><strong>Le profil a le dernier mot.</strong> Ici, Resize obtient le meilleur score (3.96 contre 3.47), mais Out Run est 2,3 fois plus large que haut : réduit à 32 pixels de haut, son lettrage deviendrait minuscule. Le profil <strong>Logos Recalbox</strong> impose Fill dès qu'un logo est au moins deux fois plus large que haut : le logo reste grand et défile, un aller-retour dure au plus 30 s.</p>
     </div>
+    <p data-i18n="s1.profiles" style="margin-top:14px;">Trois profils sont fournis : <strong>Générique</strong> suit le score sans règle ni limite, <strong>Logos Recalbox</strong> applique la règle ci-dessus à 15 i/s, <strong>DMD playlist</strong> passe à 20 i/s pour plus de fluidité. Vous pouvez créer les vôtres dans une page où chaque réglage est expliqué.</p>
   </section>
 
   <section class="feat">
     <span class="eyebrow" style="color:var(--amber)" data-i18n="s2.eyebrow">Traitement par lot</span>
     <h2 data-i18n="s2.h2">Un dossier entier, chaque logo traité à sa façon</h2>
-    <p data-i18n="s2.p">Donnez-lui un dossier complet — par exemple tous les logos scrapés d'une ludothèque. Chaque image passe par la même analyse que ci-dessus et reçoit <strong>son propre mode de rendu</strong> : réduit quand il reste lisible, défilant quand le texte l'exige. Les images sont traitées en parallèle, l'arborescence est conservée en sortie, les fichiers source ne sont jamais modifiés, et une proposition peut être verrouillée pour tout le lot.</p>
+    <p data-i18n="s2.p">Donnez-lui un dossier complet — par exemple tous les logos scrapés d'une ludothèque. Chaque image passe par la même analyse que ci-dessus et reçoit <strong>son propre rendu</strong> : taille, défilement, couleurs. Avec le profil Logos Recalbox, les logos larges défilent pour garder un lettrage lisible ; les autres suivent le score. Les images sont traitées en parallèle, l'arborescence est conservée en sortie, les fichiers source ne sont jamais modifiés, et une proposition peut être verrouillée pour tout le lot.</p>
     <div class="grid2 props">
-      <figure class="shot dmd glow-a"><img src="media/batch-1.gif" alt="Strider"><figcaption>Strider · <span data-i18n="m.resize">Resize (meilleur score)</span></figcaption></figure>
-      <figure class="shot dmd glow-a"><img src="media/batch-2.gif" alt="Out Run"><figcaption>Out Run · <span data-i18n="m.forced">Fill imposé (lisibilité)</span></figcaption></figure>
-      <figure class="shot dmd glow-a"><img src="media/batch-3.gif" alt="Strike Wolf"><figcaption>Strike Wolf · <span data-i18n="m.fill">Fill (meilleur score)</span></figcaption></figure>
-      <figure class="shot dmd glow-a"><img src="media/batch-4.gif" alt="X-Men vs Street Fighter"><figcaption>X-Men vs SF · <span data-i18n="m.forced">Fill imposé (lisibilité)</span></figcaption></figure>
-      <figure class="shot dmd glow-a"><img src="media/batch-5.gif" alt="Excitebike"><figcaption>Excitebike · <span data-i18n="m.resize">Resize (meilleur score)</span></figcaption></figure>
-      <figure class="shot dmd glow-a"><img src="media/batch-6.gif" alt="King of Fighters 97"><figcaption>KOF '97 · <span data-i18n="m.resize">Resize (meilleur score)</span></figcaption></figure>
+      <figure class="shot dmd glow-a"><img src="media/batch-1.gif" alt="Strider"><figcaption>Strider · <span data-i18n="m.forced">Fill imposé (logo large)</span></figcaption></figure>
+      <figure class="shot dmd glow-a"><img src="media/batch-2.gif" alt="Out Run"><figcaption>Out Run · <span data-i18n="m.forced">Fill imposé (logo large)</span></figcaption></figure>
+      <figure class="shot dmd glow-a"><img src="media/batch-3.gif" alt="Strike Wolf"><figcaption>Strike Wolf · <span data-i18n="m.forced">Fill imposé (logo large)</span></figcaption></figure>
+      <figure class="shot dmd glow-a"><img src="media/batch-4.gif" alt="X-Men vs Street Fighter"><figcaption>X-Men vs SF · <span data-i18n="m.fill">Fill (meilleur score)</span></figcaption></figure>
+      <figure class="shot dmd glow-a"><img src="media/batch-5.gif" alt="Excitebike"><figcaption>Excitebike · <span data-i18n="m.forced">Fill imposé (logo large)</span></figcaption></figure>
+      <figure class="shot dmd glow-a"><img src="media/batch-6.gif" alt="King of Fighters 97"><figcaption>KOF '97 · <span data-i18n="m.forced">Fill imposé (logo large)</span></figcaption></figure>
     </div>
-    <p class="cap" data-i18n="cap.batch">Six logos d'un même lot : le mode a été choisi pour chacun, sans intervention</p>
+    <p class="cap" data-i18n="cap.batch">Six logos d'un même lot, profil Logos Recalbox : le rendu a été choisi pour chacun, sans intervention</p>
     <div class="stats">
       <div class="stat"><b class="num">12</b><span data-i18n="stat.workers">images traitées en parallèle</span></div>
       <div class="stat"><b class="num" data-i18n="stat.x">×3</b><span data-i18n="stat.speed">plus rapide que la v2</span></div>
       <div class="stat"><b class="num" data-i18n="stat.n">55 000</b><span data-i18n="stat.folder">images chargées sans figer la fenêtre</span></div>
     </div>
+  </section>
+
+  <section class="feat">
+    <span class="eyebrow" style="color:var(--led-green)" data-i18n="s9.eyebrow">Score qualité</span>
+    <h2 data-i18n="s9.h2">Des milliers de logos, les ratés en premier</h2>
+    <p data-i18n="s9.p">Chaque GIF produit reçoit une <strong>note de 0 à 100</strong> : contraste des contours, part de l'écran allumée, place occupée sur le panneau, avec une pénalité pour les animations trop courtes. À la fin d'un lot, si des GIF ont une note faible ou mauvaise, l'application propose d'ouvrir la fenêtre <strong>Revoir</strong> : les GIF du plus faible au meilleur, l'aperçu LED de chacun et la raison de sa note. Ceux que vous écartez partent dans un dossier <code>_a_revoir</code>, jamais supprimés.</p>
+    <div class="ratings">
+      <span style="--c:#e0413e" data-i18n="r.bad">0–30 Mauvais</span><span style="--c:#f08a24" data-i18n="r.poor">31–50 Faible</span><span style="--c:#e8c547" data-i18n="r.ok">51–70 Acceptable</span><span style="--c:#3ee06a" data-i18n="r.good">71–85 Bon</span><span style="--c:#8fd3ff" data-i18n="r.exc">86–100 Excellent</span>
+    </div>
+    <figure class="shot glow-g" style="margin-top:18px;">
+      <a data-shot-link="review" href="media/review_fr.png"><img data-shot="review" src="media/review_fr.png" data-i18n-alt="alt.review" alt="Fenêtre Revoir : liste des GIF triés par score, aperçu LED et raisons de la note."></a>
+    </figure>
+    <p data-i18n="s9.p2" style="margin-top:14px;">Les logos sombres sur fond transparent, invisibles sur un DMD noir, sont inversés automatiquement quand le rendu y gagne.</p>
   </section>
 
   <section class="feat">
@@ -364,14 +372,24 @@
   "p.opt": "3. Optimisé",
   "p.kept": "✓ retenu",
   "p.art": "Artistique :",
-  "s1.callout": "<strong>Lisibilité d'abord.</strong> Ici, Resize obtient le meilleur score (3.96 contre 3.47), mais réduit à 32 pixels de haut, le lettrage deviendrait illisible sur le panneau. L'application le détecte et <strong>impose Fill</strong> : le logo reste grand et défile. C'est la mesure de la hauteur des lettres après réduction qui décide, pas seulement le score.",
+  "s1.callout": "<strong>Le profil a le dernier mot.</strong> Ici, Resize obtient le meilleur score (3.96 contre 3.47), mais Out Run est 2,3 fois plus large que haut : réduit à 32 pixels de haut, son lettrage deviendrait minuscule. Le profil <strong>Logos Recalbox</strong> impose Fill dès qu'un logo est au moins deux fois plus large que haut : le logo reste grand et défile, un aller-retour dure au plus 30 s.",
+  "s1.profiles": "Trois profils sont fournis : <strong>Générique</strong> suit le score sans règle ni limite, <strong>Logos Recalbox</strong> applique la règle ci-dessus à 15 i/s, <strong>DMD playlist</strong> passe à 20 i/s pour plus de fluidité. Vous pouvez créer les vôtres dans une page où chaque réglage est expliqué.",
   "s2.eyebrow": "Traitement par lot",
   "s2.h2": "Un dossier entier, chaque logo traité à sa façon",
-  "s2.p": "Donnez-lui un dossier complet — par exemple tous les logos scrapés d'une ludothèque. Chaque image passe par la même analyse que ci-dessus et reçoit <strong>son propre mode de rendu</strong> : réduit quand il reste lisible, défilant quand le texte l'exige. Les images sont traitées en parallèle, l'arborescence est conservée en sortie, les fichiers source ne sont jamais modifiés, et une proposition peut être verrouillée pour tout le lot.",
-  "m.resize": "Resize (meilleur score)",
+  "s2.p": "Donnez-lui un dossier complet — par exemple tous les logos scrapés d'une ludothèque. Chaque image passe par la même analyse que ci-dessus et reçoit <strong>son propre rendu</strong> : taille, défilement, couleurs. Avec le profil Logos Recalbox, les logos larges défilent pour garder un lettrage lisible ; les autres suivent le score. Les images sont traitées en parallèle, l'arborescence est conservée en sortie, les fichiers source ne sont jamais modifiés, et une proposition peut être verrouillée pour tout le lot.",
   "m.fill": "Fill (meilleur score)",
-  "m.forced": "Fill imposé (lisibilité)",
-  "cap.batch": "Six logos d'un même lot : le mode a été choisi pour chacun, sans intervention",
+  "m.forced": "Fill imposé (logo large)",
+  "cap.batch": "Six logos d'un même lot, profil Logos Recalbox : le rendu a été choisi pour chacun, sans intervention",
+  "s9.eyebrow": "Score qualité",
+  "s9.h2": "Des milliers de logos, les ratés en premier",
+  "s9.p": "Chaque GIF produit reçoit une <strong>note de 0 à 100</strong> : contraste des contours, part de l'écran allumée, place occupée sur le panneau, avec une pénalité pour les animations trop courtes. À la fin d'un lot, si des GIF ont une note faible ou mauvaise, l'application propose d'ouvrir la fenêtre <strong>Revoir</strong> : les GIF du plus faible au meilleur, l'aperçu LED de chacun et la raison de sa note. Ceux que vous écartez partent dans un dossier <code>_a_revoir</code>, jamais supprimés.",
+  "s9.p2": "Les logos sombres sur fond transparent, invisibles sur un DMD noir, sont inversés automatiquement quand le rendu y gagne.",
+  "r.bad": "0–30 Mauvais",
+  "r.poor": "31–50 Faible",
+  "r.ok": "51–70 Acceptable",
+  "r.good": "71–85 Bon",
+  "r.exc": "86–100 Excellent",
+  "alt.review": "Fenêtre Revoir : liste des GIF triés par score, aperçu LED et raisons de la note.",
   "stat.workers": "images traitées en parallèle",
   "stat.x": "×3",
   "stat.speed": "plus rapide que la v2",
@@ -432,14 +450,24 @@
   "p.opt": "3. Optimized",
   "p.kept": "✓ kept",
   "p.art": "Artistic:",
-  "s1.callout": "<strong>Readability first.</strong> Here Resize gets the better score (3.96 vs 3.47), but shrunk to 32 pixels high the lettering would become unreadable on the panel. The app detects it and <strong>enforces Fill</strong>: the logo stays large and scrolls. The measured letter height after scaling decides, not just the score.",
+  "s1.callout": "<strong>The profile has the last word.</strong> Here Resize gets the better score (3.96 vs 3.47), but Out Run is 2.3 times wider than it is high: shrunk to 32 pixels high, its lettering would become tiny. The <strong>Recalbox logos</strong> profile enforces Fill as soon as a logo is at least twice as wide as it is high: the logo stays large and scrolls, a round trip lasting at most 30 s.",
+  "s1.profiles": "Three profiles are included: <strong>Generic</strong> follows the score with no rule or limit, <strong>Recalbox logos</strong> applies the rule above at 15 fps, <strong>DMD playlist</strong> goes up to 20 fps for smoother motion. You can create your own in a page where every setting is explained.",
   "s2.eyebrow": "Batch processing",
   "s2.h2": "A whole folder, each logo handled its own way",
-  "s2.p": "Give it a complete folder — all the scraped logos of a game library, for example. Every image goes through the same analysis as above and gets <strong>its own render mode</strong>: scaled down when it stays readable, scrolling when the text requires it. Images are processed in parallel, the folder tree is kept in the output, source files are never modified, and a proposal can be locked for the whole batch.",
-  "m.resize": "Resize (best score)",
+  "s2.p": "Give it a complete folder — all the scraped logos of a game library, for example. Every image goes through the same analysis as above and gets <strong>its own render</strong>: size, scrolling, colors. With the Recalbox logos profile, wide logos scroll to keep their lettering readable; the others follow the score. Images are processed in parallel, the folder tree is kept in the output, source files are never modified, and a proposal can be locked for the whole batch.",
   "m.fill": "Fill (best score)",
-  "m.forced": "Fill enforced (readability)",
-  "cap.batch": "Six logos from one batch: the mode was chosen for each, hands-off",
+  "m.forced": "Fill enforced (wide logo)",
+  "cap.batch": "Six logos from one batch, Recalbox logos profile: the render was chosen for each, hands-off",
+  "s9.eyebrow": "Quality score",
+  "s9.h2": "Thousands of logos, the failures first",
+  "s9.p": "Every GIF produced gets a <strong>score from 0 to 100</strong>: edge contrast, share of the screen lit, space used on the panel, with a penalty for animations that are too short. At the end of a batch, if some GIFs score poor or bad, the app offers to open the <strong>Review</strong> window: GIFs from weakest to best, the LED preview of each and the reason for its score. The ones you set aside go into an <code>_a_revoir</code> folder, never deleted.",
+  "s9.p2": "Dark logos on a transparent background, invisible on a black DMD, are inverted automatically when the render improves.",
+  "r.bad": "0–30 Bad",
+  "r.poor": "31–50 Poor",
+  "r.ok": "51–70 Acceptable",
+  "r.good": "71–85 Good",
+  "r.exc": "86–100 Excellent",
+  "alt.review": "Review window: GIFs sorted by score, LED preview and reasons for the score.",
   "stat.workers": "images processed in parallel",
   "stat.x": "×3",
   "stat.speed": "faster than v2",
@@ -500,14 +528,24 @@
   "p.opt": "3. Optimizado",
   "p.kept": "✓ elegido",
   "p.art": "Artístico:",
-  "s1.callout": "<strong>La legibilidad primero.</strong> Aquí Resize obtiene mejor puntuación (3.96 frente a 3.47), pero reducido a 32 píxeles de alto el rótulo sería ilegible en el panel. La aplicación lo detecta e <strong>impone Fill</strong>: el logo sigue grande y se desplaza. Decide la altura de las letras medida tras la reducción, no solo la puntuación.",
+  "s1.callout": "<strong>El perfil tiene la última palabra.</strong> Aquí Resize obtiene mejor puntuación (3.96 frente a 3.47), pero Out Run es 2,3 veces más ancho que alto: reducido a 32 píxeles de alto, su rótulo quedaría diminuto. El perfil <strong>Logos Recalbox</strong> impone Fill en cuanto un logo es al menos dos veces más ancho que alto: el logo sigue grande y se desplaza, con una ida y vuelta de 30 s como máximo.",
+  "s1.profiles": "Se incluyen tres perfiles: <strong>Genérico</strong> sigue la puntuación sin reglas ni límites, <strong>Logos Recalbox</strong> aplica la regla anterior a 15 i/s, <strong>DMD playlist</strong> sube a 20 i/s para mayor fluidez. Puede crear los suyos en una página donde cada ajuste está explicado.",
   "s2.eyebrow": "Procesamiento por lotes",
   "s2.h2": "Una carpeta entera, cada logo tratado a su manera",
-  "s2.p": "Dale una carpeta completa — por ejemplo todos los logos scrapeados de una ludoteca. Cada imagen pasa por el mismo análisis y recibe <strong>su propio modo de render</strong>: reducido cuando sigue siendo legible, con desplazamiento cuando el texto lo exige. Las imágenes se procesan en paralelo, el árbol de carpetas se conserva en la salida, los archivos de origen nunca se modifican y una propuesta puede bloquearse para todo el lote.",
-  "m.resize": "Resize (mejor puntuación)",
+  "s2.p": "Dale una carpeta completa — por ejemplo todos los logos scrapeados de una ludoteca. Cada imagen pasa por el mismo análisis y recibe <strong>su propio render</strong>: tamaño, desplazamiento, colores. Con el perfil Logos Recalbox, los logos anchos se desplazan para que el rótulo siga legible; los demás siguen la puntuación. Las imágenes se procesan en paralelo, el árbol de carpetas se conserva en la salida, los archivos de origen nunca se modifican y una propuesta puede bloquearse para todo el lote.",
   "m.fill": "Fill (mejor puntuación)",
-  "m.forced": "Fill impuesto (legibilidad)",
-  "cap.batch": "Seis logos de un mismo lote: el modo se eligió para cada uno, sin intervención",
+  "m.forced": "Fill impuesto (logo ancho)",
+  "cap.batch": "Seis logos de un mismo lote, perfil Logos Recalbox: el render se eligió para cada uno, sin intervención",
+  "s9.eyebrow": "Puntuación de calidad",
+  "s9.h2": "Miles de logos, los fallidos primero",
+  "s9.p": "Cada GIF producido recibe una <strong>nota de 0 a 100</strong>: contraste de los contornos, parte de la pantalla encendida, espacio ocupado en el panel, con una penalización para las animaciones demasiado cortas. Al final de un lote, si algunos GIF tienen una nota baja o mala, la aplicación propone abrir la ventana <strong>Revisar</strong>: los GIF del más bajo al mejor, la vista previa LED de cada uno y el motivo de su nota. Los que aparta van a una carpeta <code>_a_revoir</code>, nunca se borran.",
+  "s9.p2": "Los logos oscuros sobre fondo transparente, invisibles en un DMD negro, se invierten automáticamente cuando el render mejora.",
+  "r.bad": "0–30 Malo",
+  "r.poor": "31–50 Bajo",
+  "r.ok": "51–70 Aceptable",
+  "r.good": "71–85 Bueno",
+  "r.exc": "86–100 Excelente",
+  "alt.review": "Ventana Revisar: GIF ordenados por puntuación, vista previa LED y motivos de la nota.",
   "stat.workers": "imágenes procesadas en paralelo",
   "stat.x": "×3",
   "stat.speed": "más rápido que la v2",
