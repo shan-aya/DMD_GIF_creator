@@ -14,7 +14,7 @@ processing of whole folders.
 ## Download
 
 **Windows**: download `dmd_gif_creator_v310.exe` from the
-[latest Release](https://github.com/shan-aya/DMD_GIF_converter/releases/latest) and run
+[latest Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) and run
 it — nothing to install.
 
 **From the sources** ([`dmd_gif_creator/`](./dmd_gif_creator) folder):

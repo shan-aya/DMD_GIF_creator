@@ -14,7 +14,7 @@ procesamiento por lotes de carpetas enteras.
 ## Descarga
 
 **Windows**: descargue `dmd_gif_creator_v310.exe` desde la
-[última Release](https://github.com/shan-aya/DMD_GIF_converter/releases/latest) y
+[última Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) y
 ejecútelo — no hace falta instalar nada.
 
 **Desde las fuentes** (carpeta [`dmd_gif_creator/`](./dmd_gif_creator)):

@@ -14,7 +14,7 @@ traitement par lot de dossiers entiers.
 ## Téléchargement
 
 **Windows** : téléchargez `dmd_gif_creator_v310.exe` dans la
-[dernière Release](https://github.com/shan-aya/DMD_GIF_converter/releases/latest) et
+[dernière Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) et
 lancez-le — aucune installation nécessaire.
 
 **Depuis les sources** (dossier [`dmd_gif_creator/`](./dmd_gif_creator)) :
