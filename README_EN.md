@@ -49,6 +49,8 @@ proposal can be locked for the whole batch. Every GIF gets a **quality score**, 
 the **Review** window lists the weakest first, with a preview, to review thousands of
 logos quickly and set aside (never delete) the failed ones.
 
+![Review window](./screenshots/review_en.png)
+
 ### MANUAL — advanced editing
 
 ![MANUAL tab](./screenshots/manual_en.png)

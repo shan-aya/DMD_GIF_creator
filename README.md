@@ -51,6 +51,8 @@ GIF reçoit un **score qualité**, et la fenêtre **Revoir** liste les plus faib
 premier, avec aperçu, pour relire rapidement des milliers de logos et mettre de côté
 (sans jamais supprimer) ceux qui sont ratés.
 
+![Fenêtre Revoir](./screenshots/review_fr.png)
+
 ### MANUEL — édition avancée
 
 ![Onglet MANUEL](./screenshots/manual_fr.png)

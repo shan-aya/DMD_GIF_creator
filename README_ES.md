@@ -51,6 +51,8 @@ GIF recibe una **puntuación de calidad**, y la ventana **Revisar** lista primer
 más bajos, con vista previa, para revisar rápidamente miles de logos y apartar (sin
 borrar nunca) los fallidos.
 
+![Ventana Revisar](./screenshots/review_es.png)
+
 ### MANUAL — edición avanzada
 
 ![Pestaña MANUAL](./screenshots/manual_es.png)
