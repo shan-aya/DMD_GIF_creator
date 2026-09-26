@@ -208,7 +208,9 @@ Para cada imagen se calculan y muestran 6 renders en miniatura:
   fin de lote indica el número de GIF, la puntuación media y el reparto por nota, y
   propone abrir la ventana **Revisar** si hay GIF bajos o malos. Ver la
   [sección dedicada](#función-transversal-puntuación-de-calidad-y-ventana-revisar).
-- **🔍 Revisar**: abre la ventana de revisión de una carpeta de salida ya procesada.
+- **🔍 Revisar**: abre directamente la ventana de revisión del último lote. La carpeta
+  solo se pide la primera vez; **📂 Otra carpeta…**, en la ventana, permite revisar
+  otra.
 
 ---
 
@@ -545,8 +547,10 @@ totalmente negra obtiene 0.
 - **Exportaciones MANUAL, VIDEO y TEXTSCROLL**: la puntuación aparece en el mensaje
   "GIF exportado".
 
-**Ventana Revisar** (botón **🔍 Revisar** de la pestaña AUTO, o propuesta al final de
-un lote):
+**Ventana Revisar** (botón **🔍 Revisar** de la pestaña AUTO, que abre el último lote,
+o propuesta al final de un lote cuando hay GIF bajos o malos):
+
+- **📂 Otra carpeta…**: revisar otra carpeta de salida, en la misma ventana;
 
 - lista de los GIF de la carpeta, **del más bajo al mejor**, con punto de color,
   puntuación, ruta y motivos; hacer clic en un encabezado de columna ordena la lista;

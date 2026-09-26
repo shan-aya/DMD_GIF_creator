@@ -311,7 +311,7 @@
   "t_shape_forces_fill": " (logo ancho → Fill aplicado)",
   "t_quality_summary": "Puntuación de calidad: {count} GIF, media {mean}/100",
   "review_button": "🔍 Revisar",
-  "tooltip_review": "Abre la lista de GIF de una carpeta de salida, ordenados de menor a mayor puntuación de calidad, con vista previa LED. Permite mover (nunca borrar) los GIF por debajo de un umbral a la carpeta _a_revoir.",
+  "tooltip_review": "Abre la lista de GIF del último lote, ordenados de menor a mayor puntuación de calidad, con vista previa LED («Otra carpeta…» en la ventana para revisar otra). Permite mover (nunca borrar) los GIF por debajo de un umbral a la carpeta _a_revoir.",
   "t_review_title": "Revisar los GIF — {folder}",
   "t_review_open_folder": "📂 Abrir la carpeta",
   "t_review_move": "Mover ≤ umbral a {dest}",
@@ -377,5 +377,6 @@
   "tooltip_pe_duration": "Duración mínima del GIF. Una animación más corta se repite hasta alcanzarla, y un logo fijo se muestra durante ese tiempo. No alarga un desplazamiento más largo.",
   "tooltip_pe_contrast": "Contraste de base. El modo AUTO prueba luego variantes alrededor de este valor (×0,9, ×1, ×1,15 y luego un ajuste de ±15 %) y conserva la mejor.",
   "tooltip_pe_saturation": "Saturación de color de base. El modo AUTO la ajusta luego en ±15 % si el resultado mejora.",
-  "tooltip_pe_color_count": "Número máximo de colores de la paleta del GIF, usado cuando la imagen de origen tiene más de 16 (una fuente de 8 o 16 colores conserva automáticamente 8 o 16). Menos colores = archivo más ligero."
+  "tooltip_pe_color_count": "Número máximo de colores de la paleta del GIF, usado cuando la imagen de origen tiene más de 16 (una fuente de 8 o 16 colores conserva automáticamente 8 o 16). Menos colores = archivo más ligero.",
+  "t_review_other_folder": "📂 Otra carpeta…"
 }

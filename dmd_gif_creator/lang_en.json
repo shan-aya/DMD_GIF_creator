@@ -311,7 +311,7 @@
   "t_shape_forces_fill": " (wide logo → Fill used)",
   "t_quality_summary": "Quality score: {count} GIFs, average {mean}/100",
   "review_button": "🔍 Review",
-  "tooltip_review": "Opens the list of GIFs in an output folder, sorted from lowest to highest quality score, with LED preview. Lets you move (never delete) GIFs below a threshold to the _a_revoir folder.",
+  "tooltip_review": "Opens the list of GIFs from the last batch, sorted from lowest to highest quality score, with LED preview (“Other folder…” in the window to review another one). Lets you move (never delete) GIFs below a threshold to the _a_revoir folder.",
   "t_review_title": "Review GIFs — {folder}",
   "t_review_open_folder": "📂 Open folder",
   "t_review_move": "Move ≤ threshold to {dest}",
@@ -377,5 +377,6 @@
   "tooltip_pe_duration": "Minimum duration of the GIF. A shorter animation is repeated until it reaches it, and a still logo is shown for this duration. Does not lengthen a longer scroll.",
   "tooltip_pe_contrast": "Base contrast. AUTO mode then tries variants around this value (×0.9, ×1, ×1.15, then ±15 % refinement) and keeps the best.",
   "tooltip_pe_saturation": "Base colour saturation. AUTO mode then refines it by ±15 % if the result improves.",
-  "tooltip_pe_color_count": "Maximum number of colours in the GIF palette, used when the source image has more than 16 (an 8- or 16-colour source automatically keeps 8 or 16). Fewer colours = lighter file."
+  "tooltip_pe_color_count": "Maximum number of colours in the GIF palette, used when the source image has more than 16 (an 8- or 16-colour source automatically keeps 8 or 16). Fewer colours = lighter file.",
+  "t_review_other_folder": "📂 Other folder…"
 }

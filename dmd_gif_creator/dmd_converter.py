@@ -27,7 +27,12 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v93
+# Version actuelle : v94
+#
+# v94 — 2026-09-26 — safe-modify — Fenêtre Revoir (demande utilisateur) : le bouton 🔍 Revoir ouvre directement le
+#      dossier du dernier lot noté (config last_review_folder, écrit en fin de lot dans le fil Tk) ; choix de dossier
+#      seulement s'il n'y en a pas encore ou s'il n'a plus d'index. Bouton « 📂 Autre dossier… » dans la fenêtre pour
+#      en revoir un autre. Proposition de fin de lot inchangée : seulement s'il y a des GIF faibles/mauvais.
 #
 # v93 — 2026-09-26 — safe-modify — Version 3.1.0 (score qualité + fenêtre Revoir, inversion des logos sombres,
 #      profils de génération, règle de défilement et plafond pilotés par profil) : APP_VERSION + docstring ;
@@ -8493,13 +8498,22 @@ class DMDConverter:
 
     def open_review_window(self, folder=None):
         """v88 -- ouvre la fenêtre "Revoir" (ReviewWindow) sur un dossier de
-        sortie contenant dmd_scores.json ; demande le dossier si non fourni."""
+        sortie contenant dmd_scores.json. v94 : sans dossier fourni, ouvre
+        directement le dossier du dernier lot (config last_review_folder) ;
+        choix de dossier seulement s'il n'y en a pas encore ou s'il n'a plus
+        d'index (le choix d'un autre dossier se fait dans la fenêtre)."""
         if folder is None:
-            folder = filedialog.askdirectory(
-                title=tr("t_review_pick_folder", "Dossier de GIF à revoir (contenant dmd_scores.json)")
-            )
-            if not folder:
-                return
+            last = config_manager.get("last_review_folder", "")
+            if last and os.path.isdir(last) and dq.load_index(last):
+                folder = last
+            else:
+                opts = {"initialdir": last} if last and os.path.isdir(last) else {}
+                folder = filedialog.askdirectory(
+                    title=tr("t_review_pick_folder", "Dossier de GIF à revoir (contenant dmd_scores.json)"),
+                    **opts,
+                )
+                if not folder:
+                    return
         if not dq.load_index(folder):
             messagebox.showwarning(
                 lang_manager.get("warning", "Attention"),
@@ -8508,6 +8522,7 @@ class DMDConverter:
                    "Traitez d'abord des images par lot vers ce dossier.", name=dq.INDEX_NAME),
             )
             return
+        config_manager.set("last_review_folder", str(folder))
         ReviewWindow(self, folder)
 
     def cancel_processing(self):
@@ -10110,6 +10125,10 @@ class DMDConverter:
         errors = errors or []
         error_count = len(errors)
         quality_text = self._quality_summary_text(quality_summary)
+        if quality_summary:
+            # v94 -- dossier du dernier lot noté : le bouton 🔍 Revoir l'ouvre directement
+            # (écrit ici, dans le fil Tk, jamais depuis le fil du lot)
+            config_manager.set("last_review_folder", str(output_dir).strip())
 
         self.progress_text_var.set(tr("t_batch_done", "Terminé : {ok}/{total} GIF créés", ok=success_count, total=total))
         self.progress_bar_var.set(0)
@@ -10490,6 +10509,8 @@ class ReviewWindow:
         top.pack(fill=tk.X)
         ttk.Button(top, text=tr("t_review_open_folder", "📂 Ouvrir le dossier"),
                    command=self.open_folder).pack(side=tk.RIGHT, padx=4)
+        ttk.Button(top, text=tr("t_review_other_folder", "📂 Autre dossier…"),
+                   command=self.change_folder).pack(side=tk.LEFT)
         self.move_btn = ttk.Button(top, text=tr("t_review_move", "Déplacer ≤ seuil vers {dest}", dest=dq.REVIEW_DIR),
                                    command=self.move_low)
         self.move_btn.pack(side=tk.RIGHT, padx=4)
@@ -10652,6 +10673,32 @@ class ReviewWindow:
             messagebox.showinfo(lang_manager.get("complete", "Terminé"),
                                 tr("t_review_moved", "{n} GIF déplacés vers {dest}.", n=len(moved),
                                    dest=dq.REVIEW_DIR), parent=self.win)
+        self.reload()
+
+    def change_folder(self):
+        """v94 -- revoir un autre dossier de sortie dans la même fenêtre."""
+        new = filedialog.askdirectory(
+            title=tr("t_review_pick_folder", "Dossier de GIF à revoir (contenant dmd_scores.json)"),
+            initialdir=self.folder, parent=self.win,
+        )
+        if not new:
+            return
+        if not dq.load_index(new):
+            messagebox.showwarning(
+                lang_manager.get("warning", "Attention"),
+                tr("t_review_no_index",
+                   "Aucun score dans ce dossier ({name}).\n"
+                   "Traitez d'abord des images par lot vers ce dossier.", name=dq.INDEX_NAME),
+                parent=self.win,
+            )
+            return
+        self._stop_anim()
+        self._frames = []
+        self.canvas.delete("all")
+        self.detail_var.set("")
+        self.folder = str(new)
+        config_manager.set("last_review_folder", self.folder)
+        self.win.title(tr("t_review_title", "Revoir les GIF — {folder}", folder=self.folder))
         self.reload()
 
     def open_folder(self):

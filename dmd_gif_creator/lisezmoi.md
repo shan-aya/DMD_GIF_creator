@@ -196,7 +196,9 @@ Pour chaque image, 6 rendus sont calculés et affichés en miniature :
   indique le nombre de GIF, le score moyen et la répartition par note, et propose
   d'ouvrir la fenêtre **Revoir** s'il y a des GIF faibles ou mauvais. Voir la
   [section dédiée](#notion-transversale--score-qualité-et-fenêtre-revoir).
-- **🔍 Revoir** : ouvre la fenêtre de relecture d'un dossier de sortie déjà traité.
+- **🔍 Revoir** : ouvre directement la fenêtre de relecture du dernier lot. Le dossier
+  n'est demandé qu'au premier usage ; **📂 Autre dossier…**, dans la fenêtre, permet
+  d'en revoir un autre.
 
 ---
 
@@ -515,7 +517,10 @@ obtient 0.
 - **Exports MANUEL, VIDEO et TEXTSCROLL** : le score s'affiche dans le message « GIF
   exporté ».
 
-**Fenêtre Revoir** (bouton **🔍 Revoir** de l'onglet AUTO, ou proposée en fin de lot) :
+**Fenêtre Revoir** (bouton **🔍 Revoir** de l'onglet AUTO, qui ouvre le dernier lot, ou
+proposée en fin de lot quand des GIF sont faibles ou mauvais) :
+
+- **📂 Autre dossier…** : revoir un autre dossier de sortie, dans la même fenêtre ;
 
 - liste des GIF du dossier, **du plus faible au meilleur**, avec pastille de couleur,
   score, chemin et raisons ; cliquer un en-tête de colonne trie la liste ;

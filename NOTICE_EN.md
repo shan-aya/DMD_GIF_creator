@@ -195,7 +195,9 @@ For each image, 6 renders are computed and shown as thumbnails:
   shows the number of GIFs, the average score and the breakdown by rating, and offers
   to open the **Review** window if some GIFs are poor or bad. See the
   [dedicated section](#cross-cutting-feature-quality-score-and-review-window).
-- **🔍 Review**: opens the review window for an output folder already processed.
+- **🔍 Review**: opens the review window of the last batch directly. The folder is only
+  asked for on first use; **📂 Other folder…**, in the window, lets you review another
+  one.
 
 ---
 
@@ -510,8 +512,10 @@ contrast, full background, animation too short…). A fully black screen scores 
 - **MANUAL, VIDEO and TEXTSCROLL exports**: the score is shown in the "GIF exported"
   message.
 
-**Review window** (**🔍 Review** button of the AUTO tab, or offered at the end of a
-batch):
+**Review window** (**🔍 Review** button of the AUTO tab, which opens the last batch, or
+offered at the end of a batch when some GIFs are poor or bad):
+
+- **📂 Other folder…**: review another output folder, in the same window;
 
 - list of the folder's GIFs, **from the weakest to the best**, with a colored dot,
   score, path and reasons; clicking a column header sorts the list;

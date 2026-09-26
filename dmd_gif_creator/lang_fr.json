@@ -311,7 +311,7 @@
   "t_shape_forces_fill": " (logo large → Fill imposé)",
   "t_quality_summary": "Score qualité : {count} GIF, moyenne {mean}/100",
   "review_button": "🔍 Revoir",
-  "tooltip_review": "Ouvre la liste des GIF d'un dossier de sortie, triés du plus faible au meilleur score qualité, avec aperçu LED. Permet de déplacer (jamais supprimer) les GIF sous un seuil vers le dossier _a_revoir.",
+  "tooltip_review": "Ouvre la liste des GIF du dernier lot, triés du plus faible au meilleur score qualité, avec aperçu LED (« Autre dossier… » dans la fenêtre pour en revoir un autre). Permet de déplacer (jamais supprimer) les GIF sous un seuil vers le dossier _a_revoir.",
   "t_review_title": "Revoir les GIF — {folder}",
   "t_review_open_folder": "📂 Ouvrir le dossier",
   "t_review_move": "Déplacer ≤ seuil vers {dest}",
@@ -377,5 +377,6 @@
   "tooltip_pe_duration": "Durée minimale du GIF. Une animation plus courte est répétée jusqu'à l'atteindre, et un logo fixe est affiché pendant cette durée. N'allonge pas un défilement plus long.",
   "tooltip_pe_contrast": "Contraste de base. Le mode AUTO essaie ensuite des variantes autour de cette valeur (×0,9, ×1, ×1,15, puis affinage de ±15 %) et garde la meilleure.",
   "tooltip_pe_saturation": "Saturation des couleurs de base. Le mode AUTO l'affine ensuite de ±15 % si le rendu y gagne.",
-  "tooltip_pe_color_count": "Nombre maximal de couleurs de la palette du GIF, utilisé quand l'image source en a plus de 16 (une source de 8 ou 16 couleurs garde automatiquement 8 ou 16). Moins de couleurs = fichier plus léger."
+  "tooltip_pe_color_count": "Nombre maximal de couleurs de la palette du GIF, utilisé quand l'image source en a plus de 16 (une source de 8 ou 16 couleurs garde automatiquement 8 ou 16). Moins de couleurs = fichier plus léger.",
+  "t_review_other_folder": "📂 Autre dossier…"
 }
