@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · [🇬🇧 English](./README_EN.md) · 🇪🇸 **Español**
 
-# DMD GIF Creator 128x32 — v3.0.2
+# DMD GIF Creator 128x32 — v3.1.0
 
 Cree GIF optimizados para pantallas DMD 128×32 (máquina arcade, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) a partir de **imágenes**, de
@@ -13,14 +13,14 @@ procesamiento por lotes de carpetas enteras.
 
 ## Descarga
 
-**Windows**: descargue `dmd_gif_creator_v302.exe` desde la
+**Windows**: descargue `dmd_gif_creator_v310.exe` desde la
 [última Release](https://github.com/shan-aya/DMD_GIF_converter/releases/latest) y
 ejecútelo — no hace falta instalar nada.
 
 **Desde las fuentes** (carpeta [`dmd_gif_creator/`](./dmd_gif_creator)):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v302.py
+    python dmd_gif_creator/dmd_gif_creator_v310.py
 
 `opencv-contrib-python` (y no `opencv-python`) es necesario para el seguimiento
 automático de la pestaña VIDEO; los dos paquetes no deben instalarse a la vez.
@@ -33,15 +33,23 @@ Arrastre y suelte imágenes o carpetas enteras (PNG, JPG, BMP, GIF, raw565). Par
 imagen, la aplicación calcula dos renders 128×32 — **Resize** (la imagen entera
 reducida) y **Fill** (la imagen más grande, con desplazamiento) — y los puntúa según
 la ocupación de la pantalla y la legibilidad. Se conserva el mejor y luego se afina
-(limpieza, pixel-perfect). **Si el texto queda demasiado pequeño para leerse en
-Resize, se impone Fill**, aunque Resize tenga mejor puntuación. Tres variantes
-artísticas completan las seis propuestas; la vista previa LED (con lupa) muestra el
-render real del panel.
+(limpieza, pixel-perfect). Tres variantes artísticas completan las seis propuestas;
+la vista previa LED (con lupa) muestra el render real del panel.
+
+Un **perfil** adapta esta elección al uso: **Genérico** (sin límites), **Logos
+Recalbox** (se impone el desplazamiento a los logos anchos, una ida y vuelta dura como
+máximo 30 s, 15 i/s) o **DMD playlist** (20 i/s para mayor fluidez). Puede crear sus
+propios perfiles en una página donde cada parámetro está explicado. Los logos oscuros
+sobre fondo transparente, invisibles en un DMD negro, se invierten cuando el render
+mejora.
 
 El **procesamiento por lotes** aplica el mismo análisis a cada imagen de una carpeta —
 por ejemplo todos los logos scrapeados de una ludoteca: cada logo recibe el modo de
 render que le conviene, en paralelo, conservando el árbol de carpetas y sin modificar
-nunca los archivos de origen. Una propuesta puede bloquearse para todo el lote.
+nunca los archivos de origen. Una propuesta puede bloquearse para todo el lote. Cada
+GIF recibe una **puntuación de calidad**, y la ventana **Revisar** lista primero los
+más bajos, con vista previa, para revisar rápidamente miles de logos y apartar (sin
+borrar nunca) los fallidos.
 
 ### MANUAL — edición avanzada
 
@@ -76,6 +84,14 @@ Matrix, glitch…), con una duración ajustada automáticamente a la longitud de
 
 ## Novedades
 
+**v3.1.0**
+- **Puntuación de calidad** de cada GIF y ventana **Revisar** (del más bajo al mejor,
+  vista previa LED, apartado sin borrar).
+- **Perfiles**: Genérico, Logos Recalbox, DMD playlist y perfiles personales.
+- **Logos oscuros** sobre fondo transparente invertidos cuando el render mejora.
+- El ajuste «Seuil lettrage» (umbral de letras) se sustituye por la opción de perfil
+  «Desplazamiento forzado desde (A/A)».
+
 **v3.0.2**
 - Pestaña AUTO totalmente traducida al inglés y al español (nombres de las
   propuestas, línea de estado, barra de estado).
@@ -106,6 +122,8 @@ Guía completa: [🇫🇷 Français](./NOTICE_FR.md) · [🇬🇧 English](./NOT
 ## 🤝 Agradecimientos
 
 - [RetroPixelLED original](https://github.com/fjgordillo86/RetroPixelLED)
+- [red77290/dmd_gif_converter](https://github.com/red77290/dmd_gif_converter) (MIT):
+  idea de la puntuación de calidad y del apartado de los GIF bajos
 - Visual Studio Code
 - [Sixth](https://trysixth.com/)
 

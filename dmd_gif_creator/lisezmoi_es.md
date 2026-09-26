@@ -5,7 +5,7 @@ GIF optimizadas para una pantalla DMD 128×32 (arcade / pinball / mueble RetroBo
 Esta guía describe, pestaña por pestaña, cada función de la interfaz y su uso
 concreto.
 
-> Guía actualizada para la versión **3.0**. Las capturas se hicieron con la versión
+> Guía actualizada para la versión **3.1**. Las capturas se hicieron con la versión
 > **2.7.4**, tema oscuro, interfaz en español: las pestañas VIDEO y AYUDA, añadidas
 > después, no aparecen.
 >
@@ -29,7 +29,8 @@ concreto.
 7. [Pestaña DEBUG](#pestaña-debug)
 8. [Pestaña AYUDA](#pestaña-ayuda)
 9. [Función transversal: Modo DMD / Forzar pixel-perfect](#función-transversal-modo-dmd--forzar-pixel-perfect)
-10. [Buenas prácticas y limitaciones conocidas](#buenas-prácticas-y-limitaciones-conocidas)
+10. [Función transversal: Puntuación de calidad y ventana Revisar](#función-transversal-puntuación-de-calidad-y-ventana-revisar)
+11. [Buenas prácticas y limitaciones conocidas](#buenas-prácticas-y-limitaciones-conocidas)
 
 ---
 
@@ -51,8 +52,8 @@ Cada pestaña corresponde a una forma diferente de producir una animación GIF 1
 | DEBUG | Registro de actividad de la aplicación, útil para diagnosticar un problema. |
 | AYUDA | Esta guía, en el idioma de la interfaz. |
 
-Pasar el ratón por encima de un ajuste poco evidente (pixel-perfect, umbral de
-letras, tolerancia, easing, modos de encuadre de vídeo...) muestra una **ayuda
+Pasar el ratón por encima de un ajuste poco evidente (pixel-perfect, perfil,
+tolerancia, easing, modos de encuadre de vídeo...) muestra una **ayuda
 emergente** en el idioma de la interfaz.
 
 ---
@@ -81,13 +82,50 @@ lotes:
   [sección dedicada](#función-transversal-modo-dmd--forzar-pixel-perfect) más abajo —
   esta casilla está **compartida con las pestañas MANUAL y TEXTSCROLL** (marcarla
   aquí la marca en todas partes).
-- **Seuil lettrage (px)** (6 a 11, valor por defecto 8, etiqueta aún no traducida):
-  altura mínima de letra (en píxeles, tras el escalado) para considerarse legible.
-  Por debajo de ese valor, el motor cambia automáticamente la propuesta "Optimisé" a
-  modo Fill/scroll en lugar de un Resize que dejaría el texto ilegible.
+- **Perfil**: ver más abajo.
 
 Cambiar cualquiera de estos ajustes relanza automáticamente el análisis de la imagen
 seleccionada.
+
+#### Perfil
+
+Un perfil agrupa todos los ajustes anteriores y tres opciones propias del DMD. El
+motor en sí no impone ningún límite: decide el perfil elegido. Se incluyen tres
+perfiles:
+
+| Perfil | Para qué | Ajustes |
+|---|---|---|
+| **Genérico** (por defecto) | Cualquier uso | Sin regla de desplazamiento, sin límite de duración, inversión de logos oscuros activa, 10 i/s. |
+| **Logos Recalbox (navegación)** | Logos de juegos mostrados por el panel durante la navegación | Desplazamiento forzado desde 2:1, límite de ida y vuelta de 30 s, inversión de logos oscuros, 15 i/s. |
+| **DMD playlist** | GIF reproducidos en playlist en el panel | Desplazamiento forzado desde 2:1, sin límite, inversión de logos oscuros, 20 i/s para mayor fluidez. |
+
+Las tres opciones, modificables a mano bajo la lista de perfiles:
+
+- **Desplazamiento forzado desde (A/A)**: cuando el logo (sin los márgenes
+  transparentes) es al menos N veces más ancho que alto, se usa el modo
+  Fill/desplazamiento en lugar de Resize. No se recorta nada: todo el logo pasa por
+  la pantalla. Desmarcada, se elige según la puntuación.
+- **Invertir logos oscuros**: un logo oscuro y casi monocromo sobre fondo
+  transparente (por ejemplo texto negro pensado para un fondo claro) es invisible en
+  un DMD negro. El motor prueba también su versión invertida y solo la conserva si la
+  puntuación de calidad mejora claramente.
+- **Límite ida y vuelta (s)**: duración máxima de una ida y vuelta de
+  desplazamiento. Por encima, el desplazamiento se acelera (más píxeles por imagen,
+  mismos fotogramas por segundo), sin recortar nada.
+
+Botones junto a la lista:
+
+- **➕**: abre la página de creación de un perfil, rellenada con los ajustes
+  actuales.
+- **✏**: abre la página del perfil seleccionado.
+- **💾**: guarda los ajustes actuales en el perfil seleccionado.
+- **🗑**: borra un perfil personal, o devuelve un perfil incluido a sus valores de
+  origen (con confirmación).
+
+La **página de perfil** muestra cada parámetro con su campo, una ayuda emergente al
+pasar el ratón y un botón **?** que muestra su explicación. Los valores fuera de
+rango se rechazan antes de guardar. Los perfiles se guardan en `profiles.json`, en la
+carpeta de configuración: no hace falta ninguna edición manual.
 
 ### 2. Panel "Imágenes" (columna izquierda)
 
@@ -129,10 +167,9 @@ solo están disponibles en francés por ahora (`Fichier:`, `Format:`, `Dimension
   estilo LED físico (puntos redondos con halo) en lugar de un simple ampliado
   cuadrado.
 - Debajo de la vista previa original, un mensaje de estado indica qué propuesta se
-  retuvo automáticamente y por qué (p. ej. "'Optimisé' retenu (score: 3.99), base:
-  Fill (scrolling)", o "texte illisible en Resize → Fill forcé" cuando el umbral de
-  altura de letra provocó un cambio forzado — esta línea de estado aún no está
-  traducida).
+  retuvo automáticamente y por qué (p. ej. "'Optimizado' elegido (puntuación: 3.99),
+  base: Fill (desplazamiento)"). Se añade una nota cuando ha intervenido una opción
+  del perfil: "(logo ancho → Fill aplicado)" o "(logo oscuro → invertido)".
 
 ### 5. Propuestas IA (cuadrícula 3×2)
 
@@ -167,6 +204,11 @@ Para cada imagen se calculan y muestran 6 renders en miniatura:
 - Las imágenes se procesan **en paralelo**, usando casi todos los núcleos del
   procesador (hasta 12 imágenes a la vez): un lote termina mucho más rápido que
   imagen por imagen.
+- Cada GIF producido recibe una **puntuación de calidad** (0 a 100). El mensaje de
+  fin de lote indica el número de GIF, la puntuación media y el reparto por nota, y
+  propone abrir la ventana **Revisar** si hay GIF bajos o malos. Ver la
+  [sección dedicada](#función-transversal-puntuación-de-calidad-y-ventana-revisar).
+- **🔍 Revisar**: abre la ventana de revisión de una carpeta de salida ya procesada.
 
 ---
 
@@ -478,6 +520,47 @@ marcada:
 
 ---
 
+## Función transversal: Puntuación de calidad y ventana Revisar
+
+Cada GIF producido recibe una **puntuación de calidad de 0 a 100**, calculada sobre
+sus imágenes: proporción de píxeles encendidos, contraste, ocupación de la pantalla,
+número de imágenes y duración. Es una **ayuda para la revisión, no una decisión
+automática**: nada se borra ni se modifica según esta puntuación.
+
+| Nota | Puntuación |
+|---|---|
+| Excelente | 86 a 100 |
+| Bueno | 71 a 85 |
+| Aceptable | 51 a 70 |
+| Bajo | 31 a 50 |
+| Malo | 0 a 30 |
+
+La puntuación va acompañada de **motivos** en el idioma de la interfaz (pantalla casi
+vacía, contraste bajo, fondo lleno, animación demasiado corta…). Una pantalla
+totalmente negra obtiene 0.
+
+- **Procesamiento por lotes**: las puntuaciones se guardan en un archivo
+  `dmd_scores.json` de la carpeta de salida. Un segundo lote en la misma carpeta
+  completa este archivo en lugar de borrarlo.
+- **Exportaciones MANUAL, VIDEO y TEXTSCROLL**: la puntuación aparece en el mensaje
+  "GIF exportado".
+
+**Ventana Revisar** (botón **🔍 Revisar** de la pestaña AUTO, o propuesta al final de
+un lote):
+
+- lista de los GIF de la carpeta, **del más bajo al mejor**, con punto de color,
+  puntuación, ruta y motivos; hacer clic en un encabezado de columna ordena la lista;
+- hacer clic en una fila reproduce el GIF con el renderizado LED;
+- **Umbral** (30 por defecto) y botón **Mover ≤ umbral a _a_revoir**: tras la
+  confirmación (con el número exacto de archivos), los GIF afectados se **mueven,
+  nunca se borran**, a una subcarpeta `_a_revoir` de la carpeta de salida,
+  conservando la estructura de carpetas. Esta carpeta se ignora al volver a cargar la
+  carpeta en la aplicación.
+
+La lista sigue fluida incluso con decenas de miles de GIF.
+
+---
+
 ## Buenas prácticas y limitaciones conocidas
 
 - **Imágenes con fondo transparente (PNG RGBA)**: gestionadas correctamente en todas
@@ -487,10 +570,18 @@ marcada:
   recorte de altas luces (a diferencia de AUTO) — con valores altos de
   contraste/saturación es posible "quemar" píxeles claros a blanco puro; es una
   decisión intencionada para dejar el control total al usuario.
-- **Umbral de altura de letra** (AUTO): un valor más bajo (6) tolera letras más
-  pequeñas antes de forzar el modo Fill; un valor más alto (11) es más prudente y
-  fuerza Fill con más frecuencia. El valor por defecto (8) es un compromiso validado
-  sobre un corpus de logotipos reales.
+- **Desplazamiento forzado desde (A/A)** (perfil): 2 es el valor usado para los
+  logos Recalbox, elegido sobre un pack real de más de 54 000 logos. Más bajo, más
+  logos se desplazan, en primer plano; más alto, más logos quedan fijos, más
+  pequeños.
+- **Logos animados y panel**: un logo que se desplaza se muestra más grande, por lo
+  que enciende más LED. En un panel alimentado por un simple puerto USB, una imagen
+  muy luminosa puede provocar reinicios: prevea una alimentación suficiente para el
+  panel.
+- **Inversión de logos oscuros**: la inversión también cambia los colores (un
+  contorno naranja se vuelve azul). Solo se conserva si la puntuación mejora
+  claramente; si el resultado no le convence, desmarque la opción o elija otra
+  propuesta.
 - **Localización parcial**: como se indica al principio de esta guía, varias cadenas
   de la interfaz (texto de arrastrar y soltar, algunas etiquetas de botones, el
   contenido de los paneles de Información de la Imagen, la línea de tamaño estimado

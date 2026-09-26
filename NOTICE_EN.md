@@ -4,7 +4,7 @@ Python/Tkinter application that converts images, logos, and text into GIF animat
 optimized for a 128×32 DMD display (arcade / pinball / RetroBox cabinet). This guide
 describes, tab by tab, every function of the interface and how to use it.
 
-> Guide up to date for version **3.0**. Screenshots were taken with version
+> Guide up to date for version **3.1**. Screenshots were taken with version
 > **2.7.4**, dark theme, interface set to English: the VIDEO and HELP tabs, added
 > since, are not shown.
 >
@@ -27,7 +27,8 @@ describes, tab by tab, every function of the interface and how to use it.
 7. [DEBUG tab](#debug-tab)
 8. [HELP tab](#help-tab)
 9. [Cross-cutting feature: DMD mode / Force pixel-perfect](#cross-cutting-feature-dmd-mode--force-pixel-perfect)
-10. [Best practices and known limitations](#best-practices-and-known-limitations)
+10. [Cross-cutting feature: Quality score and Review window](#cross-cutting-feature-quality-score-and-review-window)
+11. [Best practices and known limitations](#best-practices-and-known-limitations)
 
 ---
 
@@ -49,7 +50,7 @@ Each tab corresponds to a different way of producing a 128×32 GIF animation:
 | DEBUG | Application activity log, useful for diagnosing an issue. |
 | HELP | This guide, in the interface language. |
 
-Hovering over a non-obvious setting (pixel-perfect, lettering threshold, tolerance,
+Hovering over a non-obvious setting (pixel-perfect, profile, tolerance,
 easing, video framing modes...) shows a **help tooltip** in the interface language.
 
 ---
@@ -77,13 +78,48 @@ These settings apply to **every** proposal and to batch processing:
   [dedicated section](#cross-cutting-feature-dmd-mode--force-pixel-perfect) below —
   this checkbox is **shared with the MANUAL and TEXTSCROLL tabs** (checking it here
   checks it everywhere).
-- **Seuil lettrage (px)** (6 to 11, default 8, label not yet translated): minimum
-  letter height (in pixels, after scaling) required to be judged legible. Below that,
-  the engine automatically switches the "Optimisé" proposal to Fill/scroll mode
-  instead of a Resize that would make the text unreadable.
+- **Profile**: see below.
 
 Changing any of these settings automatically re-triggers analysis of the currently
 selected image.
+
+#### Profile
+
+A profile groups all the settings above plus three DMD-specific options. The engine
+itself imposes no limit: the selected profile decides. Three profiles are provided:
+
+| Profile | For | Settings |
+|---|---|---|
+| **Generic** (default) | Any use | No scrolling rule, no duration cap, dark logo inversion on, 10 fps. |
+| **Recalbox logos (browsing)** | Game logos shown by the panel while browsing | Scrolling forced from 2:1, 30 s round-trip cap, dark logo inversion, 15 fps. |
+| **DMD playlist** | GIFs played in playlist on the panel | Scrolling forced from 2:1, no cap, dark logo inversion, 20 fps for smoother motion. |
+
+The three options, which can be changed by hand below the profile list:
+
+- **Force scrolling from (W/H)**: when the logo (transparent margins removed) is at
+  least N times wider than tall, Fill/scroll mode is used instead of Resize. Nothing
+  is cropped: the whole logo goes across the screen. Unchecked, the choice is made by
+  score.
+- **Invert dark logos**: a dark, nearly monochrome logo on a transparent background
+  (for example black text meant for a light background) is invisible on a black DMD.
+  The engine also tries its inverted version and keeps it only if the quality score
+  clearly improves.
+- **Round-trip cap (s)**: maximum duration of one scrolling round trip. Beyond it,
+  scrolling is sped up (more pixels per frame, same frame rate), without cropping
+  anything.
+
+Buttons next to the list:
+
+- **➕**: opens the profile creation page, pre-filled with the current settings.
+- **✏**: opens the page of the selected profile.
+- **💾**: saves the current settings into the selected profile.
+- **🗑**: deletes a custom profile, or resets a built-in profile to its original
+  values (with confirmation).
+
+The **profile page** shows every parameter with its field, a tooltip on hover and a
+**?** button that displays its explanation. Out-of-range values are refused before
+saving. Profiles are stored in `profiles.json` in the configuration folder: no manual
+editing is needed.
 
 ### 2. "Images" panel (left column)
 
@@ -121,9 +157,9 @@ detected dominant palette, and width/height ratio compared to the DMD target (4.
   Force pixel-perfect" is checked, every frame is simulated in physical LED style
   (round dots with glow) instead of a simple square upscale.
 - Below the original preview, a status message shows which proposal was
-  automatically retained and why (e.g. "'Optimisé' retenu (score: 3.99), base: Fill
-  (scrolling)", or "texte illisible en Resize → Fill forcé" when the letter-height
-  threshold triggered a forced switch — this status line is not yet localized).
+  automatically retained and why (e.g. "'Optimized' selected (score: 3.99), base: Fill
+  (scrolling)"). A note is added when a profile option applied: "(wide logo → Fill
+  used)" or "(dark logo → inverted)".
 
 ### 5. AI Proposals (3×2 grid)
 
@@ -155,6 +191,11 @@ For each image, 6 renders are computed and shown as thumbnails:
   folder. When done, a message offers to open the output folder directly.
 - Images are processed **in parallel**, using almost all CPU cores (up to 12 images
   at a time): a batch finishes much faster than one image at a time.
+- Every GIF produced gets a **quality score** (0 to 100). The end-of-batch message
+  shows the number of GIFs, the average score and the breakdown by rating, and offers
+  to open the **Review** window if some GIFs are poor or bad. See the
+  [dedicated section](#cross-cutting-feature-quality-score-and-review-window).
+- **🔍 Review**: opens the review window for an output folder already processed.
 
 ---
 
@@ -445,6 +486,46 @@ Two extras available in the same 4 tabs, only while the checkbox is checked:
 
 ---
 
+## Cross-cutting feature: Quality score and Review window
+
+Every GIF produced gets a **quality score from 0 to 100**, computed on its frames:
+share of lit pixels, contrast, screen coverage, number of frames and duration. It is
+a **review aid, not an automatic decision**: nothing is deleted or changed based on
+this score.
+
+| Rating | Score |
+|---|---|
+| Excellent | 86 to 100 |
+| Good | 71 to 85 |
+| Acceptable | 51 to 70 |
+| Poor | 31 to 50 |
+| Bad | 0 to 30 |
+
+The score comes with **reasons** in the interface language (screen mostly empty, low
+contrast, full background, animation too short…). A fully black screen scores 0.
+
+- **Batch processing**: scores are saved in a `dmd_scores.json` file in the output
+  folder. A second batch into the same folder completes this file instead of erasing
+  it.
+- **MANUAL, VIDEO and TEXTSCROLL exports**: the score is shown in the "GIF exported"
+  message.
+
+**Review window** (**🔍 Review** button of the AUTO tab, or offered at the end of a
+batch):
+
+- list of the folder's GIFs, **from the weakest to the best**, with a colored dot,
+  score, path and reasons; clicking a column header sorts the list;
+- clicking a row plays the GIF with the LED render;
+- **Threshold** (30 by default) and **Move ≤ threshold to _a_revoir** button: after
+  confirmation (with the exact number of files), the GIFs concerned are **moved, never
+  deleted**, into an `_a_revoir` subfolder of the output folder, keeping the folder
+  structure. This folder is ignored when the folder is loaded again in the
+  application.
+
+The list stays smooth even with tens of thousands of GIFs.
+
+---
+
 ## Best practices and known limitations
 
 - **Transparent-background images (RGBA PNG)**: handled correctly everywhere (the
@@ -454,10 +535,15 @@ Two extras available in the same 4 tabs, only while the checkbox is checked:
   (unlike AUTO) — at high contrast/saturation values, bright pixels can be "blown
   out" to pure white; this is an intentional choice to leave full control to the
   user.
-- **Letter-height threshold** (AUTO): a lower setting (6) tolerates smaller letters
-  before forcing Fill mode; a higher setting (11) is more cautious and forces Fill
-  more often. The default (8) is a compromise validated against a corpus of real
-  logos.
+- **Force scrolling from (W/H)** (profile): 2 is the value used for Recalbox logos,
+  chosen on a real pack of more than 54,000 logos. Lower, more logos scroll, as a
+  close-up; higher, more logos stay still, smaller.
+- **Animated logos and the panel**: a scrolling logo is shown larger, so it lights
+  more LEDs. On a panel powered by a plain USB port, a very bright image can cause
+  restarts: provide enough power for the panel.
+- **Dark logo inversion**: inversion also changes the colors (an orange outline
+  turns blue). It is kept only if the score clearly improves; if you do not like the
+  result, uncheck the option or pick another proposal.
 - **Partial localization**: as noted at the top of this guide, several UI strings
   (drag-and-drop hint, some button labels, the Image Information panel content, the
   TEXTSCROLL size-estimate line, some proposal-caption words, and every internal log

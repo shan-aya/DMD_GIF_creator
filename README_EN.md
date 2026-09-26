@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · 🇬🇧 **English** · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.0.2
+# DMD GIF Creator 128x32 — v3.1.0
 
 Create GIFs optimized for 128×32 DMD displays (arcade cabinet, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) from **images**, a **video**
@@ -13,14 +13,14 @@ processing of whole folders.
 
 ## Download
 
-**Windows**: download `dmd_gif_creator_v302.exe` from the
+**Windows**: download `dmd_gif_creator_v310.exe` from the
 [latest Release](https://github.com/shan-aya/DMD_GIF_converter/releases/latest) and run
 it — nothing to install.
 
 **From the sources** ([`dmd_gif_creator/`](./dmd_gif_creator) folder):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v302.py
+    python dmd_gif_creator/dmd_gif_creator_v310.py
 
 `opencv-contrib-python` (not `opencv-python`) is required for the automatic tracking of
 the VIDEO tab; the two packages must not be installed at the same time.
@@ -33,14 +33,21 @@ Drag and drop images or whole folders (PNG, JPG, BMP, GIF, raw565). For each ima
 the application computes two 128×32 renders — **Resize** (the whole image scaled down)
 and **Fill** (the image at a larger size, scrolling) — and scores them on screen
 coverage and readability. The best one is kept, then refined (cleanup,
-pixel-perfect). **If the text gets too small to read in Resize, Fill is enforced**,
-even when Resize has the better score. Three artistic variants complete the six
-proposals; the LED preview (with magnifier) shows the real panel render.
+pixel-perfect). Three artistic variants complete the six proposals; the LED preview
+(with magnifier) shows the real panel render.
+
+A **profile** adapts this choice to the use: **Generic** (no limits), **Recalbox
+logos** (scrolling is forced for wide logos, a round trip lasts at most 30 s, 15 fps)
+or **DMD playlist** (20 fps for smoother motion). You can create your own profiles in
+a page where every parameter is explained. Dark logos on a transparent background,
+invisible on a black DMD, are inverted when the render improves.
 
 **Batch processing** applies the same analysis to every image of a folder — all the
 scraped logos of a game library, for example: each logo gets the render mode that
 suits it, in parallel, with the folder tree kept and source files never modified. A
-proposal can be locked for the whole batch.
+proposal can be locked for the whole batch. Every GIF gets a **quality score**, and
+the **Review** window lists the weakest first, with a preview, to review thousands of
+logos quickly and set aside (never delete) the failed ones.
 
 ### MANUAL — advanced editing
 
@@ -75,6 +82,14 @@ fitted automatically to the text length.
 
 ## What's new
 
+**v3.1.0**
+- **Quality score** for every GIF and **Review** window (weakest first, LED preview,
+  set aside without deleting).
+- **Profiles**: Generic, Recalbox logos, DMD playlist, and custom profiles.
+- **Dark logos** on a transparent background inverted when the render improves.
+- The "Seuil lettrage" (letter threshold) setting is replaced by the profile option
+  "Force scrolling from (W/H)".
+
 **v3.0.2**
 - AUTO tab fully translated into English and Spanish (proposal names, status line,
   status bar).
@@ -103,6 +118,8 @@ Full user guide: [🇫🇷 Français](./NOTICE_FR.md) · [🇬🇧 English](./NO
 ## 🤝 Thanks
 
 - [RetroPixelLED original](https://github.com/fjgordillo86/RetroPixelLED)
+- [red77290/dmd_gif_converter](https://github.com/red77290/dmd_gif_converter) (MIT):
+  idea of the quality score and of setting weak GIFs aside
 - Visual Studio Code
 - [Sixth](https://trysixth.com/)
 

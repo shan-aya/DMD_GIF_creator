@@ -1,7 +1,47 @@
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v23
+# Version actuelle : v27
+#
+# v27 — 2026-09-26 — safe-modify — Profils (décision utilisateur : moteur
+#      générique sans limitation, profil « Logos Recalbox » pour les logos) :
+#      options pilotées par batch_params, neutres par défaut —
+#      fill_min_ratio (absent/None/0 = pas de règle de forme, choix au score),
+#      invert_dark (True par défaut, décision utilisateur : actif aussi en
+#      générique), max_scroll_cycle_s (plafond d'aller-retour, absent = aucun).
+#      apply_render_profile() recopie le plafond dans les réglages retournés,
+#      y compris ceux venus de l'aperçu (cache/verrou).
+#
+# v26 — 2026-09-25 — safe-modify — Logos sombres monochromes (demande
+#      utilisateur après analyse du "gamma" de red77290) : les 315 GIF
+#      entièrement noirs du pack F:\systems venaient TOUS de logos noirs sur
+#      fond transparent (luminance visible médiane 0 : le gamma n'y peut rien).
+#      is_dark_monochrome (luminance moyenne visible < 40, saturation < 60,
+#      transparence requise) -> maybe_invert_dark : réglages résolus aussi sur
+#      la source inversée (invert_visible), rendus complets comparés au score
+#      dmd_quality, inversion retenue seulement si >= +3 points (les logos
+#      sombres à contours/texte clairs restent intacts : leur score baisse une
+#      fois inversés). Marqueur settings["invert_dark"] appliqué par
+#      render_dmd_frame. resolve_image_settings : cœur extrait tel quel dans
+#      _resolve_from_image. Le gamma de red77290 n'a rien apporté sur les
+#      logos (32 logos sombres : 93,6 -> 93,9, 6 mieux / 6 moins bien).
+#
+# v25 — 2026-09-25 — safe-modify — Règle de forme (demande utilisateur : "je
+#      préfère un logo détaillé qui scroll qu'un logo fixe non reconnaissable",
+#      "je ne veux aucun rognage") : `shape_forces_fill` + constante
+#      FILL_MIN_RATIO_DEFAULT (2.0). resolve_image_settings impose Fill si la
+#      source recadrée est au moins 2 fois plus large que haute (réglable,
+#      batch_params["fill_min_ratio"]) ; en dessous, choix au score inchangé.
+#      Le lot n'avait jamais eu le garde-fou lettres de l'aperçu : les deux
+#      suivent maintenant la même règle. resize_will_shrink_text_too_much est
+#      conservée mais n'est plus appelée (voir docstring de shape_forces_fill).
+#
+# v24 — 2026-09-25 — safe-modify — resolve_image_settings (lot) : source
+#      recadrée (crop_to_visible_content) AVANT de prendre sa taille, comme
+#      l'aperçu. Bug présent depuis le 1er commit : le sens de défilement Fill
+#      (horizontal si > 4:1) était calculé sur l'image NON recadrée alors que le
+#      rendu, lui, recadre -- un logo à marges transparentes pouvait défiler
+#      dans le mauvais sens en lot (3 006 sources sur 54 776 du pack F:\systems).
 #
 # v23 — 2026-08-06 — safe-modify — Plan perf batch (Tier 2a, préparation de la
 #      parallélisation ACROSS images) : `generate_settings_variants`/
@@ -326,6 +366,11 @@ try:
     from .dmd_manual_effects import ManualEffects
 except ImportError:
     from dmd_manual_effects import ManualEffects
+
+try:
+    from . import dmd_quality as dq
+except ImportError:
+    import dmd_quality as dq
 
 
 def hash_image(img: Image.Image) -> str:
@@ -983,6 +1028,25 @@ TONAL_REFINEMENT_PARAMS = (
 )
 
 
+# v25 -- règle de forme : à partir de ce rapport largeur/hauteur (source
+# recadrée), Fill/défilement est imposé au lieu de Resize. Réglable dans l'UI
+# ("Défilement dès"), transmis au lot via batch_params["fill_min_ratio"].
+FILL_MIN_RATIO_DEFAULT = 2.0
+
+
+def shape_forces_fill(size, min_ratio=FILL_MIN_RATIO_DEFAULT):
+    """True si la forme de la source (recadrée) impose Fill/défilement.
+    Aucun rognage : Fill agrandit selon max(128/w, 32/h) et le sens de
+    défilement (generate_settings_variants) suit le même rapport, donc tout le
+    logo passe à l'écran au cours de l'animation. Remplace, dans l'aperçu comme
+    dans le lot, le garde-fou resize_will_shrink_text_too_much : mesuré sur
+    54 776 logos réels, la détection de lettres forçait Fill sur 75 % des
+    logos presque carrés, dont une majorité parfaitement reconnaissables en
+    Resize (gros plans défilants méconnaissables à la place)."""
+    w, h = size
+    return h > 0 and (w / h) >= float(min_ratio)
+
+
 def generate_settings_variants(
     size, resize_mode, base_fps, base_duration, base_scroll, base_contrast, base_saturation
 ):
@@ -1119,6 +1183,71 @@ def optimize_cleanup_and_pixel_perfect(
     return best_score, opt_settings, best_canvas
 
 
+# v26 -- logos sombres monochromes (ex. texte noir sur fond transparent, prévu
+# pour un fond clair) : invisibles sur un DMD noir. Mesures sur les PIXELS
+# VISIBLES uniquement (sinon tout logo sur fond noir paraîtrait "sombre").
+DARK_LUM_MAX = 40.0     # luminance moyenne visible sous laquelle le logo est "sombre"
+DARK_SAT_MAX = 60.0     # saturation moyenne visible sous laquelle il est monochrome
+DARK_INVERT_MARGIN = 3  # points de score qualité que l'inversion doit gagner
+
+
+def is_dark_monochrome(img):
+    """True si l'image a de la transparence et que ses pixels visibles sont
+    sombres et peu saturés. Sans transparence, jamais : inverser une image
+    opaque inverserait aussi son fond."""
+    if img.mode not in ("RGBA", "LA", "P") and img.info.get("transparency") is None:
+        return False
+    a = np.asarray(img.convert("RGBA")).astype(np.float32)
+    alpha = a[..., 3]
+    vis = alpha > 16
+    if not vis.any() or vis.all():
+        return False
+    rgb = a[..., :3][vis]
+    lum = float((0.299 * rgb[:, 0] + 0.587 * rgb[:, 1] + 0.114 * rgb[:, 2]).mean())
+    mx, mn = rgb.max(axis=1), rgb.min(axis=1)
+    sat = float((np.where(mx > 0, (mx - mn) / np.maximum(mx, 1.0), 0.0) * 255.0).mean())
+    return lum < DARK_LUM_MAX and sat < DARK_SAT_MAX
+
+
+def invert_visible(img):
+    """Inverse les couleurs, transparence conservée (le fond transparent reste
+    noir une fois posé sur le DMD) : un logo noir devient blanc."""
+    rgba = np.asarray(img.convert("RGBA")).copy()
+    rgba[..., :3] = 255 - rgba[..., :3]
+    return Image.fromarray(rgba, "RGBA")
+
+
+def _rendered_quality(image_path, settings):
+    """Score dmd_quality (0-100) du rendu complet que produirait l'export."""
+    frames, fps = render_dmd_frame(
+        image_path, settings, return_frames=True,
+        cleanup_power=settings.get("cleanup_power", 1.0),
+        pixel_perfect=bool(settings.get("_pixel_perfect", False)),
+    )
+    frames = frames if isinstance(frames, list) else [frames]
+    return dq.evaluate_frames(frames, int(1000 / max(1, fps))).score
+
+
+def maybe_invert_dark(image_path, img, base_settings, resolve_fn):
+    """Si `img` (source recadrée) est un logo sombre monochrome, résout aussi
+    ses réglages sur la version inversée (`resolve_fn(image_inversée)`) et
+    renvoie ces réglages (marqués invert_dark) seulement si leur rendu gagne
+    au moins DARK_INVERT_MARGIN points de score qualité ; sinon None.
+    Mesuré sur 54 776 logos réels : ~1 % concernés, les 315 GIF entièrement
+    noirs du pack récupérés en quasi-totalité, et les logos sombres à parties
+    claires (contours, texte coloré) conservés car leur score baisse une fois
+    inversés."""
+    if not is_dark_monochrome(img):
+        return None
+    try:
+        inv_settings = dict(resolve_fn(invert_visible(img)), invert_dark=True)
+        if _rendered_quality(image_path, inv_settings) >= _rendered_quality(image_path, base_settings) + DARK_INVERT_MARGIN:
+            return inv_settings
+    except Exception:
+        pass  # jamais bloquant : on garde le rendu normal
+    return None
+
+
 def resolve_image_settings(image_path, batch_params, locked_settings=None, cached_settings=None):
     """Résout les réglages optimaux pour UNE image (même logique resize-vs-fill
     puis optimisation nettoyage/pixel-perfect que l'aperçu interactif Auto/IA,
@@ -1133,11 +1262,43 @@ def resolve_image_settings(image_path, batch_params, locked_settings=None, cache
     résolus par l'appelant AVANT dispatch (un worker ne peut pas lire self).
     """
     if locked_settings is not None:
-        return locked_settings.copy()
+        return apply_render_profile(locked_settings, batch_params)
     if cached_settings is not None:
-        return cached_settings
+        return apply_render_profile(cached_settings, batch_params)
 
-    img = DMDEngine.load_image(image_path)
+    # v24 : recadrée comme dans l'aperçu (auto_analyze_and_preview) -- la taille
+    # sert au sens de défilement Fill (generate_settings_variants), le rendu
+    # recadrant de son côté (score_variant/render_dmd_frame)
+    img = DMDEngine.crop_to_visible_content(DMDEngine.load_image(image_path))
+    settings = _resolve_from_image(img, batch_params)
+    # v26 : logo sombre monochrome -> version inversée si nettement meilleure
+    # (v27 : désactivable par profil, batch_params["invert_dark"], actif par défaut)
+    if batch_params.get("invert_dark", True):
+        inverted = maybe_invert_dark(image_path, img, settings,
+                                     lambda inv: _resolve_from_image(inv, batch_params))
+        if inverted is not None:
+            settings = inverted
+    return apply_render_profile(settings, batch_params)
+
+
+def apply_render_profile(settings, batch_params):
+    """v27 -- copie des réglages avec les options de RENDU du profil actif
+    (aujourd'hui : plafond d'aller-retour max_scroll_cycle_s, lu par
+    DMDEngine.create_animation_frames). Appliqué aussi aux réglages venus de
+    l'aperçu (cache/verrou) : changer de profil après un aperçu s'applique
+    au lot. Sans plafond dans le profil, la clé est retirée (aucune limite)."""
+    out = dict(settings)
+    cap = batch_params.get("max_scroll_cycle_s")
+    if cap:
+        out["max_scroll_cycle_s"] = float(cap)
+    else:
+        out.pop("max_scroll_cycle_s", None)
+    return out
+
+
+def _resolve_from_image(img, batch_params):
+    """Cœur de resolve_image_settings (v26 : extrait tel quel pour pouvoir être
+    rejoué sur la version inversée d'un logo sombre)."""
     size = img.size
     force_pixel_perfect = batch_params["pixel_perfect"]
 
@@ -1161,7 +1322,13 @@ def resolve_image_settings(image_path, batch_params, locked_settings=None, cache
         img, fill_variants, pixel_perfect=force_pixel_perfect, resize_cache=variant_cache
     )
 
-    retained_settings = fit_settings if fit_score >= fill_score else fill_settings
+    # v25 : même règle que l'aperçu (auto_analyze_and_preview) ; v27 : seulement
+    # si le profil la demande (fill_min_ratio absent/None/0 = choix au score)
+    min_ratio = batch_params.get("fill_min_ratio")
+    if min_ratio and shape_forces_fill(size, min_ratio):
+        retained_settings = fill_settings
+    else:
+        retained_settings = fit_settings if fit_score >= fill_score else fill_settings
 
     _, opt_settings, _ = optimize_cleanup_and_pixel_perfect(
         img, retained_settings, force_pixel_perfect=force_pixel_perfect, resize_cache=variant_cache,
@@ -1226,6 +1393,8 @@ def render_dmd_frame(
     supposer équivalent. Même précédent que `return_direction`."""
     raw_source = DMDEngine.load_image(image_path)
     img_orig = DMDEngine.crop_to_visible_content(raw_source)
+    if settings.get("invert_dark"):  # v26 : logo sombre retenu inversé
+        img_orig = invert_visible(img_orig)
 
     # Détecter fond
     bg_color, _is_dark = DMDEngine.detect_background_color(img_orig)

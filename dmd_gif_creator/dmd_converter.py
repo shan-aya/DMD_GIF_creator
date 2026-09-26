@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.0.2
+Version: 3.1.0
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,7 +27,63 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v85
+# Version actuelle : v93
+#
+# v93 — 2026-09-26 — safe-modify — Version 3.1.0 (score qualité + fenêtre Revoir, inversion des logos sombres,
+#      profils de génération, règle de défilement et plafond pilotés par profil) : APP_VERSION + docstring ;
+#      lanceur renommé dmd_gif_creator_v310.py ; en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v20).
+#
+# v92 — 2026-09-26 — safe-modify — Profils (demande utilisateur) : profil fourni « DMD playlist » (réglages DMD,
+#      sans plafond, 20 i/s pour la fluidité, dmd_profiles v2) et profils personnels avec toutes les variables :
+#      un profil porte aussi les paramètres globaux (FPS, durée, vitesse de défilement, contraste, saturation,
+#      couleurs GIF, pixel-perfect ; appliqués au choix du profil, None = inchangé). Page d'édition ProfileEditor
+#      (demande utilisateur : pas d'édition manuelle du JSON) : tous les paramètres éditables, chacun expliqué
+#      (infobulle + bouton « ? » en popup), validation des bornes. Boutons ➕ (nouveau profil, page préremplie
+#      avec les réglages actuels), ✏ (modifier le profil sélectionné), 💾 (enregistrer les réglages actuels),
+#      🗑 (supprimer un profil personnel / remettre un profil fourni à ses valeurs d'origine, avec confirmation).
+#
+# v91 — 2026-09-26 — safe-modify — Profils de génération (décision utilisateur : moteur générique sans limitation,
+#      profil pour les logos Recalbox ; les GIF servent aussi en playlist classique). Nouveau module dmd_profiles
+#      (profils intégrés « Générique » et « Logos Recalbox (navigation) », surchargeables via profiles.json). Onglet
+#      AUTO : ligne « Profil » (liste + 💾 enregistrer) et options modifiables — défilement imposé dès L/H (case +
+#      valeur, remplace le réglage seul v86), inversion des logos sombres, plafond d'aller-retour (case + valeur).
+#      batch_params_snapshot transmet invert_dark / max_scroll_cycle_s / fill_min_ratio (None si décoché) ;
+#      l'aperçu applique les mêmes options (inversion conditionnelle, plafond sur toutes les propositions via
+#      apply_render_profile). Défaut sans profil enregistré : Générique (aucune règle de forme, aucun plafond,
+#      inversion active).
+#
+# v90 — 2026-09-25 — safe-modify — Aperçu AUTO : même décision que le lot pour les logos sombres monochromes
+#      (dmd_pipeline_quality v26, maybe_invert_dark) — la proposition « Optimisé » passe à la version inversée si son
+#      score qualité gagne au moins 3 points ; note d'état « (logo sombre → inversé) » (clé t_dark_inverted).
+#
+# v89 — 2026-09-25 — safe-modify — Score qualité après les exports uniques (MANUEL, VIDEO, TEXTSCROLL) : une ligne
+#      « Score qualité : N/100 (note) — raisons » ajoutée au récapitulatif d'export (_export_quality_line,
+#      penalize_static=False, jamais bloquant) + trace dans les logs.
+#
+# v88 — 2026-09-25 — safe-modify — Fenêtre « Revoir » (classe ReviewWindow) : GIF d'un dossier de sortie triés du
+#      pire au meilleur d'après dmd_scores.json (pastille, score, chemin relatif, raisons dans la langue de
+#      l'interface), colonnes triables, liste remplie par blocs de 1000 via after() (jamais figée sur des dizaines
+#      de milliers de lignes), aperçu animé au clic avec le rendu LED existant (render_led_style), seuil (défaut
+#      30) + « Déplacer ≤ seuil vers _a_revoir » avec confirmation (nombre exact via dry_run), déplacement dans un
+#      thread (dmd_quality.review_low : déplace, ne supprime jamais). Ouverte par le bouton « 🔍 Revoir » (AUTO)
+#      et proposée en fin de lot quand des GIF sont 🟠/🔴.
+#
+# v87 — 2026-09-25 — safe-modify — Score qualité 0-100 dans le traitement par lot (dmd_quality.py v2, aide à la
+#      relecture de gros lots, jamais une décision automatique). process_one_image note les images déjà en mémoire
+#      (dq.evaluate_frames, durée d'image = celle de l'export) et renvoie (chemin relatif posix, score) en 7e
+#      élément ; process_images collecte dans le thread consommateur et écrit UNE fois dmd_scores.json dans le
+#      dossier de sortie (_save_quality_index : fusion avec l'index existant, aussi après une interruption).
+#      Boîte de fin de lot : résumé (nombre, moyenne, répartition par pastille) avant la question finale.
+#      _scan_folder_for_images ignore le dossier _a_revoir. Un échec du score n'empêche jamais l'export.
+#
+# v86 — 2026-09-25 — safe-modify — Règle de forme Resize/Fill (demande utilisateur : "je préfère un logo détaillé
+#      qui scroll qu'un logo fixe non reconnaissable", "je ne veux aucun rognage"). auto_analyze_and_preview
+#      impose Fill quand la source recadrée est au moins N fois plus large que haute (dmd_pipeline_quality.
+#      shape_forces_fill, N = 2 par défaut) au lieu du garde-fou lettres, qui forçait Fill sur 75 % des logos
+#      presque carrés du pack réel F:\systems (54 776 logos), souvent reconnaissables en Resize. Le lot applique
+#      désormais la même règle (il n'avait jamais eu le garde-fou) : batch_params_snapshot transmet
+#      fill_min_ratio. Réglage "Seuil lettrage (px)" remplacé par "Défilement dès (L/H)" (1.0-8.0, pas 0.5,
+#      config fill_min_ratio) ; note d'état t_text_forces_fill → t_shape_forces_fill.
 #
 # v85 — 2026-09-24 — safe-modify — Version 3.0.2. Textes de l'onglet AUTO restés en français en EN/ES (vus sur les
 #      captures du README) : noms des propositions (Resize (adapté), Fill (scrolling), Optimisé, Artistique),
@@ -2263,6 +2319,18 @@ try:
 except ImportError:
     from dmd_gif_exporter import export_frames_to_gif, estimate_gif_size
 
+# v87 -- score qualité 0-100 des GIF exportés (aide à la relecture d'un lot)
+try:
+    from . import dmd_quality as dq
+except ImportError:
+    import dmd_quality as dq
+
+# v91 -- profils de génération (options neutres du moteur)
+try:
+    from . import dmd_profiles
+except ImportError:
+    import dmd_profiles
+
 # --- Modular video engine (nouvel onglet VIDEO) ---
 try:
     from .dmd_video_engine import VideoEngine, CV2_AVAILABLE
@@ -2601,7 +2669,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.0.2"
+    APP_VERSION = "3.1.0"
 
     # ========================================================================
 
@@ -2946,31 +3014,11 @@ class DMDConverter:
         pixel_perfect_check.pack(side=tk.LEFT, padx=(0, 20))
         add_help_tooltip(pixel_perfect_check, "tooltip_pixel_perfect")
 
-        # Seuil de hauteur de lettre (px) sous lequel Fill/scroll est forcé au lieu
-        # de Resize — voir dmd_pipeline_quality.resize_will_shrink_text_too_much.
-        # Plage 6-11 : bornes empiriques du corpus de test (6.51 = pire cas encore
-        # marginalement lisible, 11.70 = meilleur cas franchement illisible en
-        # dessous — le défaut 8 se situe au milieu de cet intervalle).
-        letter_threshold_label = ttk.Label(options_row, text="Seuil lettrage (px):")
-        letter_threshold_label.pack(side=tk.LEFT, padx=(0, 5))
-        add_help_tooltip(letter_threshold_label, "tooltip_letter_threshold")
-        self.letter_size_threshold_var = tk.IntVar(
-            value=config_manager.get("letter_size_threshold", 8)
-        )
-        self.letter_size_threshold_var.trace_add(
-            "write",
-            lambda *args: config_manager.set(
-                "letter_size_threshold", self.letter_size_threshold_var.get()
-            ),
-        )
-        ttk.Spinbox(
-            options_row,
-            from_=6,
-            to=11,
-            textvariable=self.letter_size_threshold_var,
-            width=5,
-            command=self.on_global_param_change,
-        ).pack(side=tk.LEFT)
+        # v91 -- profils (dmd_profiles) : le moteur reste neutre, un profil
+        # règle les options (défilement imposé dès L/H, inversion des logos
+        # sombres, plafond d'aller-retour, cadence). Remplace le réglage seul
+        # "Défilement dès" de la v86. Valeurs courantes gardées dans config.json.
+        self._setup_profile_row(params_frame)
 
         # Container principal
         content_frame = ttk.Frame(main_frame)
@@ -3226,6 +3274,10 @@ class DMDConverter:
             activeforeground="white",
             relief=tk.RAISED,
         ).pack(side=tk.LEFT, padx=5, pady=2)
+        # v88 -- relecture d'un lot par score qualité
+        review_btn = ttk.Button(action_frame, text="🔍 Revoir", command=self.open_review_window)
+        review_btn.pack(side=tk.LEFT, padx=5, pady=2)
+        add_help_tooltip(review_btn, "tooltip_review")
 
         # Configuration grille
         main_frame.columnconfigure(1, weight=1)
@@ -6185,9 +6237,11 @@ class DMDConverter:
                 optimize=False,
             )
             file_size = Path(file_path).stat().st_size / 1024
+            quality_line = self._export_quality_line(self.video_frames, self.video_fps.get(), file_path)
             messagebox.showinfo(
                 lang_manager.get("success", "Succès"),
-                f"{lang_manager.get('gif_exported', 'GIF exporté')}: {Path(file_path).name}\n{file_size:.1f} KB",
+                f"{lang_manager.get('gif_exported', 'GIF exporté')}: {Path(file_path).name}\n{file_size:.1f} KB"
+                + quality_line,
             )
             logger.info(f"Export vidéo: {Path(file_path).name}, {file_size:.1f} KB")
         except Exception as e:
@@ -7066,7 +7120,9 @@ class DMDConverter:
         (lue par le thread Tk pour le compteur d'avancement). Aucun appel Tk ici :
         appelable depuis un thread."""
         found = []
-        for dirpath, _dirs, files in os.walk(folder):
+        for dirpath, dirs, files in os.walk(folder):
+            # v87 -- GIF mis de côté par "Revoir" : jamais rechargés
+            dirs[:] = [d for d in dirs if d != dq.REVIEW_DIR]
             for fn in files:
                 if os.path.splitext(fn)[1].lower() in self._SCAN_IMAGE_EXTS:
                     found.append(os.path.normpath(os.path.join(dirpath, fn)))
@@ -7407,21 +7463,15 @@ class DMDConverter:
             self.ia_status_var.set(tr("t_optimizing", "🧹 Optimisation nettoyage / pixel-perfect..."))
             self.root.update()
 
-            # Si le mode Resize (fit) va réduire le texte source sous un seuil de
-            # lisibilité (hauteur de lettre projetée après resize, voir
-            # dmd_pipeline_quality.resize_will_shrink_text_too_much), Fill/scroll
-            # est préféré quel que soit le score brut : son facteur d'échelle est
-            # par construction toujours >= celui de fit (adaptive_resize prend
-            # min() pour fit, max() pour fill), donc au moins aussi lisible.
-            w_orig, h_orig = img.size
-            fit_scale = min(128 / w_orig, 32 / h_orig)
-            text_forces_fill = self.resize_will_shrink_text_too_much(img, fit_scale)
-            if text_forces_fill:
+            # v86 : règle de forme, identique au lot (voir
+            # dmd_pipeline_quality.shape_forces_fill) -- remplace le garde-fou
+            # lettres (resize_will_shrink_text_too_much), qui forçait Fill sur
+            # 75 % des logos presque carrés, souvent reconnaissables en Resize.
+            min_ratio = self._get_fill_min_ratio()  # v91 : None = option du profil décochée
+            shape_fill = bool(min_ratio) and _shape_forces_fill(img.size, min_ratio)
+            if shape_fill:
                 retained_settings = fill_settings
-                logger.info(
-                    "Texte détecté fusionné en Resize — Fill/scroll forcé "
-                    "indépendamment du score"
-                )
+                logger.info("Logo large — Fill/scroll imposé par la forme")
             elif fit_score >= fill_score:
                 retained_settings = fit_settings
             else:
@@ -7437,6 +7487,22 @@ class DMDConverter:
             )
             # v85 : libellé traduit (dmd_pipeline_quality nomme la variante "Optimisé")
             opt_settings = {**opt_settings, "name": tr("t_prop_optimized", "Optimisé")}
+
+            # v90 : logo sombre monochrome -> même décision que le lot
+            # (dmd_pipeline_quality.maybe_invert_dark : inversé seulement si le
+            # score qualité du rendu gagne au moins 3 points)
+            bp = self.batch_params_snapshot()
+            inverted = _maybe_invert_dark(
+                image_path, img, opt_settings, lambda inv: _resolve_from_image(inv, bp)
+            ) if bp["invert_dark"] else None
+            dark_inverted = inverted is not None
+            if dark_inverted:
+                opt_settings = {**inverted, "name": tr("t_prop_optimized", "Optimisé")}
+                opt_canvas, _ = _render_dmd_frame(
+                    image_path, opt_settings, cleanup_power=opt_settings.get("cleanup_power", 1.0),
+                    pixel_perfect=bool(opt_settings.get("_pixel_perfect", False)),
+                )
+                logger.info("Logo sombre — version inversée retenue (score qualité supérieur)")
 
             self.ia_status_var.set(tr("t_generating_artistic", "🎨 Génération propositions artistiques..."))
             self.root.update()
@@ -7472,6 +7538,11 @@ class DMDConverter:
                 (None, artistic1_settings, artistic1_canvas),
                 (None, artistic2_settings, artistic2_canvas),
                 (None, artistic3_settings, artistic3_canvas),
+            ]
+            # v91 -- options de rendu du profil (plafond d'aller-retour) sur
+            # toutes les propositions : l'aperçu animé et l'export les suivent
+            self.proposals = [
+                (s, _apply_render_profile(v, bp), c) for s, v, c in self.proposals
             ]
 
             # Réinitialiser tous les emplacements de proposition
@@ -7528,9 +7599,11 @@ class DMDConverter:
             best_settings = self.image_settings[image_path]
 
             base_note = (
-                tr("t_text_forces_fill", " (texte illisible en Resize → Fill forcé)")
-                if text_forces_fill else ""
+                tr("t_shape_forces_fill", " (logo large → Fill imposé)")
+                if shape_fill else ""
             )
+            if dark_inverted:
+                base_note += tr("t_dark_inverted", " (logo sombre → inversé)")
             self.ia_status_var.set(
                 tr(
                     "t_retained", "✓ '{name}' retenu (score : {score}), base : {base}{note}",
@@ -8010,7 +8083,206 @@ class DMDConverter:
             "contrast": self.contrast_var.get(),
             "saturation": self.saturation_var.get(),
             "pixel_perfect": self._get_force_pixel_perfect(),
+            "fill_min_ratio": self._get_fill_min_ratio(),
+            "invert_dark": bool(self.invert_dark_var.get()),
+            "max_scroll_cycle_s": self._get_scroll_cap(),
         }
+
+    def _get_fill_min_ratio(self):
+        """v86/v91 -- rapport L/H à partir duquel Fill est imposé, ou None si
+        l'option est décochée (choix au score) ; borné, défaut si invalide."""
+        if not self.fill_ratio_on_var.get():
+            return None
+        try:
+            return max(1.0, min(8.0, float(self.fill_min_ratio_var.get())))
+        except Exception:
+            return _FILL_MIN_RATIO_DEFAULT
+
+    def _get_scroll_cap(self):
+        """v91 -- plafond d'aller-retour (s) du profil, ou None si décoché."""
+        if not self.cap_on_var.get():
+            return None
+        try:
+            return max(2.0, min(600.0, float(self.cap_s_var.get())))
+        except Exception:
+            return None
+
+    # ------------------------------------------------------------------
+    # v91 -- Profils (dmd_profiles)
+    # ------------------------------------------------------------------
+    def _setup_profile_row(self, parent):
+        """Ligne "Profil" + options du profil (onglet AUTO, paramètres
+        globaux). Les options restent modifiables à la main après le choix
+        d'un profil ; 💾 les enregistre dans profiles.json pour ce profil."""
+        self.profiles = dmd_profiles.load_profiles(config_manager.user_dir)
+        cur = self.profiles.get(config_manager.get("profile", "generic")) or self.profiles["generic"]
+
+        row1 = ttk.Frame(parent)
+        row1.pack(anchor=tk.W, pady=(2, 2), fill=tk.X)
+        lbl = ttk.Label(row1, text="Profil :")
+        lbl.pack(side=tk.LEFT, padx=(0, 5))
+        add_help_tooltip(lbl, "tooltip_profile")
+        self._profile_keys = list(self.profiles)  # ordre = valeurs de la liste (clé par position)
+        self.profile_var = tk.StringVar(value=self._profile_label(config_manager.get("profile", "generic")))
+        self.profile_combo = ttk.Combobox(row1, textvariable=self.profile_var, state="readonly", width=30,
+                                          values=[self._profile_label(k) for k in self._profile_keys])
+        self.profile_combo.pack(side=tk.LEFT)
+        self.profile_combo.bind("<<ComboboxSelected>>", lambda _e: self._on_profile_selected())
+        new_btn = ttk.Button(row1, text="➕", width=3, command=self._new_profile)
+        new_btn.pack(side=tk.LEFT, padx=(4, 0))
+        add_help_tooltip(new_btn, "tooltip_profile_new")
+        edit_btn = ttk.Button(row1, text="✏", width=3, command=self._edit_profile)
+        edit_btn.pack(side=tk.LEFT, padx=(4, 0))
+        add_help_tooltip(edit_btn, "tooltip_profile_edit")
+        save_btn = ttk.Button(row1, text="💾", width=3, command=self._save_current_profile)
+        save_btn.pack(side=tk.LEFT, padx=(4, 0))
+        add_help_tooltip(save_btn, "tooltip_profile_save")
+        del_btn = ttk.Button(row1, text="🗑", width=3, command=self._delete_profile)
+        del_btn.pack(side=tk.LEFT, padx=(4, 0))
+        add_help_tooltip(del_btn, "tooltip_profile_delete")
+
+        row2 = ttk.Frame(parent)
+        row2.pack(anchor=tk.W, pady=(2, 2), fill=tk.X)
+        cfg = config_manager.get
+        self.fill_ratio_on_var = tk.BooleanVar(value=cfg("fill_ratio_on", cur["fill_min_ratio"] is not None))
+        self.fill_min_ratio_var = tk.DoubleVar(value=cfg("fill_min_ratio", cur["fill_min_ratio"] or _FILL_MIN_RATIO_DEFAULT))
+        self.invert_dark_var = tk.BooleanVar(value=cfg("invert_dark", cur["invert_dark"]))
+        self.cap_on_var = tk.BooleanVar(value=cfg("cap_on", cur["max_scroll_cycle_s"] is not None))
+        self.cap_s_var = tk.DoubleVar(value=cfg("max_scroll_cycle_s", cur["max_scroll_cycle_s"] or 30.0))
+
+        chk = ttk.Checkbutton(row2, text="Défilement imposé dès (L/H):", variable=self.fill_ratio_on_var,
+                              command=self._on_profile_option_change)
+        chk.pack(side=tk.LEFT)
+        add_help_tooltip(chk, "tooltip_fill_ratio")
+        ttk.Spinbox(row2, from_=1.0, to=8.0, increment=0.5, format="%.1f", width=5,
+                    textvariable=self.fill_min_ratio_var,
+                    command=self._on_profile_option_change).pack(side=tk.LEFT, padx=(2, 16))
+        chk = ttk.Checkbutton(row2, text="Inverser les logos sombres", variable=self.invert_dark_var,
+                              command=self._on_profile_option_change)
+        chk.pack(side=tk.LEFT, padx=(0, 16))
+        add_help_tooltip(chk, "tooltip_invert_dark")
+        chk = ttk.Checkbutton(row2, text="Plafond aller-retour (s):", variable=self.cap_on_var,
+                              command=self._on_profile_option_change)
+        chk.pack(side=tk.LEFT)
+        add_help_tooltip(chk, "tooltip_scroll_cap")
+        ttk.Spinbox(row2, from_=2, to=600, increment=5, format="%.0f", width=5,
+                    textvariable=self.cap_s_var,
+                    command=self._on_profile_option_change).pack(side=tk.LEFT, padx=(2, 0))
+
+    def _profile_label(self, key):
+        p = self.profiles.get(key) if hasattr(self, "profiles") else None
+        if p is None:
+            return key
+        return tr(f"t_profile_{key}", p["label"])
+
+    def _profile_key_from_label(self, label):
+        """Clé du profil affiché : par position dans la liste (robuste à un
+        changement de langue), repli sur le libellé puis sur "generic"."""
+        idx = self.profile_combo.current() if hasattr(self, "profile_combo") else -1
+        if 0 <= idx < len(self._profile_keys):
+            return self._profile_keys[idx]
+        return next((k for k in self._profile_keys if self._profile_label(k) == label), "generic")
+
+    # v92 -- paramètres globaux portés par un profil : clé dmd_profiles -> variable Tk
+    def _profile_param_vars(self):
+        return {
+            "fps": self.fps_var, "duration": self.duration_var,
+            "scroll_speed": self.scroll_speed_var, "contrast": self.contrast_var,
+            "saturation": self.saturation_var, "color_count": self.color_count_var,
+            "pixel_perfect": self.pixel_perfect_var,
+        }
+
+    def _current_profile_values(self):
+        values = {
+            "fill_min_ratio": self._get_fill_min_ratio(),
+            "invert_dark": bool(self.invert_dark_var.get()),
+            "max_scroll_cycle_s": self._get_scroll_cap(),
+        }
+        for key, var in self._profile_param_vars().items():
+            try:
+                values[key] = var.get()
+            except (tk.TclError, ValueError):
+                values[key] = None  # saisie en cours invalide : non enregistrée
+        return values
+
+    def _refresh_profile_combo(self, select_key):
+        self.profiles = dmd_profiles.load_profiles(config_manager.user_dir)
+        self._profile_keys = list(self.profiles)
+        self.profile_combo.configure(values=[self._profile_label(k) for k in self._profile_keys])
+        key = select_key if select_key in self.profiles else "generic"
+        self.profile_combo.current(self._profile_keys.index(key))
+        config_manager.set("profile", key)
+        return key
+
+    def _new_profile(self):
+        """v92 -- éditeur de profil, prérempli avec les réglages actuels."""
+        ProfileEditor(self)
+
+    def _edit_profile(self):
+        """v92 -- éditeur sur le profil sélectionné."""
+        ProfileEditor(self, self._profile_key_from_label(self.profile_var.get()))
+
+    def _delete_profile(self):
+        key = self._profile_key_from_label(self.profile_var.get())
+        p = self.profiles[key]
+        if p.get("builtin"):
+            msg = tr("t_profile_reset_confirm",
+                     "Remettre le profil « {name} » à ses valeurs d'origine ?", name=self._profile_label(key))
+        else:
+            msg = tr("t_profile_delete_confirm",
+                     "Supprimer le profil « {name} » ?", name=self._profile_label(key))
+        if not messagebox.askyesno(lang_manager.get("confirmation", "Confirmation"), msg):
+            return
+        dmd_profiles.delete_profile(config_manager.user_dir, key)
+        key = self._refresh_profile_combo(key)
+        self._on_profile_selected()
+        logger.info(f"Profil {'réinitialisé' if p.get('builtin') else 'supprimé'} : {p['label']}")
+
+    def _persist_profile_options(self):
+        try:
+            config_manager.set("fill_ratio_on", bool(self.fill_ratio_on_var.get()))
+            config_manager.set("fill_min_ratio", float(self.fill_min_ratio_var.get()))
+            config_manager.set("invert_dark", bool(self.invert_dark_var.get()))
+            config_manager.set("cap_on", bool(self.cap_on_var.get()))
+            config_manager.set("max_scroll_cycle_s", float(self.cap_s_var.get()))
+        except (tk.TclError, ValueError):
+            pass  # saisie en cours dans un Spinbox : pas d'écriture
+
+    def _on_profile_option_change(self):
+        self._persist_profile_options()
+        self.on_global_param_change()
+
+    def _on_profile_selected(self):
+        key = self._profile_key_from_label(self.profile_var.get())
+        p = self.profiles[key]
+        config_manager.set("profile", key)
+        self.fill_ratio_on_var.set(p["fill_min_ratio"] is not None)
+        if p["fill_min_ratio"] is not None:
+            self.fill_min_ratio_var.set(p["fill_min_ratio"])
+        self.invert_dark_var.set(bool(p["invert_dark"]))
+        self.cap_on_var.set(p["max_scroll_cycle_s"] is not None)
+        if p["max_scroll_cycle_s"] is not None:
+            self.cap_s_var.set(p["max_scroll_cycle_s"])
+        for pkey, var in self._profile_param_vars().items():  # v92 : None = inchangé
+            if p.get(pkey) is not None:
+                var.set(p[pkey])
+        logger.info(f"Profil appliqué : {p['label']} {self._current_profile_values()}")
+        self._on_profile_option_change()
+
+    def _save_current_profile(self):
+        key = self._profile_key_from_label(self.profile_var.get())
+        values = self._current_profile_values()
+        try:
+            path = dmd_profiles.save_profile(config_manager.user_dir, key, values)
+        except OSError as e:
+            messagebox.showerror(lang_manager.get("error", "Erreur"), str(e))
+            return
+        self._refresh_profile_combo(key)
+        logger.info(f"Profil enregistré : {key} {values} -> {path}")
+        messagebox.showinfo(
+            lang_manager.get("success", "Succès"),
+            tr("t_profile_saved", "Profil « {name} » enregistré.", name=self._profile_label(key)),
+        )
 
     def get_settings_for_image(self, image_path, batch_params=None):
         """Récupère les settings optimaux pour une image (traitement par lot sans
@@ -8158,11 +8430,14 @@ class DMDConverter:
 
         completed = 0
         canceled_mid_batch = False
+        quality_rows = {}  # v87 -- collecté ici (thread consommateur), jamais par les workers
         for future in as_completed(futures):
             if self.processing_canceled:
                 canceled_mid_batch = True
                 break
-            img_path, ok, err, output_name, nframes, color_count = future.result()
+            img_path, ok, err, output_name, nframes, color_count, quality = future.result()
+            if quality is not None:
+                quality_rows[quality[0]] = quality[1]
             completed += 1
             percent = int((completed / total) * 100)
             self.root.after(
@@ -8181,18 +8456,59 @@ class DMDConverter:
             # comportement assumé vs l'ancien arrêt strict avant la prochaine
             # image (plan perf batch, Tier 2).
             pool.shutdown(wait=True, cancel_futures=True)
+            self._save_quality_index(output_dir_str, quality_rows)
             self.root.after(0, lambda: self.progress_text_var.set(tr("t_interrupted", "Interrompu")))
             logger.info("Batch interrompu par l'utilisateur")
             return
 
         pool.shutdown(wait=True)
+        quality_summary = self._save_quality_index(output_dir_str, quality_rows)
 
         self.root.after(
             0,
-            lambda out=output_dir, s=success_count, errs=errors: self.clear_progress_and_notify(
-                s, total, out, errs
+            lambda out=output_dir, s=success_count, errs=errors, qs=quality_summary: self.clear_progress_and_notify(
+                s, total, out, errs, quality_summary=qs
             ),
         )
+
+    def _save_quality_index(self, output_dir, rows):
+        """v87 -- fusionne les scores du lot dans dmd_scores.json du dossier de
+        sortie (un 2e lot dans le même dossier ne doit pas effacer le 1er) et
+        renvoie le résumé du lot (dmd_quality.summarize), ou None."""
+        if not rows:
+            return None
+        try:
+            index = dq.load_index(output_dir)
+            index.update(rows)
+            dq.save_index(output_dir, index)
+            summary = dq.summarize(rows)
+            logger.info(
+                f"Score qualité : {summary['count']} GIF, moyenne {summary['mean']}, "
+                f"{summary['by_rating']} — index {dq.index_path(output_dir)}"
+            )
+            return summary
+        except Exception as e:
+            logger.error(f"Index qualité non écrit : {e}")
+            return None
+
+    def open_review_window(self, folder=None):
+        """v88 -- ouvre la fenêtre "Revoir" (ReviewWindow) sur un dossier de
+        sortie contenant dmd_scores.json ; demande le dossier si non fourni."""
+        if folder is None:
+            folder = filedialog.askdirectory(
+                title=tr("t_review_pick_folder", "Dossier de GIF à revoir (contenant dmd_scores.json)")
+            )
+            if not folder:
+                return
+        if not dq.load_index(folder):
+            messagebox.showwarning(
+                lang_manager.get("warning", "Attention"),
+                tr("t_review_no_index",
+                   "Aucun score dans ce dossier ({name}).\n"
+                   "Traitez d'abord des images par lot vers ce dossier.", name=dq.INDEX_NAME),
+            )
+            return
+        ReviewWindow(self, folder)
 
     def cancel_processing(self):
         """Interrompt le traitement en cours"""
@@ -8853,9 +9169,11 @@ class DMDConverter:
                 self.update_listbox()
 
             file_size = Path(file_path).stat().st_size / 1024
+            quality_line = self._export_quality_line(self.manual_frames, fps, file_path)
             messagebox.showinfo(
                 lang_manager.get("success", "Succès"),
-                f"{lang_manager.get('gif_exported', 'GIF exporté')}: {Path(file_path).name}\n{file_size:.1f} KB",
+                f"{lang_manager.get('gif_exported', 'GIF exporté')}: {Path(file_path).name}\n{file_size:.1f} KB"
+                + quality_line,
             )
             logger.info(f"Export manuel: {Path(file_path).name}, {file_size:.1f} KB")
 
@@ -9066,10 +9384,11 @@ class DMDConverter:
             )
 
             file_size = Path(file_path).stat().st_size / 1024
+            quality_line = self._export_quality_line(self.text_frames, fps, file_path)
             messagebox.showinfo(
                 lang_manager.get("success", "Succès"),
                 f"{lang_manager.get('gif_text_exported', 'GIF texte exporté')}: "
-                f"{Path(file_path).name}\n{file_size:.1f} KB",
+                f"{Path(file_path).name}\n{file_size:.1f} KB" + quality_line,
             )
             logger.info(f"Export texte: {Path(file_path).name}, {file_size:.1f} KB")
 
@@ -9743,13 +10062,54 @@ class DMDConverter:
         if hasattr(self, "progressbar"):
             self.progressbar.update_idletasks()
 
-    def clear_progress_and_notify(self, success_count, total, output_dir, errors=None):
+    # v87 -- notes de dmd_quality, du meilleur au pire : (code, libellé FR par
+    # défaut, couleur de pastille). v88 : libellés traduits au lieu des emoji
+    # (Tk/boîtes Windows les affichent en gris, indiscernables).
+    _QUALITY_RATINGS = (("Excellent", "Excellent", "#f5c518"), ("Good", "Bon", "#3cb043"),
+                        ("Acceptable", "Acceptable", "#e0d000"), ("Poor", "Faible", "#ff8c00"),
+                        ("Bad", "Mauvais", "#e53935"))
+
+    @staticmethod
+    def _rating_label(code):
+        default = next((fr for c, fr, _ in DMDConverter._QUALITY_RATINGS if c == code), code)
+        return tr(f"t_rating_{code.lower()}", default)
+
+    def _quality_distribution(self, counts):
+        return " · ".join(f"{self._rating_label(c)} {counts.get(c, 0)}" for c, _, _ in self._QUALITY_RATINGS)
+
+    def _export_quality_line(self, frames, fps, file_path):
+        """v89 -- ligne de score pour le récapitulatif d'un export unique
+        (MANUEL/VIDEO/TEXTSCROLL), GIF statique non pénalisé. "" en cas
+        d'échec : le score n'est qu'une aide, jamais bloquant."""
+        try:
+            q = dq.evaluate_frames(frames, int(1000 / max(1, fps)), penalize_static=False)
+        except Exception as e:
+            logger.warning(f"Score qualité non calculé : {e}")
+            return ""
+        why = ", ".join(q.reasons_text(lang_manager.current_lang))
+        logger.info(f"Score qualité {Path(file_path).name} : {q.score}/100 ({q.rating}) — {why}")
+        return "\n" + tr("t_export_quality", "Score qualité : {score}/100 ({rating}) — {why}",
+                         score=q.score, rating=self._rating_label(q.rating), why=why)
+
+    def _quality_summary_text(self, summary):
+        """Deux lignes pour la boîte de fin de lot : moyenne + répartition."""
+        if not summary or not summary.get("count"):
+            return ""
+        return "\n\n" + tr(
+            "t_quality_summary", "Score qualité : {count} GIF, moyenne {mean}/100",
+            count=summary["count"], mean=summary["mean"],
+        ) + "\n" + self._quality_distribution(summary.get("by_rating", {}))
+
+    def clear_progress_and_notify(self, success_count, total, output_dir, errors=None,
+                                  quality_summary=None):
         """success_count/total/errors (2026-08-05, demande utilisateur) : plus
         d'erreur affichée en popup PENDANT le lot (voir process_images) -- le
         résumé complet arrive ici, en une seule notification à la toute fin,
-        au lieu de bloquer sur chaque image en échec."""
+        au lieu de bloquer sur chaque image en échec.
+        quality_summary (v87) : dmd_quality.summarize() du lot, ajouté au message."""
         errors = errors or []
         error_count = len(errors)
+        quality_text = self._quality_summary_text(quality_summary)
 
         self.progress_text_var.set(tr("t_batch_done", "Terminé : {ok}/{total} GIF créés", ok=success_count, total=total))
         self.progress_bar_var.set(0)
@@ -9782,6 +10142,10 @@ class DMDConverter:
                     "batch_complete_open_folder",
                     "{total} GIF créés dans:\n{output_dir}\n\nVoulez-vous ouvrir le dossier ?",
                 ).format(total=success_count, output_dir=output_dir)
+            if quality_text:
+                # résumé qualité juste avant la question finale (dernier paragraphe)
+                head, sep, question = batch_msg.rpartition("\n\n")
+                batch_msg = head + quality_text + sep + question if sep else batch_msg + quality_text
             response = messagebox.askyesno(lang_manager.get("complete", "Terminé"), batch_msg)
             if response:
                 try:
@@ -9796,6 +10160,15 @@ class DMDConverter:
                     logger.info(f"Dossier ouvert: {output_dir}")
                 except Exception as e:
                     logger.error(f"Impossible d'ouvrir le dossier via explorer: {e}")
+            # v88 -- GIF faibles (Poor/Bad) : proposer la fenêtre "Revoir"
+            if quality_summary:
+                weak = sum(quality_summary.get("by_rating", {}).get(r, 0) for r in ("Poor", "Bad"))
+                if weak and messagebox.askyesno(
+                    lang_manager.get("confirmation", "Confirmation"),
+                    tr("t_review_offer", "{n} GIF ont un score faible ou mauvais.\n"
+                       "Ouvrir la fenêtre « Revoir » ?", n=weak),
+                ):
+                    self.open_review_window(str(output_dir).strip())
         elif error_count:
             # Aucune image réussie : un seul résumé, pas de proposition
             # d'ouvrir un dossier vide.
@@ -9822,6 +10195,11 @@ try:
         best_variant as _best_variant_pure,
         optimize_cleanup_and_pixel_perfect as _optimize_cleanup_and_pixel_perfect_pure,
         resolve_image_settings as _resolve_image_settings,
+        shape_forces_fill as _shape_forces_fill,
+        FILL_MIN_RATIO_DEFAULT as _FILL_MIN_RATIO_DEFAULT,
+        maybe_invert_dark as _maybe_invert_dark,
+        _resolve_from_image,
+        apply_render_profile as _apply_render_profile,
         TONAL_REFINEMENT_PARAMS as _TONAL_REFINEMENT_PARAMS,
     )
 except ImportError:
@@ -9836,6 +10214,11 @@ except ImportError:
         best_variant as _best_variant_pure,
         optimize_cleanup_and_pixel_perfect as _optimize_cleanup_and_pixel_perfect_pure,
         resolve_image_settings as _resolve_image_settings,
+        shape_forces_fill as _shape_forces_fill,
+        FILL_MIN_RATIO_DEFAULT as _FILL_MIN_RATIO_DEFAULT,
+        maybe_invert_dark as _maybe_invert_dark,
+        _resolve_from_image,
+        apply_render_profile as _apply_render_profile,
         TONAL_REFINEMENT_PARAMS as _TONAL_REFINEMENT_PARAMS,
     )
 
@@ -9888,13 +10271,11 @@ def _pipeline_analyze_characteristics(self, canvas):
 def _pipeline_resize_will_shrink_text_too_much(self, original_img, fit_scale):
     """Estime si le mode Resize/fit va réduire le texte source sous un seuil de
     lisibilité (hauteur de lettre projetée après resize), auquel cas Fill/scroll
-    doit être préféré quel que soit le score brut. Le seuil est réglable dans
-    l'UI (Paramètres Globaux, "Seuil lettrage"). Voir
-    dmd_pipeline_quality.resize_will_shrink_text_too_much."""
-    try:
-        min_letter_px = float(self.letter_size_threshold_var.get())
-    except Exception:
-        min_letter_px = 8.0
+    doit être préféré quel que soit le score brut. Plus appelée depuis v86
+    (remplacée par la règle de forme, voir shape_forces_fill) ; conservée pour
+    compatibilité, seuil fixe 8 px (le réglage "Seuil lettrage" a été retiré).
+    Voir dmd_pipeline_quality.resize_will_shrink_text_too_much."""
+    min_letter_px = 8.0
     return _resize_will_shrink_text_too_much(
         original_img, fit_scale, min_letter_px=min_letter_px
     )
@@ -9933,6 +10314,359 @@ def _pipeline_render_dmd_frame(
     )
 
 
+class ProfileEditor:
+    """v92 -- fenêtre de création/modification d'un profil (dmd_profiles) :
+    tous les paramètres éditables, chacun expliqué (infobulle au survol + bouton
+    « ? » en popup), validation avant enregistrement. Remplace toute édition
+    manuelle de profiles.json."""
+
+    # (clé, type, libellé FR par défaut, bornes/choix, clé de l'explication)
+    FIELDS = (
+        ("fps", "int", "FPS (images/s)", (1, 60, 1), "tooltip_pe_fps"),
+        ("duration", "float", "Durée minimale (s)", (0.5, 60, 0.5), "tooltip_pe_duration"),
+        ("scroll_speed", "float", "Vitesse de défilement (px/image)", (0.1, 10, 0.1), "tooltip_scroll_speed"),
+        ("contrast", "float", "Contraste", (0.5, 3.0, 0.05), "tooltip_pe_contrast"),
+        ("saturation", "float", "Saturation", (0.0, 3.0, 0.05), "tooltip_pe_saturation"),
+        ("color_count", "choice", "Couleurs GIF", (8, 16, 32, 64, 128, 256), "tooltip_pe_color_count"),
+        ("pixel_perfect", "tristate", "Mode DMD / pixel-perfect", None, "tooltip_pixel_perfect"),
+        ("fill_min_ratio", "opt_float", "Défilement imposé dès (L/H)", (1.0, 8.0, 0.5), "tooltip_fill_ratio"),
+        ("invert_dark", "bool", "Inverser les logos sombres", None, "tooltip_invert_dark"),
+        ("max_scroll_cycle_s", "opt_float", "Plafond aller-retour (s)", (2, 600, 5), "tooltip_scroll_cap"),
+    )
+
+    def __init__(self, app, key=None):
+        """key=None : nouveau profil prérempli avec les réglages actuels ;
+        sinon modification du profil `key`."""
+        self.app, self.key = app, key
+        profile = app.profiles.get(key) if key else None
+        values = dict(profile) if profile else app._current_profile_values()
+        self.builtin = bool(profile and profile.get("builtin"))
+
+        win = self.win = tk.Toplevel(app.root)
+        win.title(tr("t_pe_title_edit", "Modifier le profil") if key else tr("t_pe_title_new", "Nouveau profil"))
+        win.transient(app.root)
+        win.resizable(False, False)
+        frm = ttk.Frame(win, padding=12)
+        frm.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(frm, text=tr("t_pe_name", "Nom du profil :")).grid(row=0, column=0, sticky=tk.W, pady=4)
+        self.name_var = tk.StringVar(value=app._profile_label(key) if key else "")
+        name_entry = ttk.Entry(frm, textvariable=self.name_var, width=34)
+        name_entry.grid(row=0, column=1, columnspan=2, sticky=tk.W, pady=4)
+        if self.builtin:
+            name_entry.state(["disabled"])  # profil fourni : nom fixe (traduit)
+
+        self.vars = {}
+        for i, (k, typ, label, spec, help_key) in enumerate(self.FIELDS, start=1):
+            lbl = ttk.Label(frm, text=tr(f"t_pe_{k}", label))
+            lbl.grid(row=i, column=0, sticky=tk.W, pady=3)
+            add_help_tooltip(lbl, help_key)
+            cell = ttk.Frame(frm)
+            cell.grid(row=i, column=1, sticky=tk.W, pady=3)
+            v = values.get(k)
+            if typ in ("int", "float"):
+                lo, hi, step = spec
+                var = tk.StringVar(value="" if v is None else str(v))
+                ttk.Spinbox(cell, from_=lo, to=hi, increment=step, textvariable=var, width=8).pack(side=tk.LEFT)
+                self.vars[k] = var
+            elif typ == "choice":
+                var = tk.StringVar(value=str(v if v is not None else 256))
+                ttk.Combobox(cell, textvariable=var, values=[str(c) for c in spec], width=6,
+                             state="readonly").pack(side=tk.LEFT)
+                self.vars[k] = var
+            elif typ == "tristate":
+                self._tri = [tr("t_pe_unchanged", "Inchangé"), tr("t_pe_yes", "Oui"), tr("t_pe_no", "Non")]
+                var = tk.StringVar(value=self._tri[0] if v is None else (self._tri[1] if v else self._tri[2]))
+                ttk.Combobox(cell, textvariable=var, values=self._tri, width=10,
+                             state="readonly").pack(side=tk.LEFT)
+                self.vars[k] = var
+            elif typ == "bool":
+                var = tk.BooleanVar(value=True if v is None else bool(v))
+                ttk.Checkbutton(cell, variable=var, text=tr("t_pe_enabled", "Activé")).pack(side=tk.LEFT)
+                self.vars[k] = var
+            else:  # opt_float : case "activé" + valeur
+                lo, hi, step = spec
+                on = tk.BooleanVar(value=v is not None)
+                var = tk.StringVar(value=str(v if v is not None else (2.0 if k == "fill_min_ratio" else 30)))
+                ttk.Checkbutton(cell, variable=on, text=tr("t_pe_enabled", "Activé")).pack(side=tk.LEFT)
+                ttk.Spinbox(cell, from_=lo, to=hi, increment=step, textvariable=var, width=8).pack(side=tk.LEFT, padx=(6, 0))
+                self.vars[k] = (on, var)
+            ttk.Button(frm, text="?", width=2,
+                       command=lambda t=tr(f"t_pe_{k}", label), h=help_key:
+                       messagebox.showinfo(t, lang_manager.get(h, h), parent=win)
+                       ).grid(row=i, column=2, sticky=tk.W, padx=(8, 0))
+
+        btns = ttk.Frame(frm)
+        btns.grid(row=len(self.FIELDS) + 1, column=0, columnspan=3, sticky=tk.E, pady=(12, 0))
+        ttk.Button(btns, text=tr("t_pe_cancel", "Annuler"), command=win.destroy).pack(side=tk.RIGHT, padx=(6, 0))
+        ttk.Button(btns, text=tr("t_pe_save", "💾 Enregistrer"), command=self.save).pack(side=tk.RIGHT)
+        win.grab_set()
+
+    def _collect(self):
+        """(valeurs, None) ou (None, message d'erreur)."""
+        out = {}
+        for k, typ, label, spec, _h in self.FIELDS:
+            name = tr(f"t_pe_{k}", label)
+            try:
+                if typ in ("int", "float"):
+                    raw = self.vars[k].get().strip().replace(",", ".")
+                    val = int(float(raw)) if typ == "int" else float(raw)
+                    lo, hi, _s = spec
+                    if not lo <= val <= hi:
+                        raise ValueError
+                    out[k] = val
+                elif typ == "choice":
+                    out[k] = int(self.vars[k].get())
+                elif typ == "tristate":
+                    idx = self._tri.index(self.vars[k].get())
+                    out[k] = None if idx == 0 else (idx == 1)
+                elif typ == "bool":
+                    out[k] = bool(self.vars[k].get())
+                else:
+                    on, var = self.vars[k]
+                    if on.get():
+                        val = float(var.get().strip().replace(",", "."))
+                        lo, hi, _s = spec
+                        if not lo <= val <= hi:
+                            raise ValueError
+                        out[k] = val
+                    else:
+                        out[k] = None
+            except (ValueError, tk.TclError):
+                lo_hi = f" ({spec[0]} – {spec[1]})" if isinstance(spec, tuple) and len(spec) == 3 else ""
+                return None, tr("t_pe_invalid", "Valeur invalide : {name}{range}", name=name, range=lo_hi)
+        return out, None
+
+    def save(self):
+        values, err = self._collect()
+        if err:
+            messagebox.showerror(lang_manager.get("error", "Erreur"), err, parent=self.win)
+            return
+        label = None if self.builtin else self.name_var.get().strip()
+        if not self.builtin and not label:
+            messagebox.showerror(lang_manager.get("error", "Erreur"),
+                                 tr("t_pe_name_missing", "Donnez un nom au profil."), parent=self.win)
+            return
+        key = self.key or dmd_profiles.new_profile_key(label, self.app.profiles)
+        dmd_profiles.save_profile(config_manager.user_dir, key, values, label=label)
+        logger.info(f"Profil enregistré (éditeur) : {label or key} {values}")
+        self.win.destroy()
+        self.app._refresh_profile_combo(key)
+        self.app._on_profile_selected()
+
+
+class ReviewWindow:
+    """v88 -- fenêtre "Revoir" : GIF d'un dossier de sortie triés du pire au
+    meilleur selon dmd_scores.json (dmd_quality), aperçu LED animé au clic,
+    déplacement (jamais suppression) des GIF <= seuil vers _a_revoir.
+    Aide à la relecture uniquement : rien n'est déplacé sans confirmation."""
+
+    CHUNK = 1000  # lignes insérées par tour de boucle Tk (fenêtre jamais figée)
+
+    def __init__(self, app, folder):
+        self.app, self.folder = app, str(folder)
+        self.lang = lang_manager.current_lang
+        self.items = []          # [(rel, info)]
+        self.sort_key, self.sort_desc = "score", False
+        self._fill_job = self._anim_job = None
+        self._frames, self._delays, self._idx = [], [], 0
+        self._photo = None
+
+        win = self.win = tk.Toplevel(app.root)
+        win.title(tr("t_review_title", "Revoir les GIF — {folder}", folder=self.folder))
+        win.geometry("1280x640")
+        win.protocol("WM_DELETE_WINDOW", self.close)
+
+        # Pastilles dessinées (les emoji couleur s'affichent en gris dans Tk sous Windows)
+        self.dots = {}
+        for code, _fr, color in DMDConverter._QUALITY_RATINGS:
+            im = Image.new("RGBA", (56, 56), (0, 0, 0, 0))
+            ImageDraw.Draw(im).ellipse((4, 4, 52, 52), fill=color)
+            self.dots[code] = ImageTk.PhotoImage(im.resize((14, 14), Image.Resampling.LANCZOS))
+
+        self.summary_var = tk.StringVar()
+        ttk.Label(win, textvariable=self.summary_var, padding=(6, 6, 6, 0)).pack(fill=tk.X)
+        top = ttk.Frame(win, padding=6)
+        top.pack(fill=tk.X)
+        ttk.Button(top, text=tr("t_review_open_folder", "📂 Ouvrir le dossier"),
+                   command=self.open_folder).pack(side=tk.RIGHT, padx=4)
+        self.move_btn = ttk.Button(top, text=tr("t_review_move", "Déplacer ≤ seuil vers {dest}", dest=dq.REVIEW_DIR),
+                                   command=self.move_low)
+        self.move_btn.pack(side=tk.RIGHT, padx=4)
+        self.threshold_var = tk.IntVar(value=30)
+        ttk.Spinbox(top, from_=0, to=100, textvariable=self.threshold_var, width=5).pack(side=tk.RIGHT)
+        ttk.Label(top, text=tr("t_review_threshold", "Seuil :")).pack(side=tk.RIGHT, padx=(12, 4))
+
+        body = ttk.PanedWindow(win, orient=tk.HORIZONTAL)
+        body.pack(fill=tk.BOTH, expand=True, padx=6, pady=(0, 6))
+
+        left = ttk.Frame(body)
+        cols = ("score", "file", "reasons")
+        self.tree = ttk.Treeview(left, columns=cols, show="tree headings", selectmode="browse")
+        self.tree.heading("#0", text="", command=lambda: self.sort_by("score"))
+        self.tree.column("#0", width=30, minwidth=30, stretch=False, anchor=tk.CENTER)
+        heads = {"score": tr("t_review_col_score", "Score"),
+                 "file": tr("t_review_col_file", "Fichier"), "reasons": tr("t_review_col_reasons", "Raisons")}
+        widths = {"score": 60, "file": 420, "reasons": 330}
+        for c in cols:
+            self.tree.heading(c, text=heads[c], command=lambda k=c: self.sort_by(k))
+            self.tree.column(c, width=widths[c], stretch=c != "score",
+                             anchor=tk.CENTER if c == "score" else tk.W)
+        sb = ttk.Scrollbar(left, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        sb.pack(side=tk.LEFT, fill=tk.Y)
+        self.tree.bind("<<TreeviewSelect>>", self.on_select)
+        body.add(left, weight=3)
+
+        right = ttk.Frame(body, padding=(8, 0))
+        self.canvas = tk.Canvas(right, width=512, height=128, bg="black", highlightthickness=0)
+        self.canvas.pack(pady=(0, 8))
+        self.detail_var = tk.StringVar()
+        ttk.Label(right, textvariable=self.detail_var, wraplength=512, justify=tk.LEFT).pack(anchor=tk.W)
+        body.add(right, weight=2)
+
+        self.reload()
+
+    # --- données -----------------------------------------------------------
+    def reload(self):
+        rows = dq.load_index(self.folder)
+        self.items = dq.sorted_rows(rows)  # sans les GIF déjà déplacés
+        s = dq.summarize(rows)
+        self.summary_var.set(tr("t_quality_summary", "Score qualité : {count} GIF, moyenne {mean}/100",
+                                count=s["count"], mean=s["mean"])
+                             + "   —   " + self.app._quality_distribution(s["by_rating"]))
+        self.sort_by(self.sort_key, keep_order=True)
+
+    def sort_by(self, key, keep_order=False):
+        if not keep_order:
+            self.sort_desc = (not self.sort_desc) if key == self.sort_key else False
+            self.sort_key = key
+        getter = {
+            "score": lambda kv: kv[1]["score"],
+            "file": lambda kv: kv[0].lower(),
+            "reasons": lambda kv: ", ".join(dq.reason_text(c, self.lang) for c in kv[1]["reasons"]),
+        }[key]
+        self.items.sort(key=getter, reverse=self.sort_desc)
+        self._refill()
+
+    def _refill(self):
+        if self._fill_job:
+            self.win.after_cancel(self._fill_job)
+        self.tree.delete(*self.tree.get_children())
+        self._fill_from(0)
+
+    def _fill_from(self, start):
+        for i, (rel, info) in enumerate(self.items[start:start + self.CHUNK], start):
+            why = ", ".join(dq.reason_text(c, self.lang) for c in info["reasons"])
+            self.tree.insert("", tk.END, iid=str(i), image=self.dots.get(info["rating"], ""),
+                             values=(info["score"], rel, why))
+        nxt = start + self.CHUNK
+        self._fill_job = self.win.after(1, self._fill_from, nxt) if nxt < len(self.items) else None
+
+    # --- aperçu --------------------------------------------------------------
+    def on_select(self, _event=None):
+        sel = self.tree.selection()
+        if not sel:
+            return
+        rel, info = self.items[int(sel[0])]
+        self._stop_anim()
+        path = os.path.join(self.folder, *rel.split("/"))
+        self._frames, self._delays = [], []
+        try:
+            with Image.open(path) as im:
+                for i in range(getattr(im, "n_frames", 1)):
+                    im.seek(i)
+                    self._frames.append(im.convert("RGB"))
+                    self._delays.append(int(im.info.get("duration", 100) or 100))
+        except Exception as e:
+            self.detail_var.set(f"{rel}\n{e}")
+            return
+        total_s = sum(self._delays) / 1000.0
+        why = ", ".join(dq.reason_text(c, self.lang) for c in info["reasons"])
+        self.detail_var.set(tr("t_review_detail", "{rating} {score}/100 — {rel}\n{n} images, {s} s\n{why}",
+                               rating=DMDConverter._rating_label(info["rating"]), score=info["score"], rel=rel,
+                               n=len(self._frames), s=f"{total_s:.1f}", why=why))
+        self._idx = 0
+        self._animate()
+
+    def _animate(self):
+        if not self._frames:
+            return
+        frame = self._frames[self._idx]
+        display = DMDEngine.render_led_style(frame, scale=4, led_ratio=0.525, glow=True,
+                                             brightness=self.app.led_brightness_var.get())
+        self._photo = ImageTk.PhotoImage(display)
+        self.canvas.delete("all")
+        self.canvas.create_image(256, 64, image=self._photo)
+        delay = self._delays[self._idx]
+        self._idx = (self._idx + 1) % len(self._frames)
+        if len(self._frames) > 1:
+            self._anim_job = self.win.after(delay, self._animate)
+
+    def _stop_anim(self):
+        if self._anim_job:
+            self.win.after_cancel(self._anim_job)
+            self._anim_job = None
+
+    # --- actions -------------------------------------------------------------
+    def move_low(self):
+        try:
+            thr = int(self.threshold_var.get())
+        except (tk.TclError, ValueError):
+            return
+        todo = dq.review_low(self.folder, thr, dry_run=True)
+        if not todo:
+            messagebox.showinfo(lang_manager.get("complete", "Terminé"),
+                                tr("t_review_none", "Aucun GIF de score ≤ {thr}.", thr=thr), parent=self.win)
+            return
+        if not messagebox.askyesno(
+            lang_manager.get("confirmation", "Confirmation"),
+            tr("t_review_move_confirm",
+               "Déplacer {n} GIF de score ≤ {thr} vers :\n{dest}\n\n"
+               "Les fichiers sont déplacés (arborescence conservée), jamais supprimés.",
+               n=len(todo), thr=thr, dest=os.path.join(self.folder, dq.REVIEW_DIR)),
+            parent=self.win,
+        ):
+            return
+        self._stop_anim()
+        self._frames = []
+        self.move_btn.state(["disabled"])
+
+        def work():
+            try:
+                moved, err = dq.review_low(self.folder, thr), None
+            except Exception as e:
+                moved, err = [], e
+            self.win.after(0, self._moved, moved, err)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _moved(self, moved, err):
+        self.move_btn.state(["!disabled"])
+        if err is not None:
+            logger.error(f"Revoir : déplacement interrompu : {err}")
+            messagebox.showerror(lang_manager.get("error", "Erreur"), str(err), parent=self.win)
+        else:
+            logger.info(f"Revoir : {len(moved)} GIF déplacés vers {dq.REVIEW_DIR}")
+            messagebox.showinfo(lang_manager.get("complete", "Terminé"),
+                                tr("t_review_moved", "{n} GIF déplacés vers {dest}.", n=len(moved),
+                                   dest=dq.REVIEW_DIR), parent=self.win)
+        self.reload()
+
+    def open_folder(self):
+        try:
+            os.startfile(self.folder)  # type: ignore[attr-defined]
+        except Exception as e:
+            logger.error(f"Impossible d'ouvrir le dossier : {e}")
+
+    def close(self):
+        self._stop_anim()
+        if self._fill_job:
+            self.win.after_cancel(self._fill_job)
+        self.win.destroy()
+
+
 def process_one_image(
     image_path,
     batch_params,
@@ -9962,8 +10696,9 @@ def process_one_image(
 
     Ne fait JAMAIS de popup/accès UI (impossible depuis un process enfant) :
     retourne (image_path, success, error_or_None, output_name_or_None,
-    nb_frames, color_count) — c'est PROCESS_IMAGES (thread consommateur) qui
-    décide de la mise à jour de progression/du résumé final."""
+    nb_frames, color_count, quality) — c'est PROCESS_IMAGES (thread
+    consommateur) qui décide de la mise à jour de progression/du résumé final.
+    quality (v87) : (chemin relatif posix du GIF, dmd_quality.to_dict()) ou None."""
     try:
         settings = _resolve_image_settings(
             image_path, batch_params, locked_settings=locked_settings, cached_settings=cached_settings
@@ -10020,9 +10755,17 @@ def process_one_image(
             # dmd_gif_exporter.py v3
             shared_palette=True,
         )
-        return (image_path, True, None, output_name, len(frames), color_count)
+        # v87 -- score qualité calculé ici (images déjà en mémoire, <= 10
+        # échantillonnées) ; l'index est écrit par process_images, jamais ici
+        quality = None
+        try:
+            q = dq.evaluate_frames(frames, int(1000 / fps))
+            quality = ((relative_path / output_name).as_posix(), q.to_dict())
+        except Exception:
+            pass  # le score n'est qu'une aide : jamais bloquant pour l'export
+        return (image_path, True, None, output_name, len(frames), color_count, quality)
     except Exception as e:
-        return (image_path, False, str(e), None, 0, 0)
+        return (image_path, False, str(e), None, 0, 0, None)
 
 
 DMDConverter.hash_image = _pipeline_hash_image

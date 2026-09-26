@@ -3,8 +3,14 @@ from __future__ import annotations
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v16
+# Version actuelle : v20
 #
+# v20 — 2026-09-26 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.1.0".
+# v19 — 2026-09-26 — safe-modify — TEXT_MAP : ligne Profil (profile_label, fill_ratio_on_label, invert_dark_label,
+#      scroll_cap_label), dmd_converter.py v91.
+# v18 — 2026-09-25 — safe-modify — TEXT_MAP : "🔍 Revoir" (review_button), bouton de la fenêtre Revoir (dmd_converter.py v88).
+# v17 — 2026-09-25 — safe-modify — TEXT_MAP : "Défilement dès (L/H):" (fill_ratio_label), réglage qui remplace
+#      "Seuil lettrage (px):" (entrée conservée, plus utilisée, voir dmd_converter.py v86).
 # v16 — 2026-09-24 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.0.2".
 # v15 — 2026-07-20 — safe-modify — Renommage de l'app "DMD GIF Converter" →
 #      "DMD GIF Creator" + montée de version v3.0.0 (voir dmd_converter.py
@@ -459,7 +465,7 @@ TEXT_MAP: Dict[str, str] = {
     "✅ Traiter sélection": "process_sel",
     "📂 Charger": "load",
     "✂️ Crop 128×32": "crop",
-    "DMD Creator v3.0.2": "app_header",
+    "DMD Creator v3.1.0": "app_header",
     "💾 Exporter GIF": "export_gif",
     "📚 Multi-images": "multi_images",
     "🎬 Morphing": "morphing",
@@ -600,6 +606,12 @@ TEXT_MAP: Dict[str, str] = {
     # lang_manager.translations, absent ici puisque ces textes n'y étaient
     # simplement jamais entrés).
     "Seuil lettrage (px):": "letter_threshold_label",
+    "Défilement dès (L/H):": "fill_ratio_label",
+    "🔍 Revoir": "review_button",
+    "Profil :": "profile_label",
+    "Défilement imposé dès (L/H):": "fill_ratio_on_label",
+    "Inverser les logos sombres": "invert_dark_label",
+    "Plafond aller-retour (s):": "scroll_cap_label",
     "🗑 Vider": "clear_image_list",
     "📂 Glisser-déposer\nun dossier ou des images ici": "image_drop_hint",
     "🔄 Nouvelle proposition": "regenerate_proposition",

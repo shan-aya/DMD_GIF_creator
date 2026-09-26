@@ -3,7 +3,17 @@ from __future__ import annotations
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v17
+# Version actuelle : v18
+#
+# v18 — 2026-09-25 — safe-modify — Plafond OPTIONNEL de durée du défilement :
+#      settings["max_scroll_cycle_s"] (secondes, aller-retour complet), fixé par
+#      un profil (ex. « Logos Recalbox »), JAMAIS par défaut — décision
+#      utilisateur : le moteur reste générique (les GIF servent aussi en
+#      playlist), seul un profil impose une limite. Au-delà du plafond, les
+#      positions sont réparties régulièrement sur le trajet complet (pas moyen
+#      > 1 px, aucun rognage, cadence inchangée) ; sous le plafond ou sans
+#      plafond, frames strictement identiques. Point unique :
+#      create_animation_frames (aperçu, lot, effets MANUEL).
 #
 # v17 — 2026-07-20 — safe-modify — Demande explicite : "ajoute raw565 comme
 #      format image supporté en entrée si pas déjà le cas" — confirmé absent
@@ -584,13 +594,33 @@ class DMDEngine:
         fixed_coord: int,
         max_frames: "int | None" = None,
         frame_repeat: int = 1,
+        max_cycle_frames: "int | None" = None,
     ) -> List[Image.Image]:
         """Génère les frames de scroll aller-retour sur un axe (horizontal ou vertical).
         Si max_frames est fourni, s'arrête dès que ce nombre de frames est atteint
         (les frames déjà produites sont un préfixe identique à la séquence complète).
         frame_repeat répète chaque position de scroll (utilisé pour scroll_speed<1,
-        où le pas pixel reste 1 mais chaque frame est tenue plus longtemps)."""
+        où le pas pixel reste 1 mais chaque frame est tenue plus longtemps).
+        max_cycle_frames (v18) : plafond de l'aller-retour complet, en frames. Si le
+        cycle normal le dépasse, les positions sont réparties régulièrement de 0 à
+        max_offset (pas moyen > scroll_speed, arrondi au pixel) : même trajet
+        complet, aucun rognage, simplement plus rapide. Sous le plafond, séquence
+        strictement inchangée."""
         frames: List[Image.Image] = []
+
+        n_cycle = 2 * len(range(0, max_offset + 1, scroll_speed)) * frame_repeat
+        if max_cycle_frames is not None and n_cycle > max_cycle_frames:
+            n_pos = max(2, max_cycle_frames // 2)
+            positions = [round(i * max_offset / (n_pos - 1)) for i in range(n_pos)]
+            for offset in positions + positions[::-1]:
+                frames.append(
+                    DMDEngine._render_scroll_frame_at_offset(
+                        img, bg_color, cleanup, cleanup_power, offset, horizontal, fixed_coord
+                    )
+                )
+                if max_frames is not None and len(frames) >= max_frames:
+                    return frames
+            return frames
 
         for offset in range(0, max_offset + 1, scroll_speed):
             canvas = DMDEngine._render_scroll_frame_at_offset(
@@ -668,6 +698,11 @@ class DMDEngine:
                 direction = "static"
 
         frames: List[Image.Image] = []
+        # v18 : plafond de l'aller-retour, seulement si un profil le demande
+        # (settings["max_scroll_cycle_s"]) ; absent/None/<= 0 = aucun plafond
+        cap_s = settings.get("max_scroll_cycle_s")
+        max_cycle_frames = (max(2, int(float(cap_s) * fps))
+                            if cap_s is not None and float(cap_s) > 0 else None)
 
         if direction == "static" or (w <= 128 and h <= 32):
             canvas = Image.new("RGB", (128, 32), bg_color)
@@ -703,6 +738,7 @@ class DMDEngine:
                     fixed_coord=y,
                     max_frames=max_frames,
                     frame_repeat=frame_repeat,
+                    max_cycle_frames=max_cycle_frames,
                 )
 
         elif direction == "vertical":
@@ -727,6 +763,7 @@ class DMDEngine:
                     fixed_coord=x,
                     max_frames=max_frames,
                     frame_repeat=frame_repeat,
+                    max_cycle_frames=max_cycle_frames,
                 )
 
         else:

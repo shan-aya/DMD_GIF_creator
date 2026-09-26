@@ -5,7 +5,7 @@ animations GIF optimisées pour un afficheur DMD 128×32 (arcade / flipper / bor
 RetroBox). Ce guide décrit, onglet par onglet, chaque fonction de l'interface et son
 usage concret.
 
-> Guide à jour pour la version **3.0**. Les captures d'écran datent de la version
+> Guide à jour pour la version **3.1**. Les captures d'écran datent de la version
 > **2.7.4** (thème sombre, interface en français) : l'onglet VIDEO et l'onglet AIDE,
 > apparus depuis, n'y figurent pas.
 
@@ -22,7 +22,8 @@ usage concret.
 7. [Onglet DEBUG](#onglet-debug)
 8. [Onglet AIDE](#onglet-aide)
 9. [Notion transversale : Mode DMD / Forcer pixel-perfect](#notion-transversale--mode-dmd--forcer-pixel-perfect)
-10. [Bonnes pratiques et limites connues](#bonnes-pratiques-et-limites-connues)
+10. [Notion transversale : Score qualité et fenêtre Revoir](#notion-transversale--score-qualité-et-fenêtre-revoir)
+11. [Bonnes pratiques et limites connues](#bonnes-pratiques-et-limites-connues)
 
 ---
 
@@ -45,7 +46,7 @@ Chaque onglet correspond à une méthode différente pour produire une animation
 | DEBUG | Journal d'activité de l'application (logs), utile pour diagnostiquer un problème. |
 | AIDE | Ce guide, dans la langue de l'interface. |
 
-Survoler un réglage peu évident (pixel-perfect, seuil lettrage, tolérance, easing,
+Survoler un réglage peu évident (pixel-perfect, profil, tolérance, easing,
 modes de cadrage vidéo...) affiche une **infobulle d'aide** dans la langue de
 l'interface.
 
@@ -74,13 +75,49 @@ Ces réglages s'appliquent à **toutes** les propositions et à tout traitement 
   [section dédiée](#notion-transversale--mode-dmd--forcer-pixel-perfect) plus bas —
   cette case est **partagée avec les onglets MANUEL et TEXTSCROLL** (la cocher ici la
   coche partout).
-- **Seuil lettrage (px)** (6 à 11, défaut 8) : hauteur minimale (en pixels, après mise
-  à l'échelle) qu'une lettre doit conserver pour être jugée lisible. En dessous, le
-  moteur bascule automatiquement la proposition « Optimisé » sur un mode Fill/scroll
-  plutôt qu'un Resize qui rendrait le texte illisible.
+- **Profil** : voir ci-dessous.
 
 Modifier n'importe lequel de ces réglages relance automatiquement l'analyse de l'image
 actuellement sélectionnée.
+
+#### Profil
+
+Un profil regroupe tous les réglages ci-dessus et trois options propres au DMD. Le
+moteur lui-même ne s'impose aucune limite : c'est le profil choisi qui décide. Trois
+profils sont fournis :
+
+| Profil | Pour quoi | Réglages |
+|---|---|---|
+| **Générique** (par défaut) | Tout usage | Aucune règle de défilement, aucun plafond de durée, inversion des logos sombres active, 10 i/s. |
+| **Logos Recalbox (navigation)** | Logos de jeux affichés par la dalle pendant la navigation | Défilement imposé dès 2:1, plafond d'aller-retour de 30 s, inversion des logos sombres, 15 i/s. |
+| **DMD playlist** | GIF joués en playlist sur la dalle | Défilement imposé dès 2:1, aucun plafond, inversion des logos sombres, 20 i/s pour plus de fluidité. |
+
+Les trois options, modifiables à la main sous la liste des profils :
+
+- **Défilement imposé dès (L/H)** : quand le logo (marges transparentes retirées) est
+  au moins N fois plus large que haut, le mode Fill/défilement est imposé au lieu de
+  Resize. Rien n'est rogné : tout le logo passe à l'écran. Décochée, le choix se fait
+  au score.
+- **Inverser les logos sombres** : un logo sombre et quasi monochrome sur fond
+  transparent (par exemple du texte noir prévu pour un fond clair) est invisible sur un
+  DMD noir. Le moteur essaie aussi sa version inversée et ne la garde que si le score
+  qualité s'améliore nettement.
+- **Plafond aller-retour (s)** : durée maximale d'un aller-retour de défilement.
+  Au-delà, le défilement est accéléré (plus de pixels par image, même cadence), sans
+  rien rogner.
+
+Boutons à côté de la liste :
+
+- **➕** : ouvre la page de création d'un profil, préremplie avec les réglages actuels.
+- **✏** : ouvre la page du profil sélectionné.
+- **💾** : enregistre les réglages actuels dans le profil sélectionné.
+- **🗑** : supprime un profil personnel, ou remet un profil fourni à ses valeurs
+  d'origine (avec confirmation).
+
+La **page de profil** présente chaque paramètre avec son champ, une infobulle au survol
+et un bouton **?** qui affiche son explication. Les valeurs hors limites sont refusées
+avant l'enregistrement. Les profils sont enregistrés dans `profiles.json`, dans le
+dossier de configuration : aucune édition manuelle n'est nécessaire.
 
 ### 2. Cadre « Images » (colonne gauche)
 
@@ -119,8 +156,8 @@ cible DMD (4.0 = 128/32).
   physique (points ronds avec halo) au lieu d'un simple agrandissement carré.
 - Sous l'aperçu original, un message de statut indique quelle proposition a été
   retenue automatiquement et pourquoi (ex. « 'Optimisé' retenu (score : 3.99), base :
-  Fill (scrolling) », ou « texte illisible en Resize → Fill forcé » quand le seuil de
-  lettrage a déclenché un forçage).
+  Fill (scrolling) »). Une note s'ajoute quand une option du profil a joué :
+  « (logo large → Fill imposé) » ou « (logo sombre → inversé) ».
 
 ### 5. Propositions IA (grille 3×2)
 
@@ -155,6 +192,11 @@ Pour chaque image, 6 rendus sont calculés et affichés en miniature :
 - Les images sont traitées **en parallèle**, en utilisant presque tous les cœurs du
   processeur (jusqu'à 12 images à la fois) : un lot se termine nettement plus vite
   qu'image par image.
+- Chaque GIF produit reçoit un **score qualité** (0 à 100). Le message de fin de lot
+  indique le nombre de GIF, le score moyen et la répartition par note, et propose
+  d'ouvrir la fenêtre **Revoir** s'il y a des GIF faibles ou mauvais. Voir la
+  [section dédiée](#notion-transversale--score-qualité-et-fenêtre-revoir).
+- **🔍 Revoir** : ouvre la fenêtre de relecture d'un dossier de sortie déjà traité.
 
 ---
 
@@ -448,6 +490,46 @@ cochée :
 
 ---
 
+## Notion transversale : Score qualité et fenêtre Revoir
+
+Chaque GIF produit reçoit un **score qualité de 0 à 100**, calculé sur ses images :
+part de pixels allumés, contraste, occupation de l'écran, nombre d'images et durée.
+C'est une **aide à la relecture**, pas une décision automatique : rien n'est supprimé
+ni modifié d'après ce score.
+
+| Note | Score |
+|---|---|
+| Excellent | 86 à 100 |
+| Bon | 71 à 85 |
+| Acceptable | 51 à 70 |
+| Faible | 31 à 50 |
+| Mauvais | 0 à 30 |
+
+Le score est accompagné de **raisons** dans la langue de l'interface (écran presque
+vide, contraste faible, fond plein, animation trop courte…). Un écran entièrement noir
+obtient 0.
+
+- **Traitement par lot** : les scores sont enregistrés dans un fichier
+  `dmd_scores.json` du dossier de sortie. Un second lot dans le même dossier complète ce
+  fichier au lieu de l'effacer.
+- **Exports MANUEL, VIDEO et TEXTSCROLL** : le score s'affiche dans le message « GIF
+  exporté ».
+
+**Fenêtre Revoir** (bouton **🔍 Revoir** de l'onglet AUTO, ou proposée en fin de lot) :
+
+- liste des GIF du dossier, **du plus faible au meilleur**, avec pastille de couleur,
+  score, chemin et raisons ; cliquer un en-tête de colonne trie la liste ;
+- cliquer une ligne affiche le GIF animé avec le rendu LED ;
+- **Seuil** (30 par défaut) et bouton **Déplacer ≤ seuil vers _a_revoir** : après
+  confirmation (avec le nombre exact de fichiers), les GIF concernés sont **déplacés,
+  jamais supprimés**, dans un sous-dossier `_a_revoir` du dossier de sortie, en
+  conservant l'arborescence. Ce dossier est ignoré quand on recharge le dossier dans
+  l'application.
+
+La liste reste fluide même avec des dizaines de milliers de GIF.
+
+---
+
 ## Bonnes pratiques et limites connues
 
 - **Images à fond transparent (PNG RGBA)** : gérées correctement partout (le fond
@@ -457,7 +539,14 @@ cochée :
   hautes lumières (contrairement à AUTO) — à forte valeur de contraste/saturation, il
   est possible de « cramer » des pixels clairs en blanc pur ; c'est un choix assumé
   pour laisser le contrôle total à l'utilisateur.
-- **Seuil lettrage** (AUTO) : un réglage plus bas (6) tolère des lettres plus petites
-  avant de forcer le mode Fill ; un réglage plus haut (11) est plus prudent et force
-  Fill plus souvent. La valeur par défaut (8) est un compromis validé sur un corpus de
-  logos réels.
+- **Défilement imposé dès (L/H)** (profil) : 2 est la valeur retenue pour les logos
+  Recalbox, choisie sur un pack réel de plus de 54 000 logos. Plus bas, davantage de
+  logos défilent, en gros plan ; plus haut, davantage restent fixes, en plus petit.
+- **Logos animés et dalle** : un logo qui défile est affiché plus grand, donc allume
+  plus de LED. Sur une dalle alimentée par un simple port USB, une image très
+  lumineuse peut provoquer des redémarrages : prévoyez une alimentation suffisante
+  pour le panneau.
+- **Inversion des logos sombres** : l'inversion change aussi les couleurs (un contour
+  orange devient bleu). Elle n'est gardée que si le score s'améliore nettement ; si
+  le résultat ne vous convient pas, décochez l'option ou choisissez une autre
+  proposition.

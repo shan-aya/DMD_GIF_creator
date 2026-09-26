@@ -34,3 +34,22 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                             "texte illisible en Resize -> Fill force", selection manuelle, barre d etat
                             "N images | N manuelles")
                           - version affichee 3.0.2, lanceur dmd_gif_creator_v302.py
+                v3.1.0 -- + score qualite 0-100 de chaque GIF (aide a la relecture, jamais une decision
+                            automatique) : resume en fin de lot (moyenne, repartition par note), index
+                            dmd_scores.json dans le dossier de sortie, score affiche apres les exports
+                            MANUEL, VIDEO et TEXTSCROLL (idee reprise de red77290/dmd_gif_converter, MIT)
+                          + fenetre "Revoir" : GIF tries du plus faible au meilleur, apercu LED, deplacement
+                            (jamais suppression) des GIF sous un seuil vers _a_revoir
+                          + profils de generation : Generique (par defaut, aucune limite), Logos Recalbox
+                            (navigation : defilement impose des 2:1, aller-retour plafonne a 30 s, 15 i/s)
+                            et DMD playlist (20 i/s) ; profils personnels crees et modifies dans une page
+                            ou chaque parametre est explique
+                          + logos sombres monochromes sur fond transparent (texte noir prevu pour un fond
+                            clair) : version inversee gardee si le score y gagne nettement, les logos
+                            jusqu ici entierement noirs sur le DMD deviennent lisibles
+                          - le reglage "Seuil lettrage" est remplace par l option de profil "Defilement
+                            impose des (L/H)" : la detection de lettres forcait le defilement sur des logos
+                            reconnaissables en Resize
+                          - lot : le sens de defilement est calcule sur l image recadree, comme dans
+                            l apercu (certains logos a marges transparentes defilaient dans le mauvais sens)
+                          - version affichee 3.1.0, lanceur dmd_gif_creator_v310.py
