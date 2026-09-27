@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · [🇬🇧 English](./README_EN.md) · 🇪🇸 **Español**
 
-# DMD GIF Creator 128x32 — v3.1.0
+# DMD GIF Creator 128x32 — v3.2.0
 
 Cree GIF optimizados para pantallas DMD 128×32 (máquina arcade, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) a partir de **imágenes**, de
@@ -13,14 +13,14 @@ procesamiento por lotes de carpetas enteras.
 
 ## Descarga
 
-**Windows**: descargue `dmd_gif_creator_v310.exe` desde la
+**Windows**: descargue `dmd_gif_creator_v320.exe` desde la
 [última Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) y
 ejecútelo — no hace falta instalar nada.
 
 **Desde las fuentes** (carpeta [`dmd_gif_creator/`](./dmd_gif_creator)):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v310.py
+    python dmd_gif_creator/dmd_gif_creator_v320.py
 
 `opencv-contrib-python` (y no `opencv-python`) es necesario para el seguimiento
 automático de la pestaña VIDEO; los dos paquetes no deben instalarse a la vez.
@@ -48,8 +48,10 @@ por ejemplo todos los logos scrapeados de una ludoteca: cada logo recibe el modo
 render que le conviene, en paralelo, conservando el árbol de carpetas y sin modificar
 nunca los archivos de origen. Una propuesta puede bloquearse para todo el lote. Cada
 GIF recibe una **puntuación de calidad**, y la ventana **Revisar** lista primero los
-más bajos, con vista previa, para revisar rápidamente miles de logos y apartar (sin
-borrar nunca) los fallidos.
+más bajos, con vista previa e imagen de origen, para revisar rápidamente miles de logos
+y apartar (sin borrar nunca) los fallidos. **Propone correcciones** para los GIF bajos
+(texto negro aclarado, vacío eliminado, gamma, inversión…), que se validan una a una, o
+abre el origen en MANUAL para rehacerlo a mano.
 
 ![Ventana Revisar](./screenshots/review_es.png)
 
@@ -57,15 +59,17 @@ borrar nunca) los fallidos.
 
 ![Pestaña MANUAL](./screenshots/manual_es.png)
 
-Recorte 128×32, brillo, contraste, saturación, nitidez, filtros, relleno y goma
-mágica, animaciones (desplazamiento, zoom, fundido…) con easing y bucle,
+Recorte 128×32 con un marco que se desplaza, zona que limita los efectos a una parte de
+la imagen, brillo, contraste, saturación, nitidez, filtros, zoom de la animación, relleno
+y goma mágica, animaciones (desplazamiento, zoom, fundido…) con easing y bucle,
 multi-imágenes y morphing, historial deshacer/rehacer.
 
 ### VIDEO — un GIF a partir de un vídeo
 
 ![Pestaña VIDEO](./screenshots/video_es.png)
 
-Elija un fragmento de un vídeo (MP4, AVI, MOV, MKV) en la línea de tiempo y luego el
+Elija un fragmento de un vídeo (MP4, MOV, AVI, MKV, WEBM, WMV, FLV, MPG, TS, 3GP, OGV…)
+en la línea de tiempo y luego el
 encuadre: seguimiento automático de un sujeto, encuadre automático con zoom o puntos
 manuales (zona y zoom que evolucionan en el tiempo). La calidad automática ajusta
 contraste, saturación y brillo según el vídeo, y el peso del GIF se estima en directo.
@@ -85,6 +89,17 @@ Matrix, glitch…), con una duración ajustada automáticamente a la longitud de
 - **AYUDA**: la guía completa dentro de la aplicación.
 
 ## Novedades
+
+**v3.2.0**
+- Ventana **Revisar**: **correcciones propuestas** para los GIF bajos (vacío eliminado,
+  partes oscuras aclaradas, gamma, niveles, inversión), con vista previa LED y validación
+  una a una; el original se aparta, nunca se borra. Miniatura de la imagen de origen,
+  botón **Editar en MANUAL**, paso al GIF siguiente tras validar.
+- **MANUAL**: **zona** que limita controles y filtros a una parte de la imagen, **zoom**
+  de la animación (50 a 300 %), recorte 128×32 con un **marco que se desplaza**.
+- **VIDEO**: se aceptan además los formatos WEBM, M4V, WMV, FLV, MPG/MPEG, TS, 3GP y OGV.
+- Correcciones: los controles de MANUAL ya no deshacen un recorte o un filtro; vistas
+  previas a la velocidad correcta; propuestas 4 a 6 de AUTO de nuevo visibles.
 
 **v3.1.0**
 - **Puntuación de calidad** de cada GIF y ventana **Revisar** (del más bajo al mejor,

@@ -251,12 +251,12 @@
   <section class="feat">
     <span class="eyebrow" style="color:var(--led-green)" data-i18n="s9.eyebrow">Score qualité</span>
     <h2 data-i18n="s9.h2">Des milliers de logos, les ratés en premier</h2>
-    <p data-i18n="s9.p">Chaque GIF produit reçoit une <strong>note de 0 à 100</strong> : contraste des contours, part de l'écran allumée, place occupée sur le panneau, avec une pénalité pour les animations trop courtes. À la fin d'un lot, si des GIF ont une note faible ou mauvaise, l'application propose d'ouvrir la fenêtre <strong>Revoir</strong> : les GIF du plus faible au meilleur, l'aperçu LED de chacun et la raison de sa note. Ceux que vous écartez partent dans un dossier <code>_a_revoir</code>, jamais supprimés.</p>
+    <p data-i18n="s9.p">Chaque GIF produit reçoit une <strong>note de 0 à 100</strong> : contraste des contours, part de l'écran allumée, place occupée sur le panneau, avec une pénalité pour les animations trop courtes. À la fin d'un lot, si des GIF ont une note faible ou mauvaise, l'application propose d'ouvrir la fenêtre <strong>Revoir</strong> : les GIF du plus faible au meilleur, l'aperçu LED de chacun et la raison de sa note. Ceux que vous écartez partent dans un dossier <code>_a_revoir</code>, jamais supprimés. Pour les GIF faibles, elle <strong>propose des corrections</strong> — texte noir éclairci, vide retiré, gamma, inversion… — à valider une à une en regardant l'image source, ou ouvre cette source dans MANUEL pour la reprendre à la main.</p>
     <div class="ratings">
       <span style="--c:#e0413e" data-i18n="r.bad">0–30 Mauvais</span><span style="--c:#f08a24" data-i18n="r.poor">31–50 Faible</span><span style="--c:#e8c547" data-i18n="r.ok">51–70 Acceptable</span><span style="--c:#3ee06a" data-i18n="r.good">71–85 Bon</span><span style="--c:#8fd3ff" data-i18n="r.exc">86–100 Excellent</span>
     </div>
     <figure class="shot glow-g" style="margin-top:18px;">
-      <a data-shot-link="review" href="media/review_fr.png"><img data-shot="review" src="media/review_fr.png" data-i18n-alt="alt.review" alt="Fenêtre Revoir : liste des GIF triés par score, aperçu LED et raisons de la note."></a>
+      <a data-shot-link="review" href="media/review_fr.png"><img data-shot="review" src="media/review_fr.png" data-i18n-alt="alt.review" alt="Fenêtre Revoir : GIF triés par score, image source, aperçu LED et correction proposée."></a>
     </figure>
     <p data-i18n="s9.p2" style="margin-top:14px;">Les logos sombres sur fond transparent, invisibles sur un DMD noir, sont inversés automatiquement quand le rendu y gagne.</p>
   </section>
@@ -292,7 +292,7 @@
   <section class="feat">
     <span class="eyebrow" style="color:var(--led-green)" data-i18n="s3.eyebrow">Manuel</span>
     <h2 data-i18n="s3.h2">La main sur chaque pixel</h2>
-    <p data-i18n="s3.p">Recadrage 128×32, luminosité, contraste, netteté, filtres, pot de peinture et gomme magique, animations avec easing et boucle, multi-images et morphing — avec annuler/rétablir à chaque étape.</p>
+    <p data-i18n="s3.p">Recadrage 128×32 avec un cadre à déplacer, <strong>zone</strong> qui limite les effets à une partie de l'image, luminosité, contraste, netteté, filtres, <strong>zoom</strong> de l'animation, pot de peinture et gomme magique, animations avec easing et boucle, multi-images et morphing — avec annuler/rétablir à chaque étape.</p>
     <figure class="shot glow-g">
       <a data-shot-link="manual" href="media/manual_fr.png"><img data-shot="manual" src="media/manual_fr.png" data-i18n-alt="alt.manual" alt="Onglet MANUEL : effets, filtres, outils de dessin et aperçu de l'animation."></a>
     </figure>
@@ -334,7 +334,7 @@
     <h2 data-i18n="s6.h2">Le compagnon du panneau RecalBox DMD</h2>
     <p data-i18n="s6.p">Les GIF sortent au format attendu par le panneau <a href="https://shan-aya.github.io/RecalBoxDMD/" target="_blank" rel="noopener">RecalBox DMD</a> : 128×32, palette réduite, poids maîtrisé. Glissez-les ensuite dans sa playlist ou sur sa carte SD.</p>
     <div class="chips">
-      <span class="chip">PNG</span><span class="chip">JPG</span><span class="chip">BMP</span><span class="chip">GIF</span><span class="chip">raw565</span><span class="chip">MP4</span><span class="chip">MOV</span><span class="chip">MKV</span><span class="chip">AVI</span>
+      <span class="chip">PNG</span><span class="chip">JPG</span><span class="chip">BMP</span><span class="chip">GIF</span><span class="chip">raw565</span><span class="chip">MP4</span><span class="chip">MOV</span><span class="chip">MKV</span><span class="chip">AVI</span><span class="chip">WEBM</span><span class="chip">WMV</span><span class="chip">FLV</span><span class="chip">MPG</span><span class="chip">TS</span><span class="chip">3GP</span><span class="chip">OGV</span>
     </div>
   </section>
 
@@ -382,14 +382,14 @@
   "cap.batch": "Six logos d'un même lot, profil Logos Recalbox : le rendu a été choisi pour chacun, sans intervention",
   "s9.eyebrow": "Score qualité",
   "s9.h2": "Des milliers de logos, les ratés en premier",
-  "s9.p": "Chaque GIF produit reçoit une <strong>note de 0 à 100</strong> : contraste des contours, part de l'écran allumée, place occupée sur le panneau, avec une pénalité pour les animations trop courtes. À la fin d'un lot, si des GIF ont une note faible ou mauvaise, l'application propose d'ouvrir la fenêtre <strong>Revoir</strong> : les GIF du plus faible au meilleur, l'aperçu LED de chacun et la raison de sa note. Ceux que vous écartez partent dans un dossier <code>_a_revoir</code>, jamais supprimés.",
+  "s9.p": "Chaque GIF produit reçoit une <strong>note de 0 à 100</strong> : contraste des contours, part de l'écran allumée, place occupée sur le panneau, avec une pénalité pour les animations trop courtes. À la fin d'un lot, si des GIF ont une note faible ou mauvaise, l'application propose d'ouvrir la fenêtre <strong>Revoir</strong> : les GIF du plus faible au meilleur, l'aperçu LED de chacun et la raison de sa note. Ceux que vous écartez partent dans un dossier <code>_a_revoir</code>, jamais supprimés. Pour les GIF faibles, elle <strong>propose des corrections</strong> — texte noir éclairci, vide retiré, gamma, inversion… — à valider une à une en regardant l'image source, ou ouvre cette source dans MANUEL pour la reprendre à la main.",
   "s9.p2": "Les logos sombres sur fond transparent, invisibles sur un DMD noir, sont inversés automatiquement quand le rendu y gagne.",
   "r.bad": "0–30 Mauvais",
   "r.poor": "31–50 Faible",
   "r.ok": "51–70 Acceptable",
   "r.good": "71–85 Bon",
   "r.exc": "86–100 Excellent",
-  "alt.review": "Fenêtre Revoir : liste des GIF triés par score, aperçu LED et raisons de la note.",
+  "alt.review": "Fenêtre Revoir : GIF triés par score, image source, aperçu LED et correction proposée.",
   "stat.workers": "images traitées en parallèle",
   "stat.x": "×3",
   "stat.speed": "plus rapide que la v2",
@@ -411,7 +411,7 @@
   "cap.ppon": "Avec pixel-perfect · pixels d'origine 1:1, 192 couleurs, le logo défile",
   "s3.eyebrow": "Manuel",
   "s3.h2": "La main sur chaque pixel",
-  "s3.p": "Recadrage 128×32, luminosité, contraste, netteté, filtres, pot de peinture et gomme magique, animations avec easing et boucle, multi-images et morphing — avec annuler/rétablir à chaque étape.",
+  "s3.p": "Recadrage 128×32 avec un cadre à déplacer, <strong>zone</strong> qui limite les effets à une partie de l'image, luminosité, contraste, netteté, filtres, <strong>zoom</strong> de l'animation, pot de peinture et gomme magique, animations avec easing et boucle, multi-images et morphing — avec annuler/rétablir à chaque étape.",
   "alt.manual": "Onglet MANUEL : effets, filtres, outils de dessin et aperçu de l'animation.",
   "s4.eyebrow": "Vidéo",
   "s4.h2": "Un passage de vidéo, en GIF DMD",
@@ -460,14 +460,14 @@
   "cap.batch": "Six logos from one batch, Recalbox logos profile: the render was chosen for each, hands-off",
   "s9.eyebrow": "Quality score",
   "s9.h2": "Thousands of logos, the failures first",
-  "s9.p": "Every GIF produced gets a <strong>score from 0 to 100</strong>: edge contrast, share of the screen lit, space used on the panel, with a penalty for animations that are too short. At the end of a batch, if some GIFs score poor or bad, the app offers to open the <strong>Review</strong> window: GIFs from weakest to best, the LED preview of each and the reason for its score. The ones you set aside go into an <code>_a_revoir</code> folder, never deleted.",
+  "s9.p": "Every GIF produced gets a <strong>score from 0 to 100</strong>: edge contrast, share of the screen lit, space used on the panel, with a penalty for animations that are too short. At the end of a batch, if some GIFs score poor or bad, the app offers to open the <strong>Review</strong> window: GIFs from weakest to best, the LED preview of each and the reason for its score. The ones you set aside go into an <code>_a_revoir</code> folder, never deleted. For weak GIFs, it <strong>suggests fixes</strong> — black text lightened, empty space removed, gamma, inversion… — to approve one by one while looking at the source image, or opens that source in MANUAL to redo it by hand.",
   "s9.p2": "Dark logos on a transparent background, invisible on a black DMD, are inverted automatically when the render improves.",
   "r.bad": "0–30 Bad",
   "r.poor": "31–50 Poor",
   "r.ok": "51–70 Acceptable",
   "r.good": "71–85 Good",
   "r.exc": "86–100 Excellent",
-  "alt.review": "Review window: GIFs sorted by score, LED preview and reasons for the score.",
+  "alt.review": "Review window: GIFs sorted by score, source image, LED preview and suggested fix.",
   "stat.workers": "images processed in parallel",
   "stat.x": "×3",
   "stat.speed": "faster than v2",
@@ -489,7 +489,7 @@
   "cap.ppon": "With pixel-perfect · original pixels 1:1, 192 colors, the logo scrolls",
   "s3.eyebrow": "Manual",
   "s3.h2": "Your hand on every pixel",
-  "s3.p": "128×32 crop, brightness, contrast, sharpness, filters, fill and magic eraser, animations with easing and looping, multi-images and morphing — with undo/redo at every step.",
+  "s3.p": "128×32 crop with a movable frame, a <strong>zone</strong> that limits effects to part of the image, brightness, contrast, sharpness, filters, animation <strong>zoom</strong>, fill and magic eraser, animations with easing and looping, multi-images and morphing — with undo/redo at every step.",
   "alt.manual": "MANUAL tab: effects, filters, drawing tools and animation preview.",
   "s4.eyebrow": "Video",
   "s4.h2": "A video clip, as a DMD GIF",
@@ -538,14 +538,14 @@
   "cap.batch": "Seis logos de un mismo lote, perfil Logos Recalbox: el render se eligió para cada uno, sin intervención",
   "s9.eyebrow": "Puntuación de calidad",
   "s9.h2": "Miles de logos, los fallidos primero",
-  "s9.p": "Cada GIF producido recibe una <strong>nota de 0 a 100</strong>: contraste de los contornos, parte de la pantalla encendida, espacio ocupado en el panel, con una penalización para las animaciones demasiado cortas. Al final de un lote, si algunos GIF tienen una nota baja o mala, la aplicación propone abrir la ventana <strong>Revisar</strong>: los GIF del más bajo al mejor, la vista previa LED de cada uno y el motivo de su nota. Los que aparta van a una carpeta <code>_a_revoir</code>, nunca se borran.",
+  "s9.p": "Cada GIF producido recibe una <strong>nota de 0 a 100</strong>: contraste de los contornos, parte de la pantalla encendida, espacio ocupado en el panel, con una penalización para las animaciones demasiado cortas. Al final de un lote, si algunos GIF tienen una nota baja o mala, la aplicación propone abrir la ventana <strong>Revisar</strong>: los GIF del más bajo al mejor, la vista previa LED de cada uno y el motivo de su nota. Los que aparta van a una carpeta <code>_a_revoir</code>, nunca se borran. Para los GIF bajos, <strong>propone correcciones</strong> — texto negro aclarado, vacío eliminado, gamma, inversión… — que se validan una a una viendo la imagen de origen, o abre ese origen en MANUAL para rehacerlo a mano.",
   "s9.p2": "Los logos oscuros sobre fondo transparente, invisibles en un DMD negro, se invierten automáticamente cuando el render mejora.",
   "r.bad": "0–30 Malo",
   "r.poor": "31–50 Bajo",
   "r.ok": "51–70 Aceptable",
   "r.good": "71–85 Bueno",
   "r.exc": "86–100 Excelente",
-  "alt.review": "Ventana Revisar: GIF ordenados por puntuación, vista previa LED y motivos de la nota.",
+  "alt.review": "Ventana Revisar: GIF ordenados por puntuación, imagen de origen, vista previa LED y corrección propuesta.",
   "stat.workers": "imágenes procesadas en paralelo",
   "stat.x": "×3",
   "stat.speed": "más rápido que la v2",
@@ -567,7 +567,7 @@
   "cap.ppon": "Con pixel-perfect · píxeles originales 1:1, 192 colores, el logo se desplaza",
   "s3.eyebrow": "Manual",
   "s3.h2": "Control sobre cada píxel",
-  "s3.p": "Recorte 128×32, brillo, contraste, nitidez, filtros, relleno y goma mágica, animaciones con easing y bucle, multi-imágenes y morphing — con deshacer/rehacer en cada paso.",
+  "s3.p": "Recorte 128×32 con un marco que se desplaza, <strong>zona</strong> que limita los efectos a una parte de la imagen, brillo, contraste, nitidez, filtros, <strong>zoom</strong> de la animación, relleno y goma mágica, animaciones con easing y bucle, multi-imágenes y morphing — con deshacer/rehacer en cada paso.",
   "alt.manual": "Pestaña MANUAL: efectos, filtros, herramientas de dibujo y vista previa de la animación.",
   "s4.eyebrow": "Vídeo",
   "s4.h2": "Un fragmento de vídeo, en GIF DMD",

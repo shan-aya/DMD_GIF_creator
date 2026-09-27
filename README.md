@@ -1,6 +1,6 @@
 🇫🇷 **Français** · [🇬🇧 English](./README_EN.md) · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.1.0
+# DMD GIF Creator 128x32 — v3.2.0
 
 Créez des GIF optimisés pour les écrans DMD 128×32 (borne d'arcade, flipper,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) à partir d'**images**, d'une
@@ -13,14 +13,14 @@ traitement par lot de dossiers entiers.
 
 ## Téléchargement
 
-**Windows** : téléchargez `dmd_gif_creator_v310.exe` dans la
+**Windows** : téléchargez `dmd_gif_creator_v320.exe` dans la
 [dernière Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) et
 lancez-le — aucune installation nécessaire.
 
 **Depuis les sources** (dossier [`dmd_gif_creator/`](./dmd_gif_creator)) :
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v310.py
+    python dmd_gif_creator/dmd_gif_creator_v320.py
 
 `opencv-contrib-python` (et non `opencv-python`) est nécessaire pour le suivi
 automatique de l'onglet VIDEO ; les deux paquets ne doivent pas être installés en même
@@ -48,8 +48,10 @@ par exemple tous les logos scrapés d'une ludothèque : chaque logo reçoit le m
 rendu qui lui convient, en parallèle, avec l'arborescence conservée et les fichiers
 source jamais modifiés. Une proposition peut être verrouillée pour tout le lot. Chaque
 GIF reçoit un **score qualité**, et la fenêtre **Revoir** liste les plus faibles en
-premier, avec aperçu, pour relire rapidement des milliers de logos et mettre de côté
-(sans jamais supprimer) ceux qui sont ratés.
+premier, avec aperçu et image source, pour relire rapidement des milliers de logos et
+mettre de côté (sans jamais supprimer) ceux qui sont ratés. Elle **propose des
+corrections** pour les GIF faibles (texte noir éclairci, vide retiré, gamma, inversion…),
+à valider une à une, ou ouvre la source dans MANUEL pour la reprendre à la main.
 
 ![Fenêtre Revoir](./screenshots/review_fr.png)
 
@@ -57,15 +59,17 @@ premier, avec aperçu, pour relire rapidement des milliers de logos et mettre de
 
 ![Onglet MANUEL](./screenshots/manual_fr.png)
 
-Recadrage 128×32, luminosité, contraste, saturation, netteté, filtres, pot de peinture
-et gomme magique, animations (défilement, zoom, fondu…) avec easing et boucle,
+Recadrage 128×32 avec un cadre à déplacer, zone limitant les effets à une partie de
+l'image, luminosité, contraste, saturation, netteté, filtres, zoom de l'animation, pot
+de peinture et gomme magique, animations (défilement, zoom, fondu…) avec easing et boucle,
 multi-images et morphing, historique annuler/rétablir.
 
 ### VIDEO — un GIF à partir d'une vidéo
 
 ![Onglet VIDEO](./screenshots/video_fr.png)
 
-Choisissez un passage d'une vidéo (MP4, AVI, MOV, MKV) sur la frise, puis le cadrage :
+Choisissez un passage d'une vidéo (MP4, MOV, AVI, MKV, WEBM, WMV, FLV, MPG, TS, 3GP,
+OGV…) sur la frise, puis le cadrage :
 suivi automatique d'un sujet, cadrage auto avec zoom, ou points manuels (zone et zoom
 qui évoluent dans le temps). La qualité automatique ajuste contraste, saturation et
 luminosité d'après la vidéo, et le poids du GIF est estimé en direct.
@@ -85,6 +89,17 @@ glitch…), avec une durée ajustée automatiquement à la longueur du texte.
 - **AIDE** : le guide complet dans l'application.
 
 ## Nouveautés
+
+**v3.2.0**
+- Fenêtre **Revoir** : **corrections proposées** pour les GIF faibles (vide retiré,
+  parties sombres éclaircies, gamma, niveaux, inversion), avec aperçu LED et validation
+  une à une ; l'original est mis de côté, jamais supprimé. Miniature de l'image source,
+  bouton **Éditer dans MANUEL**, passage au GIF suivant après validation.
+- **MANUEL** : **zone** limitant curseurs et filtres à une partie de l'image, **zoom**
+  de l'animation (50 à 300 %), recadrage 128×32 avec un **cadre à déplacer**.
+- **VIDEO** : formats WEBM, M4V, WMV, FLV, MPG/MPEG, TS, 3GP et OGV acceptés en plus.
+- Corrections : les curseurs de MANUEL n'annulent plus un recadrage ou un filtre ;
+  aperçus à la bonne vitesse ; propositions 4 à 6 de l'onglet AUTO de nouveau visibles.
 
 **v3.1.0**
 - **Score qualité** de chaque GIF et fenêtre **Revoir** (du plus faible au meilleur,

@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.1.0
+Version: 3.2.0
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,8 +27,75 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v94
+# Version actuelle : v105
 #
+# v105 — 2026-09-27 — safe-modify — Version 3.2.0 (v95 à v104 : corrections proposées et édition dans Revoir,
+#      zone d'effets, zoom, recadrage à cadre mobile, formats vidéo, aperçus à la bonne vitesse…) ; lanceur
+#      renommé dmd_gif_creator_v320.py ; en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v21).
+# v104 — 2026-09-27 — safe-modify — Formats vidéo acceptés (demande utilisateur) : MP4/AVI/MOV/MKV → + M4V, WEBM,
+#      WMV, FLV, MPG, MPEG, TS, 3GP, OGV, tous vérifiés (conversion ffmpeg d'une vraie vidéo puis lecture OpenCV :
+#      images, FPS, durée). Liste unique VIDEO_EXTS pour l'ouverture et le glisser-déposer.
+# v103 — 2026-09-27 — safe-modify — MANUEL (demande utilisateur + bug trouvé en préparant) :
+#      (1) BUG : apply_manual_effect (curseurs Luminosité/Contraste/Saturation/Netteté) repartait de
+#      manual_history[0], l'image CHARGÉE — toucher un curseur annulait recadrage, filtres, remplissages (vérifié :
+#      400×100 recadré + miroir → 600×300 d'origine). Désormais : départ de l'état courant de l'historique ; toute
+#      action permanente (filtre, recadrage, remplissage, gomme) intègre les réglages en cours puis remet les
+#      curseurs à 1,00 (choix utilisateur) ; annuler/rétablir abandonne les réglages non intégrés.
+#      (2) Zone d'effets : "▭ Zone" (tracer un rectangle libre, le déplacer en glissant dedans) et "✕ Zone" ;
+#      curseurs et filtres ne touchent que la zone (filtres de voisinage calculés sur toute l'image puis limités
+#      à la zone ; miroir, égaliser, etc. appliqués au seul contenu) ; Rotation 90° reste sur toute l'image et
+#      efface la zone ; zone effacée au recadrage et au chargement d'une image ; un seul mode souris à la fois.
+# v102 — 2026-09-27 — safe-modify — Signalement utilisateur : FPS MANUEL à 1 en venant de Revoir. Cause : pour un
+#      dossier sans réglages enregistrés, _timing_of déduisait les FPS du plus petit délai du GIF ; un GIF fixe ou
+#      presque noir n'a qu'UNE image (images identiques fusionnées, ~2 s) → 1000/1980 → 1 i/s. Désormais : FPS
+#      actuels d'AUTO s'ils expliquent tous les délais (multiples d'une image, ±15 ms) ou si le GIF n'a qu'une
+#      image ; sinon déduction par le plus petit délai en préférant les cadences usuelles ; à défaut FPS d'AUTO.
+# v101 — 2026-09-27 — safe-modify — Signalement utilisateur : aperçu MANUEL trop rapide après modification des FPS ou
+#      de la durée. Cause : chaque régénération relançait la boucle d'aperçu sans annuler l'étape déjà programmée
+#      (root.after) ; l'ancienne boucle repartait en parallèle (time.sleep(0.1) ne l'empêchait pas) → 2, 3…
+#      boucles qui avançaient les images en même temps. Même défaut dans les aperçus AUTO (à chaque image
+#      sélectionnée), TEXTSCROLL et VIDEO. Correction : _anim_schedule/_anim_cancel, une seule étape en attente
+#      par aperçu ; time.sleep(0.1) retiré (bloquait l'interface). MANUEL : l'aperçu et l'export utilisent la
+#      cadence avec laquelle les images ont été générées (_manual_frames_fps), et l'aperçu est refait 600 ms
+#      après une modification des FPS, de la durée ou de la vitesse (sauf morphing).
+# v100 — 2026-09-27 — safe-modify — Signalement utilisateur ("Exception in Tkinter callback … expected integer but
+#      got \"\"" en effaçant le champ FPS de MANUEL) : les 22 traces qui enregistraient un champ dans la config à
+#      chaque frappe (AUTO, MANUEL, VIDEO, TEXTSCROLL, paramètres) lisaient la valeur sans garde ; un champ vidé
+#      pour retaper levait TclError. Toutes passent par _save_var(), qui ignore une saisie incomplète.
+# v99 — 2026-09-27 — safe-modify — MANUEL (demande utilisateur) : "Resize +" / "Resize -" retirés — ils
+#      redimensionnaient l'image de travail (×1,2 / ×0,8), sans aucun effet sur le GIF puisque
+#      generate_manual_animation recalcule la taille 128×32 d'après les seules proportions (et pouvaient flouter).
+#      Remplacés par un ZOOM DE L'ANIMATION ("🔍 Zoom −", "🔍 Zoom +", "100 %") : paliers 50 % → 300 %, appliqué
+#      après le calcul 128×32 (NEAREST en pixel-perfect, sinon LANCZOS), hors historique, remis à 100 % à chaque
+#      nouvelle image ; l'aperçu est refait au changement de zoom (sauf frames de morphing).
+# v98 — 2026-09-27 — safe-modify — Demandes utilisateur : (1) Revoir : après "Garder cette version", le GIF suivant
+#      de la liste est sélectionné (_select_rel, attend l'insertion par paquets des grands dossiers) ; (2) MANUEL,
+#      "✂️ Crop 128×32" : au lieu de TRACER un rectangle (imprécis), un cadre 4:1 est posé d'emblée (128×32 px de
+#      l'image = 1 pixel par LED, réduit si l'image est plus petite) et se DÉPLACE à la souris ou aux flèches
+#      (1 px, Maj : 10 px), molette = taille (ratio 4:1 gardé), double-clic ou Entrée = appliquer, Échap ou 2e clic
+#      sur le bouton = annuler ; taille, position et pixels par LED affichés dans la barre d'état.
+# v97 — 2026-09-27 — safe-modify — Fenêtre Revoir (demandes utilisateur) : (1) miniature de l'image SOURCE au-dessus
+#      de l'aperçu LED, avec ses dimensions (source retrouvée par "src" de l'index ou par le dossier source mémorisé
+#      des dossiers anciens) ; (2) bouton "✎ Éditer dans MANUEL" quand les propositions ne conviennent pas : la source
+#      est chargée dans l'onglet MANUEL, et son export propose de remplacer le GIF du lot (original mis de côté dans
+#      _a_revoir/_avant_correction, index mis à jour, fixed="manual") ou d'enregistrer ailleurs comme avant.
+#      Remplacement commun aux corrections acceptées et à l'édition : review_replace_gif().
+# v96 — 2026-09-27 — safe-modify — Fenêtre Revoir : corrections automatiques PROPOSÉES (demande utilisateur,
+#      "on a un score + une raison, pourquoi pas une correction automatique ?"). Bouton "🪄 Proposer des
+#      corrections ≤ seuil" : pour chaque GIF, variantes de la source (nouveau module dmd_autofix : vide retiré,
+#      gamma, niveaux, sombres éclaircis, inversion), repassées dans le lot normal (process_one_image, mêmes
+#      réglages que le lot d'origine) en arrière-plan ; jusqu'à 2 propositions (couleurs gardées / inversion)
+#      avec aperçu LED ; rien ne change sans "Garder cette version", l'original part dans
+#      _a_revoir/_avant_correction/ (jamais supprimé), l'index garde fixed/score_before. Le lot écrit
+#      désormais la source ("src") et le n° de lot ("b") dans dmd_scores.json, et ses réglages dans
+#      dmd_batch.json ; un dossier plus ancien demande le dossier source et utilise les réglages actuels.
+#      Essai préalable sur les 54 GIF faibles d'un lot de 54 765 logos : 53 remontés au-dessus de 50 en
+#      gardant les couleurs.
+# v95 — 2026-09-27 — safe-modify — Onglet AUTO (signalement utilisateur, capture) : la 2e rangée de propositions
+#      (4 à 6) était coupée en bas, cases "Verrouiller" invisibles, depuis l'ajout en v91 des 2 lignes Profil /
+#      options du profil (Paramètres Globaux passés de 2 à 4 lignes, contrainte de hauteur déjà notée en v20).
+#      Retour à 2 lignes : case pixel-perfect au bout de la ligne des réglages, options du profil sur la même
+#      ligne que la liste des profils. Aucun changement de comportement.
 # v94 — 2026-09-26 — safe-modify — Fenêtre Revoir (demande utilisateur) : le bouton 🔍 Revoir ouvre directement le
 #      dossier du dernier lot noté (config last_review_folder, écrit en fin de lot dans le fil Tk) ; choix de dossier
 #      seulement s'il n'y en a pas encore ou s'il n'a plus d'index. Bouton « 📂 Autre dossier… » dans la fenêtre pour
@@ -2241,6 +2308,27 @@ class LanguageManager:
 lang_manager = LanguageManager()
 
 
+def _save_var(key, var):
+    """v100 -- enregistre une tk.Variable dans la config à chaque saisie, sauf
+    si la saisie est incomplète (champ vidé pour retaper, "1." …) : .get()
+    lève alors TclError, affichée en "Exception in Tkinter callback". La
+    valeur est enregistrée dès qu'elle redevient valide."""
+    try:
+        value = var.get()
+    except (tk.TclError, ValueError):
+        return
+    config_manager.set(key, value)
+
+
+# v104 -- conteneurs vidéo acceptés (ouverture et glisser-déposer), tous vérifiés
+# le 2026-09-27 avec le décodeur FFmpeg d'OpenCV 5.0 (images, FPS et durée lus) :
+# mp4/m4v/mov/ts (H.264), mkv (H.265), avi/3gp (MPEG-4), webm (VP9), wmv (WMV2),
+# flv (FLV1), mpg (MPEG-2), mpeg (MPEG-1), ogv (Theora). Un codec rare peut
+# rester illisible quelle que soit l'extension.
+VIDEO_EXTS = (".mp4", ".m4v", ".mov", ".avi", ".mkv", ".webm", ".wmv", ".flv",
+              ".mpg", ".mpeg", ".ts", ".3gp", ".ogv")
+
+
 def tr(key, default, **kwargs):
     """v83 -- texte dynamique traduit : lang_manager.get(key, default) puis
     str.format(**kwargs). Si la cle manque dans la langue active, le texte FR
@@ -2336,6 +2424,12 @@ try:
 except ImportError:
     import dmd_profiles
 
+# v96 -- propositions de correction des GIF faibles (fenêtre Revoir)
+try:
+    from . import dmd_autofix
+except ImportError:
+    import dmd_autofix
+
 # --- Modular video engine (nouvel onglet VIDEO) ---
 try:
     from .dmd_video_engine import VideoEngine, CV2_AVAILABLE
@@ -2369,6 +2463,9 @@ class DMDConverter:
 
         self.image_settings = {}
         self.manual_exports = set()
+        # v97 -- édition lancée depuis Revoir : {"folder", "rel", "review"} ;
+        # l'export MANUEL propose alors de remplacer ce GIF du lot
+        self.review_target = None
         self.proposals = []
         self.selected_proposal = 0
         self.locked_proposal = None
@@ -2390,9 +2487,7 @@ class DMDConverter:
         )
         self.add_anim_to_name.trace_add(
             "write",
-            lambda *args: config_manager.set(
-                "add_anim_to_name", self.add_anim_to_name.get()
-            ),
+            lambda *args: _save_var("add_anim_to_name", self.add_anim_to_name),
         )
 
         # Manuel
@@ -2412,6 +2507,15 @@ class DMDConverter:
         self.manual_frames = []
         self.manual_animating = False
         self.manual_frame_idx = 0
+        # v101 -- une seule étape d'animation en attente par aperçu (voir _anim_schedule)
+        self._anim_jobs = {}
+        self._anim_due = {}  # heure prévue de la prochaine image, par aperçu
+        # v103 -- zone d'effets MANUEL : [x1, y1, x2, y2] en pixels de l'image, ou None
+        self.manual_zone = None
+        self.zone_mode = False
+        self._zone_drag = None
+        self._manual_frames_fps = None
+        self._manual_regen_job = None
         self.eraser_mode = False
         self.eraser_tolerance = 30
         # Crop mode
@@ -2674,7 +2778,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.1.0"
+    APP_VERSION = "3.2.0"
 
     # ========================================================================
 
@@ -2868,10 +2972,10 @@ class DMDConverter:
         ttk.Label(row1, text="FPS:").pack(side=tk.LEFT)
         self.fps_var = tk.IntVar(value=config_manager.get("fps", 10))
         self.fps_var.trace_add(
-            "write", lambda *args: config_manager.set("fps", self.fps_var.get())
+            "write", lambda *args: _save_var("fps", self.fps_var)
         )
         self.fps_var.trace_add(
-            "write", lambda *args: config_manager.set("fps", self.fps_var.get())
+            "write", lambda *args: _save_var("fps", self.fps_var)
         )
         ttk.Spinbox(
             row1,
@@ -2886,11 +2990,11 @@ class DMDConverter:
         self.duration_var = tk.DoubleVar(value=config_manager.get("duration", 2.0))
         self.duration_var.trace_add(
             "write",
-            lambda *args: config_manager.set("duration", self.duration_var.get()),
+            lambda *args: _save_var("duration", self.duration_var),
         )
         self.duration_var.trace_add(
             "write",
-            lambda *args: config_manager.set("duration", self.duration_var.get()),
+            lambda *args: _save_var("duration", self.duration_var),
         )
         ttk.Spinbox(
             row1,
@@ -2908,9 +3012,7 @@ class DMDConverter:
         self.scroll_speed_var = tk.DoubleVar(value=config_manager.get("scroll_speed", 1))
         self.scroll_speed_var.trace_add(
             "write",
-            lambda *args: config_manager.set(
-                "scroll_speed", self.scroll_speed_var.get()
-            ),
+            lambda *args: _save_var("scroll_speed", self.scroll_speed_var),
         )
         ttk.Spinbox(
             row1,
@@ -2926,11 +3028,11 @@ class DMDConverter:
         self.contrast_var = tk.DoubleVar(value=config_manager.get("contrast", 1.5))
         self.contrast_var.trace_add(
             "write",
-            lambda *args: config_manager.set("contrast", self.contrast_var.get()),
+            lambda *args: _save_var("contrast", self.contrast_var),
         )
         self.contrast_var.trace_add(
             "write",
-            lambda *args: config_manager.set("contrast", self.contrast_var.get()),
+            lambda *args: _save_var("contrast", self.contrast_var),
         )
         ttk.Spinbox(
             row1,
@@ -2946,11 +3048,11 @@ class DMDConverter:
         self.saturation_var = tk.DoubleVar(value=config_manager.get("saturation", 1.3))
         self.saturation_var.trace_add(
             "write",
-            lambda *args: config_manager.set("saturation", self.saturation_var.get()),
+            lambda *args: _save_var("saturation", self.saturation_var),
         )
         self.saturation_var.trace_add(
             "write",
-            lambda *args: config_manager.set("saturation", self.saturation_var.get()),
+            lambda *args: _save_var("saturation", self.saturation_var),
         )
         ttk.Spinbox(
             row1,
@@ -2966,11 +3068,11 @@ class DMDConverter:
         self.color_count_var = tk.IntVar(value=config_manager.get("color_count", 256))
         self.color_count_var.trace_add(
             "write",
-            lambda *args: config_manager.set("color_count", self.color_count_var.get()),
+            lambda *args: _save_var("color_count", self.color_count_var),
         )
         self.color_count_var.trace_add(
             "write",
-            lambda *args: config_manager.set("color_count", self.color_count_var.get()),
+            lambda *args: _save_var("color_count", self.color_count_var),
         )
         color_combo = ttk.Combobox(
             row1,
@@ -2989,9 +3091,7 @@ class DMDConverter:
         )
         self.pixel_perfect_var.trace_add(
             "write",
-            lambda *args: config_manager.set(
-                "pixel_perfect", self.pixel_perfect_var.get()
-            ),
+            lambda *args: _save_var("pixel_perfect", self.pixel_perfect_var),
         )
         # Luminosité LED simulée (voir DMDEngine.render_led_style, brightness) :
         # partagée entre les 3 onglets de génération, comme pixel_perfect_var —
@@ -3005,18 +3105,16 @@ class DMDConverter:
         self.led_brightness_var = tk.DoubleVar(
             value=config_manager.get("led_brightness", 0.5)
         )
-        # Ligne pixel-perfect (gardée séparée : libellé long, resterait illisible
-        # accolé aux spinboxes ci-dessus sur la même ligne)
-        options_row = ttk.Frame(params_frame)
-        options_row.pack(anchor=tk.W, pady=(4, 2), fill=tk.X)
-
+        # v95 -- case pixel-perfect au bout de la ligne des réglages (elle avait
+        # sa propre ligne : avec les 2 lignes Profil de la v91, la 2e rangée de
+        # propositions sortait de la fenêtre)
         pixel_perfect_check = ttk.Checkbutton(
-            options_row,
+            row1,
             text="Mode DMD / Forcer pixel-perfect",
             variable=self.pixel_perfect_var,
             command=self.on_global_param_change,
         )
-        pixel_perfect_check.pack(side=tk.LEFT, padx=(0, 20))
+        pixel_perfect_check.pack(side=tk.LEFT, padx=(20, 0))
         add_help_tooltip(pixel_perfect_check, "tooltip_pixel_perfect")
 
         # v91 -- profils (dmd_profiles) : le moteur reste neutre, un profil
@@ -3315,6 +3413,13 @@ class DMDConverter:
         ttk.Button(toolbar, text="✂️ Crop 128×32", command=self.start_crop_mode).pack(
             side=tk.LEFT, padx=2
         )
+        # v103 -- zone où s'appliquent curseurs et filtres
+        self.zone_btn = ttk.Button(toolbar, text=tr("t_zone_btn", "▭ Zone"), command=self.toggle_zone_mode)
+        self.zone_btn.pack(side=tk.LEFT, padx=2)
+        add_help_tooltip(self.zone_btn, "tooltip_zone")
+        zc = ttk.Button(toolbar, text=tr("t_zone_clear_btn", "✕ Zone"), command=lambda: self._manual_zone_clear())
+        zc.pack(side=tk.LEFT, padx=2)
+        add_help_tooltip(zc, "tooltip_zone_clear")
         ttk.Button(toolbar, text="↶ Annuler", command=self.manual_undo).pack(
             side=tk.LEFT, padx=2
         )
@@ -3396,8 +3501,7 @@ class DMDConverter:
         filters = [
             ["Flou", "Flou Gaussien", "Contours", "Relief", "Détails+"],
             ["Inverser", "Miroir H", "Miroir V", "Rotation 90°", "N&B"],
-            ["Posteriser", "Solariser", "Égaliser", "Auto-contraste", "Resize +"],
-            ["Resize -", "", "", "", ""],
+            ["Posteriser", "Solariser", "Égaliser", "Auto-contraste", ""],
         ]
 
         for row_filters in filters:
@@ -3413,6 +3517,22 @@ class DMDConverter:
                             "é", "e"
                         ).replace("°", ""): self.apply_filter(x),
                     ).pack(side=tk.LEFT, padx=2)
+
+        # v99 -- zoom de l'animation (remplace Resize +/- : ils redimensionnaient
+        # l'image de travail, sans effet sur le GIF puisque generate_manual_animation
+        # recalcule la taille 128×32 d'après les proportions). Le zoom s'applique
+        # APRÈS ce calcul : 100 % = rendu habituel. Réglage d'animation, hors
+        # historique annuler/rétablir ; remis à 100 % à chaque nouvelle image.
+        self.manual_zoom = 1.0
+        self.manual_zoom_text = tk.StringVar(value=tr("t_manual_zoom", "Zoom : {p} %", p=100))
+        zrow = ttk.Frame(filters_frame)
+        zrow.pack(fill=tk.X, pady=2)
+        for label, step in ((tr("t_manual_zoom_out", "🔍 Zoom −"), -1), (tr("t_manual_zoom_in", "🔍 Zoom +"), 1)):
+            b = ttk.Button(zrow, text=label, width=15, command=lambda s=step: self.manual_zoom_step(s))
+            b.pack(side=tk.LEFT, padx=2)
+            add_help_tooltip(b, "tooltip_manual_zoom")
+        ttk.Button(zrow, text="100 %", width=8, command=lambda: self.manual_zoom_step(0)).pack(side=tk.LEFT, padx=2)
+        ttk.Label(zrow, textvariable=self.manual_zoom_text).pack(side=tk.LEFT, padx=8)
 
         # Outils dessin
         draw_frame = ttk.LabelFrame(left_panel, text="Outils Dessin", padding="5")
@@ -3594,7 +3714,7 @@ class DMDConverter:
         self.manual_fps = tk.IntVar(value=config_manager.get("manual_fps", 10))
         self.manual_fps.trace_add(
             "write",
-            lambda *args: config_manager.set("manual_fps", self.manual_fps.get()),
+            lambda *args: _save_var("manual_fps", self.manual_fps),
         )
         ttk.Spinbox(row2, from_=1, to=60, textvariable=self.manual_fps, width=10).pack(
             side=tk.LEFT, padx=5
@@ -3606,9 +3726,7 @@ class DMDConverter:
         )
         self.manual_scroll_speed.trace_add(
             "write",
-            lambda *args: config_manager.set(
-                "manual_scroll_speed", self.manual_scroll_speed.get()
-            ),
+            lambda *args: _save_var("manual_scroll_speed", self.manual_scroll_speed),
         )
         ttk.Spinbox(
             row2, from_=1, to=10, textvariable=self.manual_scroll_speed, width=10
@@ -3620,9 +3738,7 @@ class DMDConverter:
         )
         self.manual_duration.trace_add(
             "write",
-            lambda *args: config_manager.set(
-                "manual_duration", self.manual_duration.get()
-            ),
+            lambda *args: _save_var("manual_duration", self.manual_duration),
         )
         ttk.Spinbox(
             row2,
@@ -3632,6 +3748,9 @@ class DMDConverter:
             textvariable=self.manual_duration,
             width=10,
         ).pack(side=tk.LEFT)
+        # v101 -- aperçu refait après modification (vitesse toujours juste)
+        for var in (self.manual_fps, self.manual_duration, self.manual_scroll_speed):
+            var.trace_add("write", self._manual_schedule_regen)
         # Options boucle
         row3 = ttk.Frame(anim_frame)
         row3.pack(fill=tk.X, pady=2)
@@ -3910,7 +4029,7 @@ class DMDConverter:
         ttk.Label(row1, text="FPS:").pack(side=tk.LEFT)
         self.video_fps.trace_add(
             "write",
-            lambda *args: config_manager.set("video_fps", self.video_fps.get()),
+            lambda *args: _save_var("video_fps", self.video_fps),
         )
         ttk.Spinbox(
             row1, from_=1, to=60, textvariable=self.video_fps, width=6
@@ -4605,7 +4724,7 @@ class DMDConverter:
             return
         path = filedialog.askopenfilename(
             title=tr("t_select_video", "Sélectionner une vidéo"),
-            filetypes=[(tr("t_videos", "Vidéos"), "*.mp4 *.avi *.mov *.mkv")],
+            filetypes=[(tr("t_videos", "Vidéos"), " ".join("*" + e for e in VIDEO_EXTS))],
         )
         if path:
             self._video_load_from_path(path)
@@ -6211,7 +6330,7 @@ class DMDConverter:
 
             self.video_frame_idx = (self.video_frame_idx + 1) % len(self.video_frames)
             delay = int(1000 / self.video_fps.get())
-            self.root.after(delay, self.animate_video_preview)
+            self._anim_schedule("video", delay, self.animate_video_preview)
         except Exception:
             self.video_animating = False
 
@@ -6301,9 +6420,7 @@ class DMDConverter:
         self.text_font_size = tk.IntVar(value=config_manager.get("text_font_size", 20))
         self.text_font_size.trace_add(
             "write",
-            lambda *args: config_manager.set(
-                "text_font_size", self.text_font_size.get()
-            ),
+            lambda *args: _save_var("text_font_size", self.text_font_size),
         )
         ttk.Spinbox(
             row1, from_=8, to=48, textvariable=self.text_font_size, width=10
@@ -6421,7 +6538,7 @@ class DMDConverter:
         ttk.Label(row2, text="FPS:").pack(side=tk.LEFT)
         self.text_fps = tk.IntVar(value=config_manager.get("text_fps", 10))
         self.text_fps.trace_add(
-            "write", lambda *args: config_manager.set("text_fps", self.text_fps.get())
+            "write", lambda *args: _save_var("text_fps", self.text_fps)
         )
         ttk.Spinbox(row2, from_=1, to=60, textvariable=self.text_fps, width=10).pack(
             side=tk.LEFT, padx=5
@@ -6431,7 +6548,7 @@ class DMDConverter:
         self.text_speed = tk.IntVar(value=config_manager.get("text_speed", 2))
         self.text_speed.trace_add(
             "write",
-            lambda *args: config_manager.set("text_speed", self.text_speed.get()),
+            lambda *args: _save_var("text_speed", self.text_speed),
         )
         ttk.Spinbox(row2, from_=1, to=10, textvariable=self.text_speed, width=10).pack(
             side=tk.LEFT
@@ -6443,7 +6560,7 @@ class DMDConverter:
         )
         self.text_duration.trace_add(
             "write",
-            lambda *args: config_manager.set("text_duration", self.text_duration.get()),
+            lambda *args: _save_var("text_duration", self.text_duration),
         )
         ttk.Spinbox(
             row2,
@@ -6622,9 +6739,7 @@ class DMDConverter:
         self.default_colors = tk.IntVar(value=config_manager.get("default_colors", 256))
         self.default_colors.trace_add(
             "write",
-            lambda *args: config_manager.set(
-                "default_colors", self.default_colors.get()
-            ),
+            lambda *args: _save_var("default_colors", self.default_colors),
         )
         ttk.Combobox(
             quality_frame,
@@ -7257,12 +7372,12 @@ class DMDConverter:
         """Glisser-déposer de fichiers/dossiers sur la zone Images (tkinterdnd2).
         Un dossier déposé est scanné comme self.select_folder (toujours récursif) ;
         un fichier image est ajouté directement. Ajout additif comme les boutons
-        Dossier/Images. Un fichier vidéo (.mp4/.avi/.mov/.mkv) est routé vers
+        Dossier/Images. Un fichier vidéo (VIDEO_EXTS, v104) est routé vers
         l'onglet VIDEO (_video_load_from_path), quel que soit l'onglet actif au
         moment du dépôt — comportement déterministe basé sur l'extension plutôt
         que sur l'onglet visible."""
         image_exts = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".raw565"}
-        video_exts = {".mp4", ".avi", ".mov", ".mkv"}
+        video_exts = set(VIDEO_EXTS)
         paths = self.root.tk.splitlist(event.data)
 
         added_total = 0
@@ -7973,7 +8088,7 @@ class DMDConverter:
             self.preview_index = 0
             self.animating = True
             self.current_fps = fps
-            self.root.after(0, self.animate_preview)
+            self._anim_schedule("auto", 0, self.animate_preview)
         except Exception as e:
             self.ia_status_var.set(tr("t_preview_error", "❌ Erreur aperçu : {err}", err=e))
             logger.error(f"Erreur preview: {e}")
@@ -8006,7 +8121,7 @@ class DMDConverter:
 
             self.preview_index = (self.preview_index + 1) % len(self.preview_frames)
             delay = int(1000 / self.current_fps) if self.current_fps > 0 else 100
-            self.root.after(delay, self.animate_preview)
+            self._anim_schedule("auto", delay, self.animate_preview)
         except:
             self.animating = False
 
@@ -8146,8 +8261,10 @@ class DMDConverter:
         del_btn.pack(side=tk.LEFT, padx=(4, 0))
         add_help_tooltip(del_btn, "tooltip_profile_delete")
 
-        row2 = ttk.Frame(parent)
-        row2.pack(anchor=tk.W, pady=(2, 2), fill=tk.X)
+        # v95 -- options du profil sur la même ligne que la liste (hauteur de
+        # l'onglet AUTO : voir v95 dans l'en-tête)
+        row2 = row1
+        ttk.Frame(row2, width=24).pack(side=tk.LEFT)
         cfg = config_manager.get
         self.fill_ratio_on_var = tk.BooleanVar(value=cfg("fill_ratio_on", cur["fill_min_ratio"] is not None))
         self.fill_min_ratio_var = tk.DoubleVar(value=cfg("fill_min_ratio", cur["fill_min_ratio"] or _FILL_MIN_RATIO_DEFAULT))
@@ -8415,6 +8532,24 @@ class DMDConverter:
         cpu = os.cpu_count() or 1
         max_workers = max(min(4, cpu), min(12, cpu - 2), 1)
 
+        # v96 -- réglages du lot dans dmd_batch.json (les corrections proposées
+        # par Revoir refont le rendu avec les mêmes) ; jamais bloquant
+        batch_no = None
+        try:
+            batch_no = dmd_autofix.add_batch(output_dir_str, {
+                "date": datetime.datetime.now().isoformat(timespec="seconds"),
+                "input_dir": input_dir_str,
+                "profile": config_manager.get("profile", "generic"),
+                "batch_params": batch_params,
+                "locked": locked_settings is not None,
+                "add_anim_to_name": add_anim_to_name,
+                "color_count_fallback": color_count_fallback,
+                "loop_mode": loop_mode,
+                "loop_count": loop_count,
+            })
+        except Exception as e:
+            logger.error(f"Réglages du lot non écrits ({dmd_autofix.BATCH_FILE}) : {e}")
+
         pool = ProcessPoolExecutor(max_workers=max_workers)
         futures = {
             pool.submit(
@@ -8442,6 +8577,8 @@ class DMDConverter:
                 break
             img_path, ok, err, output_name, nframes, color_count, quality = future.result()
             if quality is not None:
+                if batch_no is not None:
+                    quality[1]["b"] = batch_no
                 quality_rows[quality[0]] = quality[1]
             completed += 1
             percent = int((completed / total) * 100)
@@ -8588,6 +8725,20 @@ class DMDConverter:
             filetypes=[("Images", "*.png *.jpg *.jpeg *.bmp *.gif *.raw565")]
         )
         if file_path:
+            self.review_target = None  # v97 : autre image, plus liée à Revoir
+            self._load_manual_from_path(file_path)
+
+    def _load_manual_from_path(self, file_path):
+        """v97 -- corps de load_manual_image, réutilisé par l'édition depuis Revoir."""
+        if file_path and getattr(self, "crop_mode", False):
+            self._crop_stop(None)  # v98 : cadre propre à l'image précédente
+        if file_path:  # v103 : zone propre à l'image précédente
+            self._zone_mode_stop()
+            self.manual_zone = None
+        if file_path and hasattr(self, "manual_zoom_text"):
+            self.manual_zoom = 1.0  # v99 : zoom propre à chaque image
+            self.manual_zoom_step(0, regenerate=False)
+        if file_path:
             self.manual_image = DMDEngine.ensure_rgb_on_black(DMDEngine.load_image(file_path))
             self.manual_original = self.manual_image.copy()
             self.manual_history = [self.manual_image.copy()]
@@ -8601,6 +8752,129 @@ class DMDConverter:
             self.display_manual_image()
             self.manual_status.set(tr("t_image_name", "Image : {name}", name=Path(file_path).name))
             logger.info(f"Image chargée: {Path(file_path).name}")
+
+    # --- v101 : boucles d'aperçu (une seule étape en attente par aperçu) ---------
+    def _anim_cancel(self, name):
+        job = self._anim_jobs.pop(name, None)
+        if job is not None:
+            try:
+                self.root.after_cancel(job)
+            except tk.TclError:
+                pass
+
+    def _anim_schedule(self, name, delay, fn):
+        """Programme la prochaine image de l'aperçu `name` ("auto", "manual",
+        "text", "video") en annulant celle déjà en attente : relancer un aperçu
+        (régénération, autre image) ne crée plus une 2e boucle parallèle qui
+        avançait les images en même temps (aperçu 2×, 3× trop rapide)."""
+        self._anim_cancel(name)
+        # cadence tenue sur l'horloge : le temps de dessin d'une image (rendu
+        # LED ~15 ms) est déduit du délai, sinon 15 i/s s'affichaient à ~12 i/s
+        now = time.perf_counter() * 1000.0
+        due = self._anim_due.get(name) if delay > 0 else None
+        due = now + delay if due is None or abs(due + delay - now) > 4 * delay + 250 else due + delay
+        self._anim_due[name] = due
+        self._anim_jobs[name] = self.root.after(max(1, int(round(due - now))), fn)
+
+    def _manual_schedule_regen(self, *_args):
+        """Champ FPS / durée / vitesse de MANUEL modifié : l'aperçu est refait
+        600 ms après la dernière frappe (s'il y en avait un, et pas pour un
+        morphing), pour que sa vitesse corresponde toujours aux réglages."""
+        if self._manual_regen_job is not None:
+            try:
+                self.root.after_cancel(self._manual_regen_job)
+            except tk.TclError:
+                pass
+        self._manual_regen_job = self.root.after(600, self._manual_regen_now)
+
+    def _manual_regen_now(self):
+        self._manual_regen_job = None
+        if not (self.manual_image is not None and self.manual_frames
+                and getattr(self, "_manual_frames_zoomable", False)):
+            return
+        try:  # saisie incomplète : on attend la suivante
+            if self.manual_fps.get() < 1 or self.manual_duration.get() <= 0 or self.manual_scroll_speed.get() < 1:
+                return
+        except (tk.TclError, ValueError):
+            return
+        self.generate_manual_animation()
+
+    _MANUAL_ZOOM_STEPS = (0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0)
+
+    def manual_zoom_step(self, step, regenerate=True):
+        """v99 -- zoom de l'animation MANUEL : palier suivant (+1), précédent
+        (-1) ou retour à 100 % (0) ; l'aperçu est régénéré s'il existait."""
+        steps = self._MANUAL_ZOOM_STEPS
+        cur = min(range(len(steps)), key=lambda i: abs(steps[i] - self.manual_zoom))
+        idx = steps.index(1.0) if step == 0 else max(0, min(len(steps) - 1, cur + step))
+        self.manual_zoom = steps[idx]
+        self.manual_zoom_text.set(tr("t_manual_zoom", "Zoom : {p} %", p=round(self.manual_zoom * 100)))
+        logger.info(f"Zoom MANUEL : {round(self.manual_zoom * 100)} %")
+        if (regenerate and self.manual_image is not None and self.manual_frames
+                and getattr(self, "_manual_frames_zoomable", False)):
+            self.generate_manual_animation()
+
+    def edit_from_review(self, folder, rel, src, review=None, timing=None):
+        """v97 -- "✎ Éditer dans MANUEL" (fenêtre Revoir) : charge la source du
+        GIF dans l'onglet MANUEL, reprend le rythme du GIF (FPS, durée, boucle
+        du lot : `timing`, choix utilisateur) ; l'export proposera de
+        remplacer ce GIF."""
+        self._load_manual_from_path(src)
+        timing = timing or {}
+        for key, var in (("fps", self.manual_fps), ("duration", self.manual_duration),
+                         ("scroll_speed", self.manual_scroll_speed),
+                         ("loop_mode", self.manual_loop_mode), ("loop_count", self.manual_loop_count)):
+            if timing.get(key) is not None:
+                var.set(timing[key])
+        self.review_target = {"folder": str(folder), "rel": rel, "review": review}
+        self.notebook.select(self.notebook.tabs()[1])
+        self.manual_status.set(tr("t_review_edit_status", "Image : {name} — l'export remplacera {rel} (Revoir)",
+                                  name=Path(src).name, rel=rel))
+        self.root.lift()
+        logger.info(f"Revoir : édition manuelle de {rel} (source {src})")
+
+    def _export_to_review(self, fps):
+        """v97 -- export MANUEL qui remplace le GIF du lot ouvert dans Revoir.
+        Renvoie True si fait (ou refusé par erreur signalée), None si
+        l'utilisateur préfère enregistrer ailleurs, False s'il annule."""
+        t = self.review_target
+        choice = messagebox.askyesnocancel(
+            lang_manager.get("confirmation", "Confirmation"),
+            tr("t_review_edit_replace",
+               "Remplacer {rel} dans le dossier du lot ?\n\nOui : l'original est mis de côté dans {dir} "
+               "(jamais supprimé).\nNon : enregistrer ailleurs.",
+               rel=t["rel"], dir=os.path.join(dq.REVIEW_DIR, dmd_autofix.BEFORE_DIR)),
+        )
+        if choice is None:
+            return False
+        if not choice:
+            return None
+        target = os.path.join(t["folder"], *t["rel"].split("/"))
+        tmp = target + ".manuel_tmp.gif"
+        try:
+            export_frames_to_gif(self.manual_frames, tmp, fps=fps, color_count=self.color_count_var.get(),
+                                 loop_mode=self.manual_loop_mode.get(), loop_count=self.manual_loop_count.get(),
+                                 disposal=2, optimize=False)
+            q = dq.evaluate_frames(self.manual_frames, int(1000 / max(1, fps))).to_dict()
+            before, bak = review_replace_gif(t["folder"], t["rel"], tmp, q, "manual")
+        except Exception as e:
+            if os.path.exists(tmp):
+                os.remove(tmp)  # export temporaire non utilisé
+            messagebox.showerror(lang_manager.get("error", "Erreur"), f"{lang_manager.get('err_export', 'Erreur export')}: {e}")
+            logger.error(f"Revoir : remplacement manuel de {t['rel']} impossible : {e}")
+            return True
+        rw = t.get("review")
+        if rw is not None:
+            try:
+                if rw.win.winfo_exists() and os.path.normcase(rw.folder) == os.path.normcase(t["folder"]):
+                    rw.after_external_replace(t["rel"])
+            except tk.TclError:
+                pass
+        messagebox.showinfo(lang_manager.get("success", "Succès"),
+                            tr("t_review_edit_done", "{rel} remplacé : {before} → {score}.\nOriginal : {bak}",
+                               rel=t["rel"], before=before, score=q["score"], bak=bak))
+        logger.info(f"Revoir : {t['rel']} remplacé par l'export MANUEL, {before} → {q['score']}, original : {bak}")
+        return True
 
     def display_manual_image(self):
         """Affiche l'image dans le canvas manuel"""
@@ -8617,6 +8891,10 @@ class DMDConverter:
         self.manual_preview = ImageTk.PhotoImage(img_display)
         self.manual_canvas.delete("all")
         self.manual_canvas.create_image(320, 160, image=self.manual_preview)
+        if getattr(self, "crop_mode", False):  # v98 : cadre de recadrage redessiné
+            self.crop_preview_rect = None
+            self._crop_draw()
+        self._zone_draw()  # v103 : zone d'effets toujours visible
         self.update_manual_info()
 
     def apply_manual_effect(self):
@@ -8624,7 +8902,12 @@ class DMDConverter:
         if self.manual_image is None or not self.manual_history:
             return
 
-        base_img = self.manual_history[0].copy()
+        # v103 : partir de l'état courant de l'historique (partait de
+        # manual_history[0], l'image chargée : toucher un curseur annulait
+        # recadrage, filtres, remplissages…). Les réglages sont intégrés à la
+        # prochaine action permanente (_manual_commit_history).
+        committed = self.manual_history[self.manual_history_index]
+        base_img = committed.copy()
 
         if self.manual_brightness.get() != 1.0:
             enhancer = ImageEnhance.Brightness(base_img)
@@ -8642,7 +8925,7 @@ class DMDConverter:
             enhancer = ImageEnhance.Sharpness(base_img)
             base_img = enhancer.enhance(self.manual_sharpness.get())
 
-        self.manual_image = base_img
+        self.manual_image = self._manual_zone_merge(committed, base_img)  # v103 : zone
         self.display_manual_image()
 
     def apply_filter(self, filter_name):
@@ -8658,38 +8941,35 @@ class DMDConverter:
             "details+": ImageFilter.DETAIL,
         }
 
+        point_ops = {
+            "inverser": ImageOps.invert,
+            "miroir_h": ImageOps.mirror,
+            "miroir_v": ImageOps.flip,
+            "n&b": lambda im: ImageOps.grayscale(im).convert("RGB"),
+            "posteriser": lambda im: ImageOps.posterize(im, 4),
+            "solariser": lambda im: ImageOps.solarize(im, threshold=128),
+            "egaliser": ImageOps.equalize,
+            "auto-contraste": ImageOps.autocontrast,
+        }
+        img = self.manual_image
+        zone = self.manual_zone
         if filter_name in filters_map:
             f = filters_map[filter_name]
-            self.manual_image = self.manual_image.filter(f() if callable(f) else f)
-        elif filter_name == "inverser":
-            self.manual_image = ImageOps.invert(self.manual_image)
-        elif filter_name == "miroir_h":
-            self.manual_image = ImageOps.mirror(self.manual_image)
-        elif filter_name == "miroir_v":
-            self.manual_image = ImageOps.flip(self.manual_image)
+            # v103 : filtre de voisinage calculé sur toute l'image (pas d'effet de
+            # bord au contour de la zone), seul l'intérieur de la zone est gardé
+            self.manual_image = self._manual_zone_merge(img, img.filter(f() if callable(f) else f))
+        elif filter_name in point_ops:
+            if zone:  # v103 : appliqué au seul contenu de la zone (miroir, égaliser… de la zone)
+                out = img.copy()
+                out.paste(point_ops[filter_name](img.crop(tuple(zone))), (zone[0], zone[1]))
+                self.manual_image = out
+            else:
+                self.manual_image = point_ops[filter_name](img)
         elif filter_name == "rotation_90":
-            self.manual_image = self.manual_image.rotate(90, expand=True)
-        elif filter_name == "n&b":
-            self.manual_image = ImageOps.grayscale(self.manual_image).convert("RGB")
-        elif filter_name == "posteriser":
-            self.manual_image = ImageOps.posterize(self.manual_image, 4)
-        elif filter_name == "solariser":
-            self.manual_image = ImageOps.solarize(self.manual_image, threshold=128)
-        elif filter_name == "egaliser":
-            self.manual_image = ImageOps.equalize(self.manual_image)
-        elif filter_name == "auto-contraste":
-            self.manual_image = ImageOps.autocontrast(self.manual_image)
-
-        elif filter_name == "resize_+":
-            w, h = self.manual_image.size
-            self.manual_image = self.manual_image.resize(
-                (int(w * 1.2), int(h * 1.2)), Image.Resampling.LANCZOS
-            )
-        elif filter_name == "resize_-":
-            w, h = self.manual_image.size
-            self.manual_image = self.manual_image.resize(
-                (int(w * 0.8), int(h * 0.8)), Image.Resampling.LANCZOS
-            )
+            # toujours toute l'image (changerait les dimensions de la zone)
+            self.manual_image = img.rotate(90, expand=True)
+            self._manual_zone_clear(quiet=True)
+        # v99 : resize_+ / resize_- retirés, remplacés par manual_zoom_step
 
         self._manual_commit_history()
         self.display_manual_image()
@@ -8710,12 +8990,22 @@ class DMDConverter:
         self.manual_history = self.manual_history[: self.manual_history_index + 1]
         self.manual_history.append(self.manual_image.copy())
         self.manual_history_index = len(self.manual_history) - 1
+        # v103 : l'action a été faite sur l'image affichée, curseurs compris :
+        # leurs réglages sont désormais intégrés, ils reviennent à 1,00
+        self._manual_reset_sliders()
+
+    def _manual_reset_sliders(self):
+        for name in ("manual_brightness", "manual_contrast", "manual_saturation", "manual_sharpness"):
+            var = getattr(self, name, None)
+            if var is not None:
+                var.set(1.0)
 
     def manual_undo(self):
         """Annule la dernière action (incrémental, voir manual_redo)."""
         if self.manual_history_index > 0:
             self.manual_history_index -= 1
             self.manual_image = self.manual_history[self.manual_history_index].copy()
+            self._manual_reset_sliders()  # v103 : réglages non intégrés abandonnés
             self.display_manual_image()
             self.manual_status.set(tr("t_undo_done", "Annulation effectuée"))
             logger.info("Annulation")
@@ -8729,6 +9019,7 @@ class DMDConverter:
         if self.manual_history_index < len(self.manual_history) - 1:
             self.manual_history_index += 1
             self.manual_image = self.manual_history[self.manual_history_index].copy()
+            self._manual_reset_sliders()  # v103 : réglages non intégrés abandonnés
             self.display_manual_image()
             self.manual_status.set(tr("t_redo_done", "Rétablissement effectué"))
             logger.info("Rétablissement (redo)")
@@ -8739,6 +9030,7 @@ class DMDConverter:
 
     def toggle_fill_mode(self):
         """Active/désactive le mode remplissage"""
+        self._zone_mode_stop()  # v103 : le clic sert au remplissage, plus à la zone
         self.fill_mode = not self.fill_mode
         self.eraser_mode = False
 
@@ -8756,6 +9048,7 @@ class DMDConverter:
 
     def toggle_eraser_mode(self):
         """Active/désactive la gomme magique"""
+        self._zone_mode_stop()  # v103 : le clic sert à la gomme, plus à la zone
         self.eraser_mode = not self.eraser_mode
         self.fill_mode = False
 
@@ -8956,8 +9249,11 @@ class DMDConverter:
             )
             return
 
+        # v101 : l'étape d'animation en attente est annulée (_anim_schedule) ;
+        # l'ancien time.sleep(0.1) ne l'empêchait pas de repartir en parallèle
+        # de la nouvelle boucle (aperçu 2×, 3× trop rapide après chaque régénération)
+        self._anim_cancel("manual")
         self.manual_animating = False
-        time.sleep(0.1)
 
         try:
             anim_type = self.manual_anim_type.get()
@@ -8974,7 +9270,15 @@ class DMDConverter:
                 "auto",
                 pixel_perfect=self.pixel_perfect_var.get(),
             )
+            # v99 -- zoom de l'animation, appliqué après le calcul 128×32
+            zoom = getattr(self, "manual_zoom", 1.0)
+            if abs(zoom - 1.0) > 1e-6:
+                new_w, new_h = max(1, round(new_w * zoom)), max(1, round(new_h * zoom))
+                resample = (Image.Resampling.NEAREST if self.pixel_perfect_var.get()
+                            else Image.Resampling.LANCZOS)
+                img_resized = img_resized.resize((new_w, new_h), resample)
 
+            self._manual_frames_zoomable = True  # v99 : frames d'animation, le zoom peut les refaire
             # Générer frames selon type
             if anim_type == "scroll":
                 self.manual_frames = ManualEffects.scroll_effect(
@@ -9096,10 +9400,11 @@ class DMDConverter:
 
             self.manual_frame_idx = 0
             self.manual_animating = True
+            self._manual_frames_fps = fps
             self.manual_preview_status.set(
                 f"Animation: {len(self.manual_frames)} frames @ {fps} FPS"
             )
-            self.root.after(0, self.animate_manual_preview)
+            self._anim_schedule("manual", 0, self.animate_manual_preview)
 
             logger.info(
                 f"Animation générée: {anim_type}, {len(self.manual_frames)} frames"
@@ -9141,8 +9446,10 @@ class DMDConverter:
             self.manual_frame_idx = (self.manual_frame_idx + 1) % len(
                 self.manual_frames
             )
-            delay = int(1000 / self.manual_fps.get())
-            self.root.after(delay, self.animate_manual_preview)
+            # v101 : cadence des images générées (pas le champ FPS en cours de saisie)
+            fps = self._manual_frames_fps or self.manual_fps.get()
+            delay = int(1000 / max(1, fps))
+            self._anim_schedule("manual", delay, self.animate_manual_preview)
         except:
             self.manual_animating = False
 
@@ -9155,6 +9462,15 @@ class DMDConverter:
             )
             return
 
+        # v101 : cadence avec laquelle les images ont été générées (le champ FPS
+        # a pu changer depuis, ou être en cours de saisie)
+        frames_fps = self._manual_frames_fps or self.manual_fps.get()
+
+        if self.review_target is not None:  # v97 : édition lancée depuis Revoir
+            done = self._export_to_review(frames_fps)
+            if done is not None:
+                return
+
         file_path = filedialog.asksaveasfilename(
             defaultextension=".gif", filetypes=[("GIF", "*.gif")]
         )
@@ -9163,7 +9479,7 @@ class DMDConverter:
             return
 
         try:
-            fps = self.manual_fps.get()
+            fps = frames_fps
             color_count = self.color_count_var.get()
 
             export_frames_to_gif(
@@ -9319,7 +9635,7 @@ class DMDConverter:
                 tr("t_text_gif_info", "Durée : {dur:.1f}s | Taille estimée : {size:.1f} KB", dur=duration, size=estimated_size)
             )
 
-            self.root.after(0, self.animate_text_preview)
+            self._anim_schedule("text", 0, self.animate_text_preview)
             logger.info(f"Texte animé: {anim_type}, {total_frames} frames")
 
         except Exception as e:
@@ -9357,7 +9673,7 @@ class DMDConverter:
 
             self.text_frame_idx = (self.text_frame_idx + 1) % len(self.text_frames)
             delay = int(1000 / self.text_fps.get())
-            self.root.after(delay, self.animate_text_preview)
+            self._anim_schedule("text", delay, self.animate_text_preview)
         except:
             self.text_animating = False
 
@@ -9563,112 +9879,289 @@ class DMDConverter:
             )
             return
 
-        self.crop_mode = not self.crop_mode
+        if self.crop_mode:  # 2e clic sur le bouton : annule
+            self._crop_stop(tr("t_crop_off", "Recadrage désactivé"))
+            return
+        self._zone_mode_stop()  # v103 : un seul mode souris à la fois
 
+        # v98 -- cadre 4:1 posé d'emblée, à DÉPLACER (demande utilisateur : le
+        # tracer à la main n'était pas précis). Taille par défaut 128×32 px de
+        # l'image = 1 pixel par LED ; molette = taille (ratio 4:1 gardé),
+        # flèches = 1 px (Maj : 10 px), double-clic ou Entrée = appliquer,
+        # Échap = annuler. Coordonnées tenues en pixels de l'image.
+        self.crop_mode = True
+        self.fill_mode = False
+        self.eraser_mode = False
+        self.fill_btn.config(text=tr("fill", "🎨 Remplissage"))
+        self.eraser_btn.config(text=tr("eraser", "🧹 Gomme Magique"))
+        w, h = self.manual_image.size
+        cw = min(128, w, 4 * h)
+        ch = max(1, cw // 4)
+        cw = ch * 4
+        self.crop_box = [(w - cw) // 2, (h - ch) // 2, cw, ch]
+        self.crop_start = None
+        c = self.manual_canvas
+        c.config(cursor="fleur")
+        c.unbind("<Button-1>")
+        c.bind("<ButtonPress-1>", self.on_crop_start)
+        c.bind("<B1-Motion>", self.on_crop_drag)
+        c.bind("<ButtonRelease-1>", self.on_crop_end)
+        c.bind("<Double-Button-1>", lambda e: self._crop_apply())
+        c.bind("<MouseWheel>", self._crop_wheel)
+        c.bind("<Return>", lambda e: self._crop_apply())
+        c.bind("<Escape>", lambda e: self._crop_stop(tr("t_crop_off", "Recadrage désactivé")))
+        for key, dx, dy in (("Left", -1, 0), ("Right", 1, 0), ("Up", 0, -1), ("Down", 0, 1)):
+            c.bind(f"<{key}>", lambda e, dx=dx, dy=dy: self._crop_nudge(dx, dy, 1))
+            c.bind(f"<Shift-{key}>", lambda e, dx=dx, dy=dy: self._crop_nudge(dx, dy, 10))
+        c.focus_set()
+        self._crop_draw()
+        logger.info("Crop mode ON")
+
+    # --- v103 : zone d'effets ----------------------------------------------------
+    def _manual_zone_merge(self, base, effected):
+        """Image `base` dont seule la zone reçoit le contenu de `effected`
+        (même taille) ; sans zone, `effected` tel quel."""
+        z = self.manual_zone
+        if not z or base.size != effected.size:
+            return effected
+        out = base.copy()
+        out.paste(effected.crop(tuple(z)), (z[0], z[1]))
+        return out
+
+    def toggle_zone_mode(self):
+        if self.manual_image is None:
+            messagebox.showwarning(lang_manager.get("warning", "Attention"),
+                                   lang_manager.get("load_one_image_first_warning", "Chargez une image d'abord"))
+            return
+        if self.zone_mode:
+            self._zone_mode_stop()
+            return
         if self.crop_mode:
-            self.fill_mode = False
-            self.eraser_mode = False
+            self._crop_stop(None)
+        if self.fill_mode or self.eraser_mode:
+            self.fill_mode = self.eraser_mode = False
             self.fill_btn.config(text=tr("fill", "🎨 Remplissage"))
             self.eraser_btn.config(text=tr("eraser", "🧹 Gomme Magique"))
+        self.zone_mode = True
+        c = self.manual_canvas
+        c.config(cursor="tcross")
+        c.unbind("<Button-1>")
+        c.bind("<ButtonPress-1>", self._zone_press)
+        c.bind("<B1-Motion>", self._zone_motion)
+        c.bind("<ButtonRelease-1>", self._zone_release)
+        c.bind("<Escape>", lambda e: self._zone_mode_stop())
+        c.focus_set()
+        self.zone_btn.config(text=tr("t_zone_btn_active", "▭ Zone (ACTIF)"))
+        self._zone_draw()
 
-            self.manual_canvas.config(cursor="crosshair")
-            self.manual_canvas.unbind("<Button-1>")
-            self.manual_canvas.bind("<ButtonPress-1>", self.on_crop_start)
-            self.manual_canvas.bind("<B1-Motion>", self.on_crop_drag)
-            self.manual_canvas.bind("<ButtonRelease-1>", self.on_crop_end)
-            self.manual_status.set(
-                "Mode crop: tracez un rectangle (ratio 4:1 automatique)"
-            )
-            logger.info("Crop mode ON")
+    def _zone_mode_stop(self):
+        if not self.zone_mode:
+            return
+        self.zone_mode = False
+        self._zone_drag = None
+        c = self.manual_canvas
+        for seq in ("<ButtonPress-1>", "<B1-Motion>", "<ButtonRelease-1>", "<Escape>"):
+            c.unbind(seq)
+        c.bind("<Button-1>", self.on_manual_click)
+        c.config(cursor="arrow")
+        self.zone_btn.config(text=tr("t_zone_btn", "▭ Zone"))
+        self._zone_draw()
+
+    def _manual_zone_clear(self, quiet=False):
+        had = self.manual_zone is not None
+        self.manual_zone = None
+        if had and not quiet:
+            self.apply_manual_effect()  # réglages en cours : de nouveau sur toute l'image
+        self._zone_draw()
+        if had:
+            self.manual_status.set(tr("t_zone_cleared", "Zone effacée : effets sur toute l'image"))
+
+    def _zone_img_xy(self, event):
+        s, ox, oy = self._crop_geom()
+        w, h = self.manual_image.size
+        return (max(0, min(w, int(round((event.x - ox) / s)))),
+                max(0, min(h, int(round((event.y - oy) / s)))))
+
+    def _zone_press(self, event):
+        x, y = self._zone_img_xy(event)
+        z = self.manual_zone
+        if z and z[0] <= x <= z[2] and z[1] <= y <= z[3]:
+            self._zone_drag = ("move", x - z[0], y - z[1])  # clic dans la zone : on la déplace
         else:
-            self.manual_canvas.config(cursor="arrow")
-            self.manual_canvas.unbind("<ButtonPress-1>")
-            self.manual_canvas.unbind("<B1-Motion>")
-            self.manual_canvas.unbind("<ButtonRelease-1>")
-            self.manual_canvas.bind("<Button-1>", self.on_manual_click)
-            if self.crop_preview_rect:
-                self.manual_canvas.delete(self.crop_preview_rect)
-                self.crop_preview_rect = None
-            self.manual_status.set(tr("t_crop_off", "Recadrage désactivé"))
-            logger.info("Crop mode OFF")
+            self._zone_drag = ("new", x, y)  # clic dehors : nouvelle zone tracée
+
+    def _zone_motion(self, event):
+        if not self._zone_drag:
+            return
+        x, y = self._zone_img_xy(event)
+        w, h = self.manual_image.size
+        kind, a, b = self._zone_drag
+        if kind == "move":
+            z = self.manual_zone
+            zw, zh = z[2] - z[0], z[3] - z[1]
+            nx, ny = max(0, min(w - zw, x - a)), max(0, min(h - zh, y - b))
+            self.manual_zone = [nx, ny, nx + zw, ny + zh]
+        else:
+            self.manual_zone = [min(a, x), min(b, y), max(a, x), max(b, y)]
+        self._zone_draw()
+
+    def _zone_release(self, event):
+        if not self._zone_drag:
+            return
+        self._zone_motion(event)
+        self._zone_drag = None
+        z = self.manual_zone
+        if z and (z[2] - z[0] < 2 or z[3] - z[1] < 2):
+            self.manual_zone = None  # simple clic hors zone : zone effacée
+        self.apply_manual_effect()  # les réglages en cours suivent la zone
+        self._zone_draw()
+
+    def _zone_draw(self):
+        c = self.manual_canvas
+        c.delete("zone")
+        z = self.manual_zone
+        if self.manual_image is None:
+            return
+        if z and (z[2] > self.manual_image.size[0] or z[3] > self.manual_image.size[1]):
+            self.manual_zone = z = None  # image changée (annuler, rotation…)
+        if z:
+            s, ox, oy = self._crop_geom()
+            c.create_rectangle(ox + z[0] * s, oy + z[1] * s, ox + z[2] * s, oy + z[3] * s,
+                               outline="#00e5ff", width=2, dash=(4, 3), tags="zone")
+            t = c.create_text(ox + z[0] * s + 3, oy + z[1] * s + 2, anchor="nw", fill="#00e5ff",
+                              font=("Segoe UI", 8), tags="zone",
+                              text=tr("t_zone_label", "Zone {w}×{h}", w=z[2] - z[0], h=z[3] - z[1]))
+            bx = c.bbox(t)
+            c.tag_lower(c.create_rectangle(bx[0] - 2, bx[1] - 1, bx[2] + 2, bx[3] + 1, fill="#101010",
+                                           outline="", tags="zone"), t)
+        if self.zone_mode:
+            text = tr("t_zone_hint", "Zone : tracez un rectangle (glisser), glissez dedans pour le déplacer ; "
+                                     "curseurs et filtres ne touchent que la zone. Échap ou ▭ Zone = terminer")
+            t = c.create_text(6, 4, text=text, anchor="nw", fill="white", width=628,
+                              font=("Segoe UI", 9), tags="zone")
+            bx = c.bbox(t)
+            c.tag_lower(c.create_rectangle(bx[0] - 3, bx[1] - 2, bx[2] + 3, bx[3] + 2, fill="#202020",
+                                           outline="#505050", tags="zone"), t)
+
+    def _crop_geom(self):
+        """(échelle, décalage x, décalage y) de l'image dans le canvas 640×320
+        (même calcul que display_manual_image)."""
+        w, h = self.manual_image.size
+        s = min(640 / w, 320 / h)
+        return s, (640 - int(w * s)) // 2, (320 - int(h * s)) // 2
+
+    def _crop_clamp(self):
+        w, h = self.manual_image.size
+        b = self.crop_box
+        if b[2] > w or b[3] > h:  # image changée (annuler/rétablir) : cadre réduit
+            b[3] = max(1, min(h, w // 4))
+            b[2] = b[3] * 4
+        b[0] = max(0, min(b[0], w - b[2]))
+        b[1] = max(0, min(b[1], h - b[3]))
+
+    def _crop_draw(self):
+        self._crop_clamp()
+        s, ox, oy = self._crop_geom()
+        x, y, cw, ch = self.crop_box
+        c = self.manual_canvas
+        if self.crop_preview_rect:
+            c.delete(self.crop_preview_rect)
+        c.delete("crop_hint")
+        self.crop_preview_rect = c.create_rectangle(
+            ox + x * s, oy + y * s, ox + (x + cw) * s, oy + (y + ch) * s, outline="red", width=2, dash=(5, 5)
+        )
+        per_led = cw / 128.0
+        text = tr(
+            "t_crop_status",
+            "Cadre {w}×{h} px ({k} px par LED) en ({x}, {y}) — glisser pour déplacer, molette = taille, "
+            "flèches = 1 px (Maj : 10), double-clic ou Entrée = appliquer, Échap = annuler",
+            w=cw, h=ch, k=f"{per_led:.2f}".rstrip("0").rstrip("."), x=x, y=y)
+        self.manual_status.set(text)
+        # le libellé d'état est sous le canvas, hors de la fenêtre sur un écran
+        # de 1080 px : l'aide du cadre est aussi écrite en haut du canvas
+        t = c.create_text(6, 4, text=text, anchor="nw", fill="white", width=628,
+                          font=("Segoe UI", 9), tags="crop_hint")
+        bx = c.bbox(t)
+        c.tag_lower(c.create_rectangle(bx[0] - 3, bx[1] - 2, bx[2] + 3, bx[3] + 2, fill="#202020",
+                                       outline="#505050", tags="crop_hint"), t)
+        c.tag_raise(self.crop_preview_rect)  # le cadre reste visible, même tout en haut
 
     def on_crop_start(self, event):
-        """Début sélection crop"""
-        self.crop_start = (event.x, event.y)
-        if self.crop_preview_rect:
-            self.manual_canvas.delete(self.crop_preview_rect)
+        """Prise du cadre : clic dedans = on le déplace ; clic dehors = il est
+        centré sur le point cliqué."""
+        s, ox, oy = self._crop_geom()
+        ix, iy = (event.x - ox) / s, (event.y - oy) / s
+        x, y, cw, ch = self.crop_box
+        if not (x <= ix <= x + cw and y <= iy <= y + ch):
+            self.crop_box[0], self.crop_box[1] = int(round(ix - cw / 2)), int(round(iy - ch / 2))
+            self._crop_clamp()
+        self.crop_start = (ix - self.crop_box[0], iy - self.crop_box[1])
+        self.manual_canvas.focus_set()
+        self._crop_draw()
 
     def on_crop_drag(self, event):
-        """Drag sélection crop avec ratio 4:1"""
-        if self.crop_start:
-            if self.crop_preview_rect:
-                self.manual_canvas.delete(self.crop_preview_rect)
-
-            x1, y1 = self.crop_start
-            width = abs(event.x - x1)
-            height = width / 4  # Ratio fixe 128:32
-
-            x2 = x1 + width if event.x > x1 else x1 - width
-            y2 = y1 + height if event.y > y1 else y1 - height
-
-            self.crop_preview_rect = self.manual_canvas.create_rectangle(
-                x1, y1, x2, y2, outline="red", width=2, dash=(5, 5)
-            )
+        if not self.crop_start:
+            return
+        s, ox, oy = self._crop_geom()
+        ix, iy = (event.x - ox) / s, (event.y - oy) / s
+        self.crop_box[0] = int(round(ix - self.crop_start[0]))
+        self.crop_box[1] = int(round(iy - self.crop_start[1]))
+        self._crop_clamp()
+        self._crop_draw()
 
     def on_crop_end(self, event):
-        """Fin sélection crop - applique le crop"""
-        if not self.crop_start or not self.manual_image:
-            return
+        self.crop_start = None  # le cadre reste en place ; appliquer = double-clic/Entrée
 
-        # Convertir coords canvas → image
+    def _crop_wheel(self, event):
         w, h = self.manual_image.size
-        scale = min(640 / w, 320 / h)
-        display_w, display_h = int(w * scale), int(h * scale)
-        offset_x = (640 - display_w) // 2
-        offset_y = (320 - display_h) // 2
+        x, y, cw, ch = self.crop_box
+        step = 1.1 if event.delta > 0 else 1 / 1.1
+        new_ch = int(round(ch * step))
+        if new_ch == ch:
+            new_ch = ch + (1 if event.delta > 0 else -1)
+        new_ch = max(2, min(new_ch, h, w // 4))
+        new_cw = new_ch * 4
+        cx, cy = x + cw / 2, y + ch / 2
+        self.crop_box = [int(round(cx - new_cw / 2)), int(round(cy - new_ch / 2)), new_cw, new_ch]
+        self._crop_clamp()
+        self._crop_draw()
 
-        x1 = int((self.crop_start[0] - offset_x) / scale)
-        y1 = int((self.crop_start[1] - offset_y) / scale)
-        x2 = int((event.x - offset_x) / scale)
-        y2 = int((event.y - offset_y) / scale)
+    def _crop_nudge(self, dx, dy, n):
+        self.crop_box[0] += dx * n
+        self.crop_box[1] += dy * n
+        self._crop_clamp()
+        self._crop_draw()
+        return "break"
 
-        # Normaliser
-        x1, x2 = min(x1, x2), max(x1, x2)
-        y1, y2 = min(y1, y2), max(y1, y2)
-
-        # Forcer ratio 4:1
-        crop_w = x2 - x1
-        crop_h = int(crop_w / 4)
-
-        # Limiter aux bords
-        x1 = max(0, x1)
-        y1 = max(0, y1)
-        x2 = min(w, x1 + crop_w)
-        y2 = min(h, y1 + crop_h)
-
-        if x2 - x1 < 10 or y2 - y1 < 10:
-            messagebox.showwarning(
-                lang_manager.get("warning", "Attention"), lang_manager.get("zone_too_small", "Zone trop petite")
-            )
-            self.manual_canvas.delete(self.crop_preview_rect)
-            self.crop_preview_rect = None
-            self.crop_start = None
+    def _crop_apply(self):
+        if not self.crop_mode or self.manual_image is None:
             return
-
-        # Appliquer crop
-        self.manual_image = self.manual_image.crop((x1, y1, x2, y2))
+        x, y, cw, ch = self.crop_box
+        self.manual_image = self.manual_image.crop((x, y, x + cw, y + ch))
+        self.manual_zone = None  # v103 : coordonnées de la zone invalides après recadrage
         self._manual_commit_history()
-
+        self._crop_stop(None)
         self.display_manual_image()
-        self.manual_canvas.delete(self.crop_preview_rect)
-        self.crop_preview_rect = None
+        self.manual_status.set(tr("t_crop_applied", "Recadrage appliqué : {w}×{h}px", w=cw, h=ch))
+        logger.info(f"Crop: {cw}×{ch} en ({x}, {y})")
+
+    def _crop_stop(self, message):
+        c = self.manual_canvas
+        for seq in ("<ButtonPress-1>", "<B1-Motion>", "<ButtonRelease-1>", "<Double-Button-1>", "<MouseWheel>",
+                    "<Return>", "<Escape>", "<Left>", "<Right>", "<Up>", "<Down>",
+                    "<Shift-Left>", "<Shift-Right>", "<Shift-Up>", "<Shift-Down>"):
+            c.unbind(seq)
+        c.bind("<Button-1>", self.on_manual_click)
+        c.config(cursor="arrow")
+        if self.crop_preview_rect:
+            c.delete(self.crop_preview_rect)
+            self.crop_preview_rect = None
+        c.delete("crop_hint")
         self.crop_start = None
         self.crop_mode = False
-        self.manual_canvas.config(cursor="arrow")
-        self.manual_canvas.bind("<Button-1>", self.on_manual_click)
-
-        self.manual_status.set(tr("t_crop_applied", "Recadrage appliqué : {w}×{h}px", w=x2 - x1, h=y2 - y1))
-        logger.info(f"Crop: {x2-x1}×{y2-y1}")
+        if message:
+            self.manual_status.set(message)
+            logger.info("Crop mode OFF")
 
     # ========================================================================
     # NOUVELLES MÉTHODES - SÉLECTION AUTO
@@ -9764,6 +10257,7 @@ class DMDConverter:
             transition_frames = int(fps * 1.0)  # 1 seconde par transition
 
             self.manual_frames = []
+            self._manual_frames_zoomable = False  # v99 : morphing, le zoom ne le refait pas
 
             # Redimensionner toutes les images à la même taille
             target_size = self.multi_images[0].size
@@ -9810,7 +10304,8 @@ class DMDConverter:
             # Lancer animation
             self.manual_frame_idx = 0
             self.manual_animating = True
-            self.animate_manual_preview()
+            self._manual_frames_fps = fps  # v101 : cadence de ces images
+            self._anim_schedule("manual", 0, self.animate_manual_preview)
 
             self.manual_preview_status.set(
                 tr("t_morph_status", "Morphing : {frames} frames, {images} images",
@@ -10474,6 +10969,38 @@ class ProfileEditor:
         self.app._on_profile_selected()
 
 
+def review_replace_gif(folder, rel, new_path, quality, code):
+    """v97 -- remplace le GIF `rel` d'un dossier de lot par `new_path` :
+    l'original part dans _a_revoir/_avant_correction/ (jamais supprimé,
+    suffixe _2, _3… si une version y est déjà), l'index garde la nouvelle
+    note, fixed=code et score_before (note d'origine, conservée d'une
+    correction à l'autre). Renvoie (note d'origine, chemin de l'original).
+    Commun aux corrections acceptées et à l'édition MANUEL depuis Revoir."""
+    orig = os.path.join(folder, *rel.split("/"))
+    bak = os.path.join(folder, dq.REVIEW_DIR, dmd_autofix.BEFORE_DIR, *rel.split("/"))
+    if os.path.exists(bak):
+        stem, ext = os.path.splitext(bak)
+        n = 2
+        while os.path.exists(f"{stem}_{n}{ext}"):
+            n += 1
+        bak = f"{stem}_{n}{ext}"
+    os.makedirs(os.path.dirname(bak), exist_ok=True)
+    shutil.move(orig, bak)
+    try:
+        shutil.move(new_path, orig)
+    except Exception:
+        shutil.move(bak, orig)  # remet l'original en place
+        raise
+    rows = dq.load_index(folder)
+    row = rows.get(rel, {})
+    before = row.get("score_before", row.get("score"))
+    row.update(score=quality["score"], rating=quality["rating"], color=quality["color"],
+               reasons=quality["reasons"], fixed=code, score_before=before)
+    rows[rel] = row
+    dq.save_index(folder, rows)
+    return before, bak
+
+
 class ReviewWindow:
     """v88 -- fenêtre "Revoir" : GIF d'un dossier de sortie triés du pire au
     meilleur selon dmd_scores.json (dmd_quality), aperçu LED animé au clic,
@@ -10490,10 +11017,20 @@ class ReviewWindow:
         self._fill_job = self._anim_job = None
         self._frames, self._delays, self._idx = [], [], 0
         self._photo = None
+        # v96 -- corrections proposées : rel -> {"state", "props", "note"} ;
+        # calcul en arrière-plan, fichiers proposés dans un dossier temporaire
+        self.fixes = {}
+        self._iid = {}
+        self._players = []
+        self._fix_thread = None
+        self._fix_cancel = threading.Event()
+        self._work_root = None
+        self._job_seq = 0
+        self._current_rel = None
 
         win = self.win = tk.Toplevel(app.root)
         win.title(tr("t_review_title", "Revoir les GIF — {folder}", folder=self.folder))
-        win.geometry("1280x640")
+        win.geometry("1280x880")
         win.protocol("WM_DELETE_WINDOW", self.close)
 
         # Pastilles dessinées (les emoji couleur s'affichent en gris dans Tk sous Windows)
@@ -10511,6 +11048,12 @@ class ReviewWindow:
                    command=self.open_folder).pack(side=tk.RIGHT, padx=4)
         ttk.Button(top, text=tr("t_review_other_folder", "📂 Autre dossier…"),
                    command=self.change_folder).pack(side=tk.LEFT)
+        self.fix_var = tk.StringVar()
+        ttk.Label(top, textvariable=self.fix_var).pack(side=tk.LEFT, padx=12)
+        self.fix_btn = ttk.Button(top, text=tr("t_fix_button", "🪄 Proposer des corrections ≤ seuil"),
+                                  command=self.start_fixes)
+        self.fix_btn.pack(side=tk.RIGHT, padx=4)
+        add_help_tooltip(self.fix_btn, "tooltip_fix_button")
         self.move_btn = ttk.Button(top, text=tr("t_review_move", "Déplacer ≤ seuil vers {dest}", dest=dq.REVIEW_DIR),
                                    command=self.move_low)
         self.move_btn.pack(side=tk.RIGHT, padx=4)
@@ -10522,17 +11065,18 @@ class ReviewWindow:
         body.pack(fill=tk.BOTH, expand=True, padx=6, pady=(0, 6))
 
         left = ttk.Frame(body)
-        cols = ("score", "file", "reasons")
+        cols = ("score", "file", "reasons", "fix")
         self.tree = ttk.Treeview(left, columns=cols, show="tree headings", selectmode="browse")
         self.tree.heading("#0", text="", command=lambda: self.sort_by("score"))
         self.tree.column("#0", width=30, minwidth=30, stretch=False, anchor=tk.CENTER)
         heads = {"score": tr("t_review_col_score", "Score"),
-                 "file": tr("t_review_col_file", "Fichier"), "reasons": tr("t_review_col_reasons", "Raisons")}
-        widths = {"score": 60, "file": 420, "reasons": 330}
+                 "file": tr("t_review_col_file", "Fichier"), "reasons": tr("t_review_col_reasons", "Raisons"),
+                 "fix": tr("t_fix_col", "Correction")}
+        widths = {"score": 60, "file": 330, "reasons": 230, "fix": 120}
         for c in cols:
             self.tree.heading(c, text=heads[c], command=lambda k=c: self.sort_by(k))
-            self.tree.column(c, width=widths[c], stretch=c != "score",
-                             anchor=tk.CENTER if c == "score" else tk.W)
+            self.tree.column(c, width=widths[c], stretch=c not in ("score", "fix"),
+                             anchor=tk.CENTER if c in ("score", "fix") else tk.W)
         sb = ttk.Scrollbar(left, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=sb.set)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -10541,10 +11085,22 @@ class ReviewWindow:
         body.add(left, weight=3)
 
         right = ttk.Frame(body, padding=(8, 0))
+        # v97 -- image source au-dessus du GIF produit
+        self.src_var = tk.StringVar()
+        ttk.Label(right, textvariable=self.src_var).pack(anchor=tk.W)
+        self.src_canvas = tk.Canvas(right, width=512, height=96, bg="black", highlightthickness=0)
+        self.src_canvas.pack(pady=(2, 8))
+        self._src_photo = None
         self.canvas = tk.Canvas(right, width=512, height=128, bg="black", highlightthickness=0)
         self.canvas.pack(pady=(0, 8))
         self.detail_var = tk.StringVar()
         ttk.Label(right, textvariable=self.detail_var, wraplength=512, justify=tk.LEFT).pack(anchor=tk.W)
+        self.edit_btn = ttk.Button(right, text=tr("t_review_edit", "✎ Éditer dans MANUEL"), command=self.edit_manual)
+        self.edit_btn.pack(anchor=tk.W, pady=(6, 0))
+        self.edit_btn.state(["disabled"])
+        add_help_tooltip(self.edit_btn, "tooltip_review_edit")
+        self.fix_frame = ttk.Frame(right)  # v96 -- propositions du GIF sélectionné
+        self.fix_frame.pack(fill=tk.X, anchor=tk.W, pady=(10, 0))
         body.add(right, weight=2)
 
         self.reload()
@@ -10561,12 +11117,14 @@ class ReviewWindow:
 
     def sort_by(self, key, keep_order=False):
         if not keep_order:
-            self.sort_desc = (not self.sort_desc) if key == self.sort_key else False
+            # v96 : la colonne Correction trie d'abord les plus gros gains
+            self.sort_desc = (not self.sort_desc) if key == self.sort_key else (key == "fix")
             self.sort_key = key
         getter = {
             "score": lambda kv: kv[1]["score"],
             "file": lambda kv: kv[0].lower(),
             "reasons": lambda kv: ", ".join(dq.reason_text(c, self.lang) for c in kv[1]["reasons"]),
+            "fix": lambda kv: self._fix_gain(*kv),
         }[key]
         self.items.sort(key=getter, reverse=self.sort_desc)
         self._refill()
@@ -10578,10 +11136,13 @@ class ReviewWindow:
         self._fill_from(0)
 
     def _fill_from(self, start):
+        if start == 0:
+            self._iid = {}
         for i, (rel, info) in enumerate(self.items[start:start + self.CHUNK], start):
             why = ", ".join(dq.reason_text(c, self.lang) for c in info["reasons"])
             self.tree.insert("", tk.END, iid=str(i), image=self.dots.get(info["rating"], ""),
-                             values=(info["score"], rel, why))
+                             values=(info["score"], rel, why, self._fix_text(rel, info)))
+            self._iid[rel] = str(i)
         nxt = start + self.CHUNK
         self._fill_job = self.win.after(1, self._fill_from, nxt) if nxt < len(self.items) else None
 
@@ -10592,6 +11153,10 @@ class ReviewWindow:
             return
         rel, info = self.items[int(sel[0])]
         self._stop_anim()
+        self._current_rel = rel
+        self.edit_btn.state(["!disabled"])
+        self._show_source(rel, info)
+        self._show_fixes(rel, info)
         path = os.path.join(self.folder, *rel.split("/"))
         self._frames, self._delays = [], []
         try:
@@ -10675,6 +11240,425 @@ class ReviewWindow:
                                    dest=dq.REVIEW_DIR), parent=self.win)
         self.reload()
 
+    # --- v96 : corrections proposées ------------------------------------------
+    @staticmethod
+    def _fix_label(code):
+        names = {"trim": tr("t_fix_step_trim", "vide retiré"), "gamma": tr("t_fix_step_gamma", "gamma"),
+                 "levels": tr("t_fix_step_levels", "niveaux"),
+                 "dark_lift": tr("t_fix_step_dark_lift", "sombres éclaircis"),
+                 "invert": tr("t_fix_step_invert", "inversion"),
+                 "manual": tr("t_fix_step_manual", "édition manuelle")}
+        return " + ".join(names.get(s, s) for s in code.split("+"))
+
+    def _fix_gain(self, rel, info):
+        f = self.fixes.get(rel)
+        if f and f["state"] == "ready":
+            return max(p["score"] for p in f["props"]) - info["score"]
+        if info.get("fixed"):
+            return -1
+        return -2 if f else -3
+
+    def _fix_text(self, rel, info):
+        if info.get("fixed"):
+            return tr("t_fix_state_done", "✓ {before} → {score}", before=info.get("score_before", "?"),
+                      score=info["score"])
+        f = self.fixes.get(rel)
+        if not f:
+            return ""
+        if f["state"] == "pending":
+            return tr("t_fix_state_pending", "calcul…")
+        if f["state"] == "ready":
+            return tr("t_fix_state_ready", "🪄 +{gain}", gain=self._fix_gain(rel, info))
+        if f["state"] == "refused":
+            return tr("t_fix_state_refused", "refusée")
+        return "—"
+
+    def _update_fix_cell(self, rel):
+        iid = self._iid.get(rel)
+        info = dict(self.items).get(rel) if iid is not None else None
+        if iid is not None and info is not None and self.tree.exists(iid):
+            self.tree.set(iid, "fix", self._fix_text(rel, info))
+
+    def start_fixes(self):
+        if self._fix_thread is not None and self._fix_thread.is_alive():
+            return
+        try:
+            thr = int(self.threshold_var.get())
+        except (tk.TclError, ValueError):
+            return
+        targets = [(rel, info) for rel, info in self.items
+                   if info["score"] <= thr and not info.get("fixed") and rel not in self.fixes]
+        if not targets:
+            messagebox.showinfo(lang_manager.get("complete", "Terminé"),
+                                tr("t_fix_none_todo", "Aucun GIF de score ≤ {thr} à corriger.", thr=thr),
+                                parent=self.win)
+            return
+        data = dmd_autofix.load_batches(self.folder)
+        batches = data.get("batches", [])
+
+        def known(info):
+            b = info.get("b")
+            return bool(info.get("src")) and isinstance(b, int) and 0 <= b < len(batches)
+
+        legacy_root = None
+        if any(not known(info) for _rel, info in targets):
+            # dossier produit avant la v96 : ni source ni réglages enregistrés
+            messagebox.showinfo(
+                lang_manager.get("warning", "Attention"),
+                tr("t_fix_legacy",
+                   "Ce dossier a été produit avant l'enregistrement des réglages du lot.\n"
+                   "Choisissez le dossier des images SOURCE de ce lot : les corrections utiliseront "
+                   "les réglages actuels de l'onglet AUTO (profil « {profile} »).",
+                   profile=self.app.profile_var.get()),
+                parent=self.win)
+            legacy_root = self._pick_source_root()
+            if not legacy_root:
+                return
+            cur = (self.app.batch_params_snapshot(), self.app.color_count_var.get(),
+                   self.app.manual_loop_mode.get(), self.app.manual_loop_count.get())
+
+        jobs, missing = [], 0
+        for rel, info in targets:
+            if known(info):
+                rec = batches[info["b"]]
+                src = info["src"]
+                params = (rec["batch_params"], rec.get("color_count_fallback", 256),
+                          rec.get("loop_mode", "infini"), rec.get("loop_count", 0))
+            else:
+                src = dmd_autofix.find_source(legacy_root, rel)
+                params = cur
+            if not src or not os.path.isfile(src):
+                missing += 1
+                continue
+            jobs.append((rel, src, params, info["score"]))
+        extra = tr("t_fix_missing", "\n{m} GIF sans image source retrouvée sont ignorés.", m=missing) if missing else ""
+        if not jobs:
+            messagebox.showwarning(lang_manager.get("warning", "Attention"),
+                                   tr("t_fix_no_job", "Aucune image source retrouvée pour ces GIF."),
+                                   parent=self.win)
+            return
+        if not messagebox.askyesno(
+            lang_manager.get("confirmation", "Confirmation"),
+            tr("t_fix_confirm",
+               "Chercher des corrections pour {n} GIF de score ≤ {thr} ?\n\n"
+               "Le calcul se fait en arrière-plan. Aucun GIF n'est modifié tant que vous "
+               "n'acceptez pas une proposition.", n=len(jobs), thr=thr) + extra,
+            parent=self.win,
+        ):
+            return
+        if self._work_root is None:
+            import tempfile
+            self._work_root = tempfile.mkdtemp(prefix="dmd_autofix_")
+        for rel, *_ in jobs:
+            self.fixes[rel] = {"state": "pending", "props": [], "note": None}
+            self._update_fix_cell(rel)
+        self._fix_cancel.clear()
+        self._fix_counts = [0, len(jobs), 0]  # traités, total, avec proposition
+        self.fix_var.set(tr("t_fix_progress", "Corrections : {done}/{n} — {k} proposées", done=0, n=len(jobs), k=0))
+        self.fix_btn.state(["disabled"])
+        seq0 = self._job_seq
+        self._job_seq += len(jobs)
+        self._fix_thread = threading.Thread(target=self._run_fixes, args=(jobs, seq0), daemon=True)
+        self._fix_thread.start()
+
+    def _run_fixes(self, jobs, seq0):
+        """Thread : calcule les propositions en parallèle (processus), résultat
+        remis au fil Tk un GIF à la fois."""
+        cpu = os.cpu_count() or 1
+        pool = ProcessPoolExecutor(max_workers=max(1, min(12, cpu - 2, len(jobs))))
+        futs = [pool.submit(autofix_one, rel, src, p[0], p[1], p[2], p[3], score,
+                            os.path.join(self._work_root, f"{seq0 + i:05d}"))
+                for i, (rel, src, p, score) in enumerate(jobs)]
+        try:
+            for fut in as_completed(futs):
+                if self._fix_cancel.is_set():
+                    break
+                try:
+                    rel, props, note = fut.result()
+                except Exception as e:
+                    logger.error(f"Revoir : correction impossible : {e}")
+                    continue
+                try:
+                    self.win.after(0, self._fix_ready, rel, props, note)
+                except (tk.TclError, RuntimeError):
+                    break  # fenêtre fermée
+        finally:
+            pool.shutdown(wait=True, cancel_futures=True)
+            if self._fix_cancel.is_set():
+                self._cleanup_work()
+            else:
+                try:
+                    self.win.after(0, self._fixes_finished)
+                except (tk.TclError, RuntimeError):
+                    pass
+
+    def _fix_ready(self, rel, props, note):
+        if self._fix_cancel.is_set():
+            return  # dossier changé ou fenêtre fermée entre-temps
+        if note not in (None, "nothing", "lit_background"):
+            logger.error(f"Revoir : correction de {rel} : {note}")
+        self.fixes[rel] = {"state": "ready" if props else "none", "props": props, "note": note}
+        self._fix_counts[0] += 1
+        self._fix_counts[2] += 1 if props else 0
+        done, n, k = self._fix_counts
+        self.fix_var.set(tr("t_fix_progress", "Corrections : {done}/{n} — {k} proposées", done=done, n=n, k=k))
+        self._update_fix_cell(rel)
+        if rel == self._current_rel:
+            self._show_fixes(rel, dict(self.items).get(rel, {}))
+
+    def _fixes_finished(self):
+        self.fix_btn.state(["!disabled"])
+        _done, n, k = self._fix_counts
+        self.fix_var.set(tr("t_fix_finished", "Corrections : {k} GIF avec proposition sur {n}", k=k, n=n))
+        logger.info(f"Revoir : corrections calculées, {k} GIF avec proposition sur {n}")
+
+    def _stop_players(self):
+        for p in self._players:
+            p.stop()
+        self._players = []
+
+    def _show_fixes(self, rel, info):
+        """Panneau sous l'aperçu : état ou propositions du GIF sélectionné."""
+        self._stop_players()
+        for w in self.fix_frame.winfo_children():
+            w.destroy()
+        if info.get("fixed"):
+            ttk.Label(self.fix_frame, wraplength=512, justify=tk.LEFT, text=tr(
+                "t_fix_done_detail", "Corrigé ({name}) : {before} → {score}.\nOriginal dans {dir}",
+                name=self._fix_label(info["fixed"]), before=info.get("score_before", "?"), score=info["score"],
+                dir=os.path.join(dq.REVIEW_DIR, dmd_autofix.BEFORE_DIR))).pack(anchor=tk.W)
+            return
+        f = self.fixes.get(rel)
+        if not f:
+            return
+        if f["state"] != "ready":
+            msg = {"pending": tr("t_fix_state_pending", "calcul…"),
+                   "refused": tr("t_fix_refused_detail", "Propositions refusées."),
+                   }.get(f["state"])
+            if msg is None:
+                msg = (tr("t_fix_lit_bg", "Fond plein : pas de correction automatique.")
+                       if f.get("note") == "lit_background"
+                       else tr("t_fix_none_found", "Aucune correction utile trouvée."))
+            ttk.Label(self.fix_frame, text=msg).pack(anchor=tk.W)
+            return
+        for p in f["props"]:
+            box = ttk.Frame(self.fix_frame)
+            box.pack(fill=tk.X, anchor=tk.W, pady=(0, 8))
+            ttk.Label(box, text=tr("t_fix_prop", "Proposition : {name} — {score}/100 (+{gain})",
+                                   name=self._fix_label(p["code"]), score=p["score"],
+                                   gain=p["score"] - info.get("score", 0))).pack(anchor=tk.W)
+            cv = tk.Canvas(box, width=384, height=96, bg="black", highlightthickness=0)
+            cv.pack(anchor=tk.W, pady=2)
+            self._players.append(_GifPlayer(self.win, cv, p["path"], 3, self.app.led_brightness_var.get))
+            ttk.Button(box, text=tr("t_fix_accept", "✓ Garder cette version"),
+                       command=lambda pp=p: self.accept_fix(rel, pp)).pack(anchor=tk.W)
+        ttk.Button(self.fix_frame, text=tr("t_fix_refuse", "✗ Refuser les propositions"),
+                   command=lambda: self.refuse_fix(rel)).pack(anchor=tk.W)
+
+    def _drop_props(self, rel, keep_path=None):
+        for p in (self.fixes.get(rel) or {}).get("props", []):
+            if p["path"] != keep_path:
+                try:
+                    os.remove(p["path"])  # proposition temporaire non retenue
+                except OSError:
+                    pass
+
+    def accept_fix(self, rel, prop):
+        """Remplace le GIF par la proposition ; l'original va dans
+        _a_revoir/_avant_correction/ (jamais supprimé) ; l'index est mis à jour."""
+        self._stop_players()
+        self._stop_anim()
+        self._frames = []
+        # v98 : après validation, le GIF suivant de la liste est sélectionné
+        order = [r for r, _ in self.items]
+        pos = order.index(rel) if rel in order else -1
+        next_rel = order[pos + 1] if 0 <= pos < len(order) - 1 else None
+        try:
+            before, bak = review_replace_gif(self.folder, rel, prop["path"], prop, prop["code"])
+        except Exception as e:
+            logger.error(f"Revoir : correction de {rel} non appliquée : {e}")
+            messagebox.showerror(lang_manager.get("error", "Erreur"), str(e), parent=self.win)
+            return
+        self._drop_props(rel, keep_path=prop["path"])
+        self.fixes[rel] = {"state": "accepted", "props": [], "note": None}
+        logger.info(f"Revoir : {rel} corrigé ({prop['code']}) {before} → {prop['score']}, original : {bak}")
+        self.reload()
+        self._select_rel(next_rel or rel)
+
+    def _select_rel(self, rel, tries=40):
+        """Sélectionne la ligne de `rel` ; attend qu'elle soit insérée si la
+        liste se remplit encore par paquets (grands dossiers)."""
+        iid = self._iid.get(rel)
+        if iid is not None and self.tree.exists(iid):
+            self.tree.selection_set(iid)
+            self.tree.see(iid)
+        elif tries > 0 and self._fill_job:
+            self.win.after(50, self._select_rel, rel, tries - 1)
+
+    def refuse_fix(self, rel):
+        self._stop_players()
+        self._drop_props(rel)
+        self.fixes[rel] = {"state": "refused", "props": [], "note": None}
+        self._update_fix_cell(rel)
+        self._show_fixes(rel, dict(self.items).get(rel, {}))
+
+    def _cleanup_work(self):
+        if self._work_root:
+            shutil.rmtree(self._work_root, ignore_errors=True)  # propositions temporaires uniquement
+            self._work_root = None
+
+    # --- v97 : source affichée, édition dans MANUEL ------------------------------
+    def _pick_source_root(self):
+        """Demande le dossier des images source (dossier produit avant v96) et
+        le mémorise dans dmd_batch.json ; None si annulé."""
+        data = dmd_autofix.load_batches(self.folder)
+        last = data.get("legacy_source_root", "")
+        opts = {"initialdir": last} if last and os.path.isdir(last) else {}
+        root_dir = filedialog.askdirectory(
+            title=tr("t_fix_pick_source", "Dossier des images source de ce lot"), parent=self.win, **opts)
+        if not root_dir:
+            return None
+        try:
+            data["legacy_source_root"] = root_dir
+            dmd_autofix.save_batches(self.folder, data)
+        except Exception as e:
+            logger.error(f"Revoir : {dmd_autofix.BATCH_FILE} non écrit : {e}")
+        return root_dir
+
+    def _source_of(self, rel, info):
+        """Chemin de l'image source d'un GIF, ou None si inconnue."""
+        src = info.get("src")
+        if src and os.path.isfile(src):
+            return src
+        root_dir = dmd_autofix.load_batches(self.folder).get("legacy_source_root")
+        if root_dir and os.path.isdir(root_dir):
+            return dmd_autofix.find_source(root_dir, rel)
+        return None
+
+    def _show_source(self, rel, info):
+        self.src_canvas.delete("all")
+        self._src_photo = None
+        src = self._source_of(rel, info)
+        if not src:
+            self.src_var.set(tr("t_review_src_unknown", "Source : inconnue"))
+            return
+        try:
+            # sur damier gris, pas sur noir : les parties noires (invisibles
+            # sur le DMD) doivent rester visibles, c'est tout l'intérêt
+            img = DMDEngine.load_image(src).convert("RGBA")
+            w, h = img.size
+            img.thumbnail((512, 96), Image.Resampling.LANCZOS)
+            board = Image.new("RGBA", img.size, (72, 72, 72, 255))
+            dr = ImageDraw.Draw(board)
+            for y in range(0, img.size[1], 8):
+                for x in range((y // 8) % 2 * 8, img.size[0], 16):
+                    dr.rectangle((x, y, x + 7, y + 7), fill=(104, 104, 104, 255))
+            board.alpha_composite(img)
+            img = board.convert("RGB")
+            self._src_photo = ImageTk.PhotoImage(img)
+            self.src_canvas.create_image(256, 48, image=self._src_photo)
+            self.src_var.set(tr("t_review_src", "Source {w}×{h} — {name}", w=w, h=h, name=os.path.basename(src)))
+        except Exception as e:
+            self.src_var.set(tr("t_review_src_unknown", "Source : inconnue") + f" ({e})")
+
+    def edit_manual(self):
+        if self._current_rel is None:
+            return
+        rel = self._current_rel
+        info = dict(self.items).get(rel, {})
+        src = self._source_of(rel, info)
+        if not src:
+            if not self._pick_source_root():
+                return
+            src = self._source_of(rel, info)
+            self._show_source(rel, info)
+            if not src:
+                messagebox.showwarning(lang_manager.get("warning", "Attention"),
+                                       tr("t_fix_no_job", "Aucune image source retrouvée pour ces GIF."),
+                                       parent=self.win)
+                return
+        self.app.edit_from_review(self.folder, rel, src, review=self, timing=self._timing_of(rel, info))
+
+    def _timing_of(self, rel, info):
+        """Rythme du GIF du lot (FPS d'après le délai médian, durée totale) et
+        boucle du lot si enregistrée : repris par MANUEL pour que le GIF
+        refait garde le même rythme que les autres (choix utilisateur v97)."""
+        timing = {}
+        b = info.get("b")
+        batches = dmd_autofix.load_batches(self.folder).get("batches", [])
+        rec = batches[b] if isinstance(b, int) and 0 <= b < len(batches) else None
+        if rec is not None:
+            timing["loop_mode"] = rec.get("loop_mode")
+            timing["loop_count"] = rec.get("loop_count")
+        try:
+            with Image.open(os.path.join(self.folder, *rel.split("/"))) as im:
+                delays = []
+                for i in range(getattr(im, "n_frames", 1)):
+                    im.seek(i)
+                    delays.append(int(im.info.get("duration", 100) or 100))
+            # FPS : ceux du lot (identiques pour toutes ses images) ; sinon
+            # déduits du plus petit délai. Le GIF tronque les délais au 1/100 s
+            # (15 i/s -> 60 ms) et fusionne les images identiques qui se
+            # suivent (130, 190 ms…) : le délai seul ne suffit pas.
+            if rec is not None and rec.get("batch_params", {}).get("fps"):
+                fps = int(rec["batch_params"]["fps"])
+            else:
+                # v102 : un GIF fixe ou presque noir n'a souvent QU'UNE image
+                # (images identiques fusionnées, ~2 s) : 1000/délai donnait
+                # 1 i/s. Les FPS actuels d'AUTO sont retenus s'ils expliquent
+                # tous les délais (multiples d'une image, à 15 ms près) ou si
+                # le GIF n'a qu'une image ; sinon déduction par le plus petit
+                # délai, et à défaut les FPS d'AUTO.
+                try:
+                    pref = int(self.app.fps_var.get())
+                except (tk.TclError, ValueError):
+                    pref = 10
+                pref = max(1, min(60, pref))
+                period = 1000.0 / pref
+                fits = all(abs(x - max(1, round(x / period)) * period) <= 15 for x in delays)
+                d = min(delays)
+                cands = [f for f in range(1, 61) if int(1000 / f) // 10 * 10 == d]
+                if len(delays) == 1 or fits or not cands:
+                    fps = pref
+                else:  # 60 ms = 15 ou 16 i/s, 50 ms = 17 à 20 : cadences usuelles d'abord
+                    usual = [f for f in cands if f in (10, 12, 15, 20, 24, 25, 30)]
+                    fps = (usual or cands)[0]
+            fps = max(1, min(60, fps))
+            timing["fps"] = fps
+            if rec is not None and rec.get("batch_params", {}).get("duration"):
+                # réglages exacts du lot : durée minimale et vitesse de défilement
+                bp = rec["batch_params"]
+                timing["duration"] = max(0.1, min(30.0, float(bp["duration"])))
+                timing["scroll_speed"] = max(1, min(10, round(float(bp.get("scroll_speed", 1)))))
+            else:
+                frames = sum(max(1, round(x * fps / 1000.0)) for x in delays)
+                timing["duration"] = max(0.1, min(30.0, round(frames / fps, 1)))
+                timing["scroll_speed"] = max(1, min(10, round(float(self.app.scroll_speed_var.get()))))
+        except Exception as e:
+            logger.error(f"Revoir : rythme de {rel} illisible : {e}")
+        return timing
+
+    def after_external_replace(self, rel):
+        """GIF remplacé depuis MANUEL : liste et aperçu rechargés."""
+        self._drop_props(rel)
+        self.fixes[rel] = {"state": "accepted", "props": [], "note": None}
+        self.reload()
+        iid = self._iid.get(rel)
+        if iid is not None and self.tree.exists(iid):
+            self.tree.selection_set(iid)
+            self.tree.see(iid)
+
+    def _cancel_fixes(self):
+        """Arrête le calcul en cours et oublie les propositions (dossier ou
+        fenêtre fermés) ; le nettoyage se fait à la fin du thread s'il tourne."""
+        self._stop_players()
+        self._fix_cancel.set()
+        if self._fix_thread is None or not self._fix_thread.is_alive():
+            self._cleanup_work()
+        self.fixes = {}
+        self.fix_var.set("")
+        self.fix_btn.state(["!disabled"])
+
     def change_folder(self):
         """v94 -- revoir un autre dossier de sortie dans la même fenêtre."""
         new = filedialog.askdirectory(
@@ -10693,6 +11677,13 @@ class ReviewWindow:
             )
             return
         self._stop_anim()
+        self._cancel_fixes()  # v96 : propositions propres à l'ancien dossier
+        for w in self.fix_frame.winfo_children():
+            w.destroy()
+        self._current_rel = None
+        self.edit_btn.state(["disabled"])
+        self.src_canvas.delete("all")
+        self.src_var.set("")
         self._frames = []
         self.canvas.delete("all")
         self.detail_var.set("")
@@ -10709,9 +11700,51 @@ class ReviewWindow:
 
     def close(self):
         self._stop_anim()
+        self._cancel_fixes()  # v96 : propositions non acceptées = fichiers temporaires effacés
         if self._fill_job:
             self.win.after_cancel(self._fill_job)
         self.win.destroy()
+
+
+class _GifPlayer:
+    """v96 -- aperçu LED animé d'un GIF dans un canvas (propositions de
+    correction de la fenêtre Revoir). Images chargées en mémoire : le
+    fichier n'est pas verrouillé et peut être déplacé pendant la lecture."""
+
+    def __init__(self, win, canvas, path, scale, brightness_fn):
+        self.win, self.canvas, self.scale, self.brightness_fn = win, canvas, scale, brightness_fn
+        self.frames, self.delays, self.idx, self.job, self.photo = [], [], 0, None, None
+        try:
+            with Image.open(path) as im:
+                for i in range(getattr(im, "n_frames", 1)):
+                    im.seek(i)
+                    self.frames.append(im.convert("RGB"))
+                    self.delays.append(int(im.info.get("duration", 100) or 100))
+        except Exception as e:
+            logger.error(f"Aperçu de proposition illisible ({path}) : {e}")
+        self._tick()
+
+    def _tick(self):
+        if not self.frames:
+            return
+        img = DMDEngine.render_led_style(self.frames[self.idx], scale=self.scale, led_ratio=0.525, glow=True,
+                                         brightness=self.brightness_fn())
+        self.photo = ImageTk.PhotoImage(img)
+        self.canvas.delete("all")
+        self.canvas.create_image(64 * self.scale, 16 * self.scale, image=self.photo)
+        delay = self.delays[self.idx]
+        self.idx = (self.idx + 1) % len(self.frames)
+        if len(self.frames) > 1:
+            self.job = self.win.after(delay, self._tick)
+
+    def stop(self):
+        if self.job:
+            try:
+                self.win.after_cancel(self.job)
+            except tk.TclError:
+                pass
+            self.job = None
+        self.frames = []
 
 
 def process_one_image(
@@ -10807,12 +11840,58 @@ def process_one_image(
         quality = None
         try:
             q = dq.evaluate_frames(frames, int(1000 / fps))
-            quality = ((relative_path / output_name).as_posix(), q.to_dict())
+            # v96 : source gardée dans l'index (corrections proposées par Revoir)
+            quality = ((relative_path / output_name).as_posix(), dict(q.to_dict(), src=str(image_path)))
         except Exception:
             pass  # le score n'est qu'une aide : jamais bloquant pour l'export
         return (image_path, True, None, output_name, len(frames), color_count, quality)
     except Exception as e:
         return (image_path, False, str(e), None, 0, 0, None)
+
+
+def autofix_one(rel, src, batch_params, color_count_fallback, loop_mode, loop_count, base_score, work_dir):
+    """v96 -- propositions de correction pour UN GIF faible (fenêtre Revoir),
+    PICKLABLE comme process_one_image (worker ProcessPoolExecutor). Chaque
+    variante de la source (dmd_autofix.build_variants) est écrite dans
+    `work_dir` puis passe par process_one_image avec les réglages du lot
+    d'origine : même rendu, même export, même note que le lot. La source
+    n'est jamais modifiée. Retourne (rel, propositions, note) ; une
+    proposition = {"code", "path" (GIF dans work_dir), score, rating, color,
+    reasons} ; note = None, "lit_background", "nothing" ou le message d'erreur."""
+    try:
+        img = DMDEngine.load_image(src)
+        if dmd_autofix.has_lit_background(img):
+            return rel, [], "lit_background"
+        variants = dmd_autofix.build_variants(img)
+        if not variants:
+            return rel, [], "nothing"
+        os.makedirs(work_dir, exist_ok=True)
+        out_dir = os.path.join(work_dir, "gif")
+        scored, made = {}, {}
+        for code, v in variants.items():
+            png = os.path.join(work_dir, code.replace("+", "__") + ".png")
+            v.save(png)
+            r = process_one_image(png, batch_params, None, None, out_dir, work_dir, False,
+                                  color_count_fallback, loop_mode, loop_count)
+            os.remove(png)
+            if r[1] and r[6] is not None:
+                q = {k: val for k, val in r[6][1].items() if k != "src"}
+                scored[code] = q["score"]
+                made[code] = (os.path.join(out_dir, r[3]), q)
+        keep = dmd_autofix.choose(base_score, scored)
+        props = []
+        for code, (path, q) in made.items():
+            if code in keep:
+                props.append(dict(q, code=code, path=path))
+            else:
+                try:
+                    os.remove(path)  # variante non retenue (fichier temporaire)
+                except OSError:
+                    pass
+        props.sort(key=lambda p: keep.index(p["code"]))
+        return rel, props, (None if props else "nothing")
+    except Exception as e:
+        return rel, [], str(e)
 
 
 DMDConverter.hash_image = _pipeline_hash_image

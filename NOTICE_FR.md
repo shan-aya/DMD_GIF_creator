@@ -212,7 +212,18 @@ chaque effet et chaque paramètre d'animation.
 ### 1. Barre d'outils (haut)
 
 - **📂 Charger** : charge une image depuis le disque.
-- **✂️ Crop 128×32** : active un mode de recadrage manuel à la taille cible.
+- **✂️ Crop 128×32** : pose un cadre au format 4:1 sur l'image, par défaut de 128×32
+  pixels de l'image (un pixel par LED, sans mise à l'échelle). Glissez-le pour le
+  déplacer (un clic hors du cadre le centre sur ce point), flèches = 1 pixel (Maj :
+  10), molette = taille (le format 4:1 est gardé). La barre d'état indique la taille,
+  la position et le nombre de pixels par LED. Double-clic ou Entrée = appliquer ;
+  Échap ou nouveau clic sur le bouton = annuler.
+- **▭ Zone** / **✕ Zone** : limite les effets à une partie de l'image. En mode Zone,
+  tracez un rectangle à la souris ; glissez à l'intérieur pour le déplacer ; un simple
+  clic à l'extérieur l'efface. Tant qu'une zone existe (cadre bleu clair), les curseurs
+  et les filtres ne touchent que son contenu ; Rotation 90° tourne toujours toute
+  l'image (et efface la zone). « ✕ Zone » revient aux effets sur toute l'image ; la zone
+  est aussi effacée au recadrage et au chargement d'une autre image.
 - **↶ Annuler** / **↷ Rétablir** : historique undo/redo incrémental. Chaque
   filtre, remplissage, gomme magique ou recadrage est un point d'historique ;
   annuler puis rétablir retrouve exactement les états intermédiaires (pas
@@ -235,11 +246,22 @@ appliquée ici, le contrôle est volontairement laissé entier à l'utilisateur)
 - **Luminosité** (0.5–2.0), **Contraste** (0.5–3.0), **Saturation** (0.0–2.0),
   **Netteté** (0.0–3.0).
 
+Les curseurs agissent sur l'état actuel de l'image (recadrage, filtres, remplissages
+compris). À la prochaine action permanente (filtre, recadrage, remplissage, gomme), leurs
+réglages sont intégrés à l'image et ils reviennent à 1,00 ; « ↶ Annuler » revient avant
+cette action. Avec une **zone** (voir ci-dessous), ils ne touchent que la zone.
+
 ### 3. Filtres
 
 Boutons à effet immédiat et cumulatif : Flou, Flou Gaussien, Contours, Relief,
 Détails+, Inverser, Miroir H, Miroir V, Rotation 90°, N&B, Postériser, Solariser,
-Égaliser, Auto-contraste, Resize + / Resize -.
+Égaliser, Auto-contraste.
+
+**🔍 Zoom − / 🔍 Zoom + / 100 %** : agrandit ou réduit le logo sur la dalle, par paliers
+de 50 % à 300 %. 100 % correspond à la taille calculée automatiquement pour le 128×32 ;
+au-delà, le logo déborde et défile plus longtemps ; en dessous, il est plus petit et
+centré. C'est un réglage de l'animation : l'image de travail n'est pas modifiée, et le
+zoom revient à 100 % à chaque nouvelle image. L'aperçu est refait à chaque changement.
 
 ### 4. Outils Dessin
 
@@ -298,7 +320,9 @@ dominante), plus le nombre d'états dans l'historique d'annulation.
 
 ## Onglet VIDEO — GIF à partir d'une vidéo
 
-Transforme un passage d'une vidéo (MP4, AVI, MOV, MKV) en GIF 128×32. Nécessite le
+Transforme un passage d'une vidéo (MP4, M4V, MOV, AVI, MKV, WEBM, WMV, FLV, MPG, MPEG,
+TS, 3GP, OGV) en GIF 128×32. Un codec rare peut rester illisible quelle que soit
+l'extension. Nécessite le
 module `opencv-contrib-python` (inclus dans l'exécutable Windows) ; s'il manque,
 l'onglet l'indique.
 
@@ -496,8 +520,8 @@ cochée :
 
 Chaque GIF produit reçoit un **score qualité de 0 à 100**, calculé sur ses images :
 part de pixels allumés, contraste, occupation de l'écran, nombre d'images et durée.
-C'est une **aide à la relecture**, pas une décision automatique : rien n'est supprimé
-ni modifié d'après ce score.
+C'est une **aide à la relecture**, pas une décision automatique : rien n'est supprimé,
+et un GIF n'est remplacé que si vous acceptez une correction proposée (voir plus bas).
 
 | Note | Score |
 |---|---|
@@ -524,12 +548,43 @@ proposée en fin de lot quand des GIF sont faibles ou mauvais) :
 
 - liste des GIF du dossier, **du plus faible au meilleur**, avec pastille de couleur,
   score, chemin et raisons ; cliquer un en-tête de colonne trie la liste ;
-- cliquer une ligne affiche le GIF animé avec le rendu LED ;
+- cliquer une ligne affiche le GIF animé avec le rendu LED et, au-dessus, l'**image
+  source** avec ses dimensions, sur un damier gris : les parties noires, invisibles sur
+  le DMD, y restent visibles ;
+- **✎ Éditer dans MANUEL** : quand les propositions ne conviennent pas, ouvre la source
+  dans l'onglet MANUEL avec le rythme du lot (FPS, durée minimale, vitesse de
+  défilement, boucle). À l'export, l'application propose de **remplacer ce GIF** dans le
+  dossier du lot (l'original est mis de côté dans `_a_revoir/_avant_correction`, jamais
+  supprimé) ou d'enregistrer ailleurs. MANUEL garde sa propre mise à l'échelle : le GIF
+  refait peut être plus petit ou plus court que celui du lot ;
 - **Seuil** (30 par défaut) et bouton **Déplacer ≤ seuil vers _a_revoir** : après
   confirmation (avec le nombre exact de fichiers), les GIF concernés sont **déplacés,
   jamais supprimés**, dans un sous-dossier `_a_revoir` du dossier de sortie, en
   conservant l'arborescence. Ce dossier est ignoré quand on recharge le dossier dans
   l'application.
+- **🪄 Proposer des corrections ≤ seuil** : pour chaque GIF de score inférieur ou égal
+  au seuil, l'application essaie en arrière-plan des corrections de l'**image source**
+  (la source elle-même n'est jamais modifiée) et refait le GIF avec les réglages du lot
+  d'origine :
+  - **vide retiré** : marges transparentes ou noires enlevées (aucun contenu coupé) ;
+  - **sombres éclaircis** : texte et contours noirs, invisibles sur un DMD noir, passés
+    en clair, les couleurs vives étant gardées ;
+  - **gamma** et **niveaux** : logo trop sombre éclairci ;
+  - **inversion** : utile aux logos sombres d'une seule couleur, mais elle change les
+    couleurs d'un logo coloré ; elle n'est proposée que si elle fait nettement mieux.
+
+  La colonne **Correction** indique le gain possible (🪄 +62). Cliquer la ligne affiche
+  jusqu'à deux propositions avec leur aperçu LED et leur score : **✓ Garder cette
+  version** remplace le GIF et met l'original de côté dans `_a_revoir/_avant_correction`
+  (jamais supprimé) ; **✗ Refuser les propositions** laisse le GIF tel quel. Une
+  proposition doit gagner au moins 10 points. Les images à fond plein (plaque colorée)
+  ne reçoivent pas de proposition, car les corrections éclairciraient aussi le fond.
+  Le score ne mesure pas la luminosité : jugez à l'œil, un rendu terne peut être bien
+  noté.
+
+  Le traitement par lot enregistre ses réglages dans `dmd_batch.json`. Pour un dossier
+  produit par une version précédente, l'application demande le dossier des images source et utilise
+  les réglages actuels de l'onglet AUTO.
 
 La liste reste fluide même avec des dizaines de milliers de GIF.
 

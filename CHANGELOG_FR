@@ -53,3 +53,25 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                           - lot : le sens de defilement est calcule sur l image recadree, comme dans
                             l apercu (certains logos a marges transparentes defilaient dans le mauvais sens)
                           - version affichee 3.1.0, lanceur dmd_gif_creator_v310.py
+                v3.2.0 -- + fenetre "Revoir" : corrections proposees pour les GIF faibles (vide retire,
+                            parties sombres et peu colorees eclaircies, gamma, niveaux, inversion),
+                            recalculees avec les reglages du lot, jusqu a 2 propositions avec apercu LED,
+                            validees une a une ; l original accepte est mis de cote dans
+                            _a_revoir/_avant_correction, jamais supprime ; fond plein : pas de proposition
+                          + fenetre "Revoir" : miniature de l image source, bouton "Editer dans MANUEL"
+                            (rythme du lot repris, l export remplace le GIF du lot), passage au GIF
+                            suivant apres validation
+                          + le lot enregistre la source de chaque GIF et ses reglages (dmd_batch.json)
+                          + MANUEL : zone limitant curseurs et filtres a une partie de l image
+                          + MANUEL : recadrage 128x32 avec un cadre pose d emblee, a deplacer (souris,
+                            fleches), taille a la molette
+                          + MANUEL : zoom de l animation 50-300 % (remplace Resize +/-, sans effet sur le GIF)
+                          + MANUEL : apercu refait quand les FPS, la duree ou la vitesse changent
+                          + VIDEO : formats WEBM, M4V, WMV, FLV, MPG, MPEG, TS, 3GP et OGV acceptes en plus
+                          - MANUEL : les curseurs repartaient de l image chargee et annulaient recadrage et
+                            filtres ; ils sont maintenant integres a l image a l action suivante
+                          - apercus AUTO, MANUEL, TEXTSCROLL et VIDEO trop rapides apres une regeneration
+                            (boucles d animation en double), cadence juste
+                          - AUTO : propositions 4 a 6 de nouveau visibles en entier (parametres sur 2 lignes)
+                          - vider un champ numerique pour le retaper provoquait une erreur
+                          - version affichee 3.2.0, lanceur dmd_gif_creator_v320.py

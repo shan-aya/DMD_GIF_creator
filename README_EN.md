@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · 🇬🇧 **English** · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.1.0
+# DMD GIF Creator 128x32 — v3.2.0
 
 Create GIFs optimized for 128×32 DMD displays (arcade cabinet, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) from **images**, a **video**
@@ -13,14 +13,14 @@ processing of whole folders.
 
 ## Download
 
-**Windows**: download `dmd_gif_creator_v310.exe` from the
+**Windows**: download `dmd_gif_creator_v320.exe` from the
 [latest Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) and run
 it — nothing to install.
 
 **From the sources** ([`dmd_gif_creator/`](./dmd_gif_creator) folder):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v310.py
+    python dmd_gif_creator/dmd_gif_creator_v320.py
 
 `opencv-contrib-python` (not `opencv-python`) is required for the automatic tracking of
 the VIDEO tab; the two packages must not be installed at the same time.
@@ -46,8 +46,10 @@ invisible on a black DMD, are inverted when the render improves.
 scraped logos of a game library, for example: each logo gets the render mode that
 suits it, in parallel, with the folder tree kept and source files never modified. A
 proposal can be locked for the whole batch. Every GIF gets a **quality score**, and
-the **Review** window lists the weakest first, with a preview, to review thousands of
-logos quickly and set aside (never delete) the failed ones.
+the **Review** window lists the weakest first, with a preview and the source image, to
+review thousands of logos quickly and set aside (never delete) the failed ones. It
+**suggests fixes** for weak GIFs (black text lightened, empty space removed, gamma,
+inversion…), to approve one by one, or opens the source in MANUAL to redo it by hand.
 
 ![Review window](./screenshots/review_en.png)
 
@@ -55,7 +57,8 @@ logos quickly and set aside (never delete) the failed ones.
 
 ![MANUAL tab](./screenshots/manual_en.png)
 
-128×32 crop, brightness, contrast, saturation, sharpness, filters, fill and magic
+128×32 crop with a movable frame, zone limiting effects to part of the image,
+brightness, contrast, saturation, sharpness, filters, animation zoom, fill and magic
 eraser, animations (scroll, zoom, fade…) with easing and looping, multi-images and
 morphing, undo/redo history.
 
@@ -63,7 +66,8 @@ morphing, undo/redo history.
 
 ![VIDEO tab](./screenshots/video_en.png)
 
-Pick a section of a video (MP4, AVI, MOV, MKV) on the timeline, then the framing:
+Pick a section of a video (MP4, MOV, AVI, MKV, WEBM, WMV, FLV, MPG, TS, 3GP, OGV…) on
+the timeline, then the framing:
 automatic subject tracking, auto framing with zoom, or manual points (area and zoom
 that change over time). Automatic quality adjusts contrast, saturation and brightness
 from the video, and the GIF size is estimated live.
@@ -83,6 +87,17 @@ fitted automatically to the text length.
 - **HELP**: the full guide inside the application.
 
 ## What's new
+
+**v3.2.0**
+- **Review** window: **suggested fixes** for weak GIFs (empty space removed, dark parts
+  lightened, gamma, levels, inversion), with LED preview and one-by-one approval; the
+  original is set aside, never deleted. Source image thumbnail, **Edit in MANUAL**
+  button, next GIF selected after approval.
+- **MANUAL**: **zone** limiting sliders and filters to part of the image, animation
+  **zoom** (50 to 300 %), 128×32 crop with a **movable frame**.
+- **VIDEO**: WEBM, M4V, WMV, FLV, MPG/MPEG, TS, 3GP and OGV formats also accepted.
+- Fixes: MANUAL sliders no longer undo a crop or a filter; previews play at the right
+  speed; AUTO proposals 4 to 6 fully visible again.
 
 **v3.1.0**
 - **Quality score** for every GIF and **Review** window (weakest first, LED preview,

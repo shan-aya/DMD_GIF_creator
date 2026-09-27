@@ -211,7 +211,17 @@ every animation parameter yourself.
 ### 1. Toolbar (top)
 
 - **📂 Load**: loads an image from disk.
-- **✂️ Crop 128×32**: activates a manual cropping mode at the target size.
+- **✂️ Crop 128×32**: places a 4:1 frame on the image, by default 128×32 image pixels
+  (one pixel per LED, no scaling). Drag it to move it (clicking outside the frame
+  centers it on that point), arrow keys = 1 pixel (Shift: 10), mouse wheel = size (the
+  4:1 format is kept). The status bar shows the size, position and pixels per LED.
+  Double-click or Enter = apply; Escape or clicking the button again = cancel.
+- **▭ Zone** / **✕ Zone**: limits effects to part of the image. In Zone mode, draw a
+  rectangle with the mouse; drag inside it to move it; a single click outside clears it.
+  While a zone exists (light-blue frame), sliders and filters only affect its content;
+  Rotate 90° always turns the whole image (and clears the zone). "✕ Zone" goes back to
+  effects on the whole image; the zone is also cleared on crop and when another image is
+  loaded.
 - **↶ Undo** / **↷ Redo**: incremental undo/redo history. Every filter, fill,
   magic eraser, or crop is a history checkpoint; undoing then redoing recovers
   the exact intermediate states (not just the start/end). Performing a new
@@ -233,11 +243,22 @@ protection is applied here, control is intentionally left entirely to the user):
 - **Brightness** (0.5–2.0), **Contrast** (0.5–3.0), **Saturation** (0.0–2.0),
   **Sharpness** (0.0–3.0).
 
+The sliders act on the current state of the image (crop, filters, fills included). On
+the next permanent action (filter, crop, fill, eraser), their settings are merged into
+the image and they go back to 1.00; "↶ Undo" goes back to before that action. With a
+**zone** (see below), they only affect the zone.
+
 ### 3. Filters
 
 Immediate, cumulative-effect buttons: Blur, Gaussian Blur, Edges, Emboss, Detail+,
 Invert, Mirror H, Mirror V, Rotate 90°, Grayscale, Posterize, Solarize, Equalize,
-Auto-contrast, Resize + / Resize -.
+Auto-contrast.
+
+**🔍 Zoom − / 🔍 Zoom + / 100 %**: enlarges or shrinks the logo on the panel, in steps
+from 50 % to 300 %. 100 % is the size computed automatically for 128×32; above, the logo
+overflows and scrolls longer; below, it is smaller and centered. It is an animation
+setting: the working image is not modified, and the zoom goes back to 100 % with each
+new image. The preview is remade at every change.
 
 ### 4. Drawing Tools
 
@@ -295,7 +316,8 @@ currently only available in French.
 
 ## VIDEO tab — GIF from a video
 
-Turns a section of a video (MP4, AVI, MOV, MKV) into a 128×32 GIF. Requires the
+Turns a section of a video (MP4, M4V, MOV, AVI, MKV, WEBM, WMV, FLV, MPG, MPEG, TS, 3GP,
+OGV) into a 128×32 GIF. A rare codec may remain unreadable whatever the extension. Requires the
 `opencv-contrib-python` module (included in the Windows executable); if it is
 missing, the tab says so.
 
@@ -492,8 +514,8 @@ Two extras available in the same 4 tabs, only while the checkbox is checked:
 
 Every GIF produced gets a **quality score from 0 to 100**, computed on its frames:
 share of lit pixels, contrast, screen coverage, number of frames and duration. It is
-a **review aid, not an automatic decision**: nothing is deleted or changed based on
-this score.
+a **review aid, not an automatic decision**: nothing is deleted, and a GIF is only
+replaced if you accept a suggested fix (see below).
 
 | Rating | Score |
 |---|---|
@@ -519,12 +541,40 @@ offered at the end of a batch when some GIFs are poor or bad):
 
 - list of the folder's GIFs, **from the weakest to the best**, with a colored dot,
   score, path and reasons; clicking a column header sorts the list;
-- clicking a row plays the GIF with the LED render;
+- clicking a row plays the GIF with the LED render and, above it, shows the **source
+  image** with its size, on a gray checkerboard: black parts, invisible on the DMD, stay
+  visible there;
+- **✎ Edit in MANUAL**: when the suggestions don't fit, opens the source in the MANUAL
+  tab with the batch timing (FPS, minimum duration, scroll speed, loop). On export, the
+  application offers to **replace this GIF** in the batch folder (the original is set
+  aside in `_a_revoir/_avant_correction`, never deleted) or to save elsewhere. MANUAL
+  keeps its own scaling: the remade GIF can be smaller or shorter than the batch one;
 - **Threshold** (30 by default) and **Move ≤ threshold to _a_revoir** button: after
   confirmation (with the exact number of files), the GIFs concerned are **moved, never
   deleted**, into an `_a_revoir` subfolder of the output folder, keeping the folder
   structure. This folder is ignored when the folder is loaded again in the
   application.
+- **🪄 Suggest fixes ≤ threshold**: for each GIF scoring at or below the threshold, the
+  application tries, in the background, fixes of the **source image** (the source itself
+  is never modified) and remakes the GIF with the settings of the original batch:
+  - **empty space removed**: transparent or black margins taken off (no content cut);
+  - **dark parts lightened**: black text and outlines, invisible on a black DMD, turned
+    light while bright colors are kept;
+  - **gamma** and **levels**: a logo that is too dark is brightened;
+  - **inversion**: useful for dark single-color logos, but it changes the colors of a
+    colored logo; it is only suggested when it does clearly better.
+
+  The **Fix** column shows the possible gain (🪄 +62). Clicking the row shows up to two
+  suggestions with their LED preview and score: **✓ Keep this version** replaces the GIF
+  and sets the original aside in `_a_revoir/_avant_correction` (never deleted); **✗
+  Decline the suggestions** leaves the GIF as it is. A suggestion must gain at least 10
+  points. Images with a full background (colored plate) get no suggestion, since the
+  fixes would also brighten the background. The score does not measure brightness:
+  judge by eye, a dull render can score well.
+
+  Batch processing records its settings in `dmd_batch.json`. For a folder produced by an
+  earlier version, the application asks for the source images folder and uses the
+  current AUTO tab settings.
 
 The list stays smooth even with tens of thousands of GIFs.
 

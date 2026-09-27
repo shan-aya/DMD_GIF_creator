@@ -3,8 +3,9 @@ from __future__ import annotations
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v20
+# Version actuelle : v21
 #
+# v21 — 2026-09-27 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.2.0".
 # v20 — 2026-09-26 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.1.0".
 # v19 — 2026-09-26 — safe-modify — TEXT_MAP : ligne Profil (profile_label, fill_ratio_on_label, invert_dark_label,
 #      scroll_cap_label), dmd_converter.py v91.
@@ -465,7 +466,7 @@ TEXT_MAP: Dict[str, str] = {
     "✅ Traiter sélection": "process_sel",
     "📂 Charger": "load",
     "✂️ Crop 128×32": "crop",
-    "DMD Creator v3.1.0": "app_header",
+    "DMD Creator v3.2.0": "app_header",
     "💾 Exporter GIF": "export_gif",
     "📚 Multi-images": "multi_images",
     "🎬 Morphing": "morphing",

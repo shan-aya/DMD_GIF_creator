@@ -224,7 +224,18 @@ parámetro de animación.
 ### 1. Barra de herramientas (arriba)
 
 - **📂 Cargar**: carga una imagen desde el disco.
-- **✂️ Recortar 128×32**: activa un modo de recorte manual al tamaño objetivo.
+- **✂️ Recortar 128×32**: coloca un marco en formato 4:1 sobre la imagen, por defecto
+  de 128×32 píxeles de la imagen (un píxel por LED, sin escalado). Arrástrelo para
+  moverlo (un clic fuera del marco lo centra en ese punto), flechas = 1 píxel (Mayús:
+  10), rueda del ratón = tamaño (se mantiene el formato 4:1). La barra de estado indica
+  el tamaño, la posición y los píxeles por LED. Doble clic o Intro = aplicar; Escape o
+  nuevo clic en el botón = cancelar.
+- **▭ Zona** / **✕ Zona**: limita los efectos a una parte de la imagen. En modo Zona,
+  trace un rectángulo con el ratón; arrastre dentro para moverlo; un simple clic fuera
+  lo borra. Mientras exista una zona (marco azul claro), los controles y los filtros solo
+  afectan a su contenido; Rotación 90° siempre gira toda la imagen (y borra la zona).
+  «✕ Zona» vuelve a los efectos sobre toda la imagen; la zona también se borra al
+  recortar y al cargar otra imagen.
 - **↶ Deshacer** / **↷ Rehacer**: historial de deshacer/rehacer incremental.
   Cada filtro, relleno, borrador mágico o recorte es un punto del historial;
   deshacer y luego rehacer recupera exactamente los estados intermedios (no
@@ -248,11 +259,22 @@ deja intencionadamente por completo en manos del usuario):
 - **Brillo** (0.5–2.0), **Contraste** (0.5–3.0), **Saturación** (0.0–2.0),
   **Nitidez** (0.0–3.0).
 
+Los controles actúan sobre el estado actual de la imagen (recorte, filtros y rellenos
+incluidos). En la siguiente acción permanente (filtro, recorte, relleno, goma), sus
+ajustes se integran en la imagen y vuelven a 1,00; «↶ Deshacer» vuelve a antes de esa
+acción. Con una **zona** (ver más abajo), solo afectan a la zona.
+
 ### 3. Filtros
 
 Botones de efecto inmediato y acumulativo: Desenfoque, Desenfoque Gaussiano, Bordes,
 Relieve, Detalle+, Invertir, Espejo H, Espejo V, Rotar 90°, Escala de grises,
-Posterizar, Solarizar, Ecualizar, Auto-contraste, Redimensionar + / Redimensionar -.
+Posterizar, Solarizar, Ecualizar, Auto-contraste.
+
+**🔍 Zoom − / 🔍 Zoom + / 100 %**: amplía o reduce el logo en el panel, por pasos del
+50 % al 300 %. 100 % corresponde al tamaño calculado automáticamente para 128×32; por
+encima, el logo desborda y se desplaza más tiempo; por debajo, es más pequeño y
+centrado. Es un ajuste de la animación: la imagen de trabajo no se modifica y el zoom
+vuelve al 100 % con cada nueva imagen. La vista previa se rehace en cada cambio.
 
 ### 4. Herramientas de Dibujo
 
@@ -316,7 +338,9 @@ etiquetas de campo aquí también están disponibles solo en francés por ahora.
 
 ## Pestaña VIDEO — GIF a partir de un vídeo
 
-Convierte un fragmento de un vídeo (MP4, AVI, MOV, MKV) en un GIF 128×32. Necesita
+Convierte un fragmento de un vídeo (MP4, M4V, MOV, AVI, MKV, WEBM, WMV, FLV, MPG, MPEG,
+TS, 3GP, OGV) en un GIF 128×32. Un códec poco común puede seguir siendo ilegible sea
+cual sea la extensión. Necesita
 el módulo `opencv-contrib-python` (incluido en el ejecutable de Windows); si falta,
 la pestaña lo indica.
 
@@ -527,7 +551,8 @@ marcada:
 Cada GIF producido recibe una **puntuación de calidad de 0 a 100**, calculada sobre
 sus imágenes: proporción de píxeles encendidos, contraste, ocupación de la pantalla,
 número de imágenes y duración. Es una **ayuda para la revisión, no una decisión
-automática**: nada se borra ni se modifica según esta puntuación.
+automática**: nada se borra, y un GIF solo se sustituye si acepta una corrección
+propuesta (ver más abajo).
 
 | Nota | Puntuación |
 |---|---|
@@ -554,12 +579,42 @@ o propuesta al final de un lote cuando hay GIF bajos o malos):
 
 - lista de los GIF de la carpeta, **del más bajo al mejor**, con punto de color,
   puntuación, ruta y motivos; hacer clic en un encabezado de columna ordena la lista;
-- hacer clic en una fila reproduce el GIF con el renderizado LED;
+- hacer clic en una fila reproduce el GIF con el renderizado LED y, encima, muestra la
+  **imagen de origen** con sus dimensiones, sobre un damero gris: las partes negras,
+  invisibles en el DMD, siguen viéndose;
+- **✎ Editar en MANUAL**: cuando las propuestas no convienen, abre el origen en la
+  pestaña MANUAL con el ritmo del lote (FPS, duración mínima, velocidad de
+  desplazamiento, bucle). Al exportar, la aplicación propone **sustituir este GIF** en
+  la carpeta del lote (el original se aparta en `_a_revoir/_avant_correction`, nunca se
+  borra) o guardar en otro lugar. MANUAL conserva su propio escalado: el GIF rehecho
+  puede ser más pequeño o más corto que el del lote;
 - **Umbral** (30 por defecto) y botón **Mover ≤ umbral a _a_revoir**: tras la
   confirmación (con el número exacto de archivos), los GIF afectados se **mueven,
   nunca se borran**, a una subcarpeta `_a_revoir` de la carpeta de salida,
   conservando la estructura de carpetas. Esta carpeta se ignora al volver a cargar la
   carpeta en la aplicación.
+- **🪄 Proponer correcciones ≤ umbral**: para cada GIF con puntuación menor o igual al
+  umbral, la aplicación prueba en segundo plano correcciones de la **imagen de origen**
+  (el origen nunca se modifica) y rehace el GIF con los ajustes del lote original:
+  - **vacío eliminado**: márgenes transparentes o negros quitados (sin cortar contenido);
+  - **oscuros aclarados**: texto y contornos negros, invisibles en un DMD negro, pasados
+    a claro, conservando los colores vivos;
+  - **gamma** y **niveles**: un logo demasiado oscuro se aclara;
+  - **inversión**: útil para logos oscuros de un solo color, pero cambia los colores de
+    un logo de color; solo se propone si mejora claramente.
+
+  La columna **Corrección** indica la ganancia posible (🪄 +62). Hacer clic en la fila
+  muestra hasta dos propuestas con su vista previa LED y su puntuación: **✓ Conservar
+  esta versión** sustituye el GIF y aparta el original en `_a_revoir/_avant_correction`
+  (nunca se borra); **✗ Rechazar las propuestas** deja el GIF tal cual. Una propuesta
+  debe ganar al menos 10 puntos. Las imágenes con fondo lleno (placa de color) no
+  reciben propuesta, porque las correcciones también aclararían el fondo. La puntuación
+  no mide el brillo: juzgue a simple vista, un renderizado apagado puede tener buena
+  nota.
+
+  El procesamiento por lotes guarda sus ajustes en `dmd_batch.json`. Para una carpeta
+  generada por una versión anterior, la aplicación pide la carpeta de las imágenes de
+  origen y usa los ajustes actuales de la pestaña AUTO.
 
 La lista sigue fluida incluso con decenas de miles de GIF.
 
