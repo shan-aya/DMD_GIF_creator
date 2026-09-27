@@ -582,6 +582,13 @@ The list stays smooth even with tens of thousands of GIFs.
 
 ## Best practices and known limitations
 
+- **Antivirus**: the executable is not digitally signed. Windows SmartScreen may show
+  "Windows protected your PC" on first launch ("More info" then "Run anyway"). During
+  batch processing, the application starts several copies of itself and writes many
+  files very quickly, which an anti-ransomware protection may wrongly take for an attack
+  (seen once with Malwarebytes, "Malware.Ransom.Agent.Generic"). It is a false
+  positive: restore the file from quarantine, add the application to the antivirus
+  exclusions, and report it in an issue on the GitHub repository.
 - **Transparent-background images (RGBA PNG)**: handled correctly everywhere (the
   transparent background is always composited onto black, never left as-is) —
   avoids white/colored halos around cut-out logos.

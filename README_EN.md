@@ -17,6 +17,11 @@ processing of whole folders.
 [latest Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) and run
 it — nothing to install.
 
+The executable is not signed: Windows SmartScreen may ask for confirmation on first
+launch ("More info" then "Run anyway"). If an antivirus blocks it during batch
+processing (anti-ransomware protection), it is a false positive: see "Antivirus" in the
+[user guide](./NOTICE_EN.md#best-practices-and-known-limitations).
+
 **From the sources** ([`dmd_gif_creator/`](./dmd_gif_creator) folder):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python

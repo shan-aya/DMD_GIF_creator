@@ -622,6 +622,14 @@ La lista sigue fluida incluso con decenas de miles de GIF.
 
 ## Buenas prácticas y limitaciones conocidas
 
+- **Antivirus**: el ejecutable no está firmado digitalmente. Windows SmartScreen puede
+  mostrar «Windows protegió su PC» en el primer inicio («Más información» y luego
+  «Ejecutar de todas formas»). Durante un procesamiento por lotes, la aplicación inicia
+  varias copias de sí misma y escribe muchos archivos muy rápido, lo que una protección
+  anti-ransomware puede tomar por error por un ataque (visto una vez con Malwarebytes,
+  «Malware.Ransom.Agent.Generic»). Es un falso positivo: restaure el archivo desde la
+  cuarentena, añada la aplicación a las exclusiones del antivirus e infórmelo en una
+  issue del repositorio de GitHub.
 - **Imágenes con fondo transparente (PNG RGBA)**: gestionadas correctamente en todas
   partes (el fondo transparente siempre se compone sobre negro, nunca se deja tal
   cual) — evita halos blancos/de color alrededor de logotipos recortados.

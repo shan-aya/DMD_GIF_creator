@@ -17,6 +17,11 @@ procesamiento por lotes de carpetas enteras.
 [última Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) y
 ejecútelo — no hace falta instalar nada.
 
+El ejecutable no está firmado: Windows SmartScreen puede pedir una confirmación en el
+primer inicio («Más información» y luego «Ejecutar de todas formas»). Si un antivirus lo
+bloquea durante un procesamiento por lotes (protección anti-ransomware), es un falso
+positivo: vea «Antivirus» en la [guía](./NOTICE_ES.md#buenas-prácticas-y-limitaciones-conocidas).
+
 **Desde las fuentes** (carpeta [`dmd_gif_creator/`](./dmd_gif_creator)):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
