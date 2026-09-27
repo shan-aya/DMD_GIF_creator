@@ -348,6 +348,14 @@ la pestaña lo indica.
 
 - **📹 Cargar Vídeo**: abre un archivo de vídeo. También puede **arrastrar y soltar**
   un vídeo en cualquier lugar de la ventana, sea cual sea la pestaña mostrada.
+- **Vídeo largo**: si procesar todo el vídeo necesitaría mucha memoria (más de unos
+  1,5 GB: por ejemplo más de 8 s en 1080p a 30 i/s), se abre una ventana justo después
+  de elegirlo: **Inicio** y **Duración** del fragmento que se conserva, con la memoria
+  necesaria mostrada en directo. «✂ Recortar este fragmento» crea una copia temporal del
+  fragmento (borrada después): la línea de tiempo, la reproducción y la generación solo
+  lo tienen en cuenta a él. «Conservar todo el vídeo» sigue siendo posible. Una
+  **alerta** avisa si el fragmento conservado, o la selección al generar, supera el 60 %
+  de la memoria libre del PC.
 - **Reproducción**: el vídeo se reproduce en bucle en miniatura. **Haga clic** para
   abrirlo a tamaño real en el reproductor de vídeo de Windows.
 - **ℹ️ Vídeo de origen**: nombre del archivo, resolución, duración, imágenes por

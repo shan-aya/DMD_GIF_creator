@@ -1,7 +1,7 @@
 {
-  "app_title": "DMD GIF Creator 128x32 - IA Enhanced v3.2.1",
+  "app_title": "DMD GIF Creator 128x32 - IA Enhanced v3.2.2",
   "scanning_images": "Recherche d'images… {n}",
-  "app_header": "DMD Creator v3.2.1",
+  "app_header": "DMD Creator v3.2.2",
   "tab_auto": "AUTO",
   "tab_manual": "MANUEL",
   "tab_video": "VIDEO",
@@ -430,5 +430,19 @@
   "t_batch_workers": "Cœurs pour le traitement par lot :",
   "t_batch_workers_auto": "Auto ({n})",
   "t_batch_workers_note": "Les calculs du lot tournent en priorité basse : le PC reste utilisable pendant un traitement. {cpu} cœurs logiques sur ce PC.",
-  "tooltip_batch_workers": "Nombre d'images traitées en même temps par le traitement par lot (et par les corrections de la fenêtre Revoir). Auto = cœurs logiques moins 2, au plus 12 : au-delà de 12, le gain mesuré n'est que de 6 %. Moins de cœurs = lot plus lent mais PC plus disponible."
+  "tooltip_batch_workers": "Nombre d'images traitées en même temps par le traitement par lot (et par les corrections de la fenêtre Revoir). Auto = cœurs logiques moins 2, au plus 12 : au-delà de 12, le gain mesuré n'est que de 6 %. Moins de cœurs = lot plus lent mais PC plus disponible.",
+  "t_cut_title": "Vidéo longue — choisir le passage",
+  "t_cut_intro": "{name} : {dur} s, {w}×{h}, {fps} i/s.\nLa traiter entièrement demanderait environ {mem} de mémoire. Choisissez le passage à utiliser : seul ce passage sera découpé puis affiché dans la frise.",
+  "t_cut_start": "Début (s) :",
+  "t_cut_duration": "Durée (s) :",
+  "t_cut_mem": "Mémoire nécessaire pour ce passage : ~{need}",
+  "t_cut_mem_avail": " (libre sur ce PC : {avail})",
+  "t_cut_mem_warn": "⚠ Trop long pour la mémoire libre : le PC risque de ralentir fortement.",
+  "t_cut_do": "✂ Couper ce passage",
+  "t_cut_keep": "Garder toute la vidéo",
+  "t_cut_cancel": "Annuler",
+  "t_cut_ram_alert": "Ce passage demandera environ {need} de mémoire, pour {avail} libres sur ce PC.\n\nLe traitement risque d'être très lent et de ralentir tout le PC. Continuer quand même ?",
+  "t_cut_running": "Découpage du passage…",
+  "t_cut_status": "{name} — passage {a}–{b} s ({dur}s @ {fps}fps)",
+  "t_gen_ram_alert": "Cette sélection demandera environ {need} de mémoire, pour {avail} libres sur ce PC.\n\nLe traitement risque d'être très lent et de ralentir tout le PC. Réduisez la durée ou les FPS, ou continuez quand même. Continuer ?"
 }

@@ -3,8 +3,17 @@ from __future__ import annotations
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v8
+# Version actuelle : v10
 #
+# v10 — 2026-09-27 — safe-modify — Découpage des vidéos longues avant la frise (demande utilisateur, mémoire) :
+#      cut_clip (passage écrit en AVI MJPEG qualité 95, mêmes dimensions/fps, lecture séquentielle) et
+#      estimate_frames_bytes (mémoire des images gardées par la génération).
+# v9 — 2026-09-27 — safe-modify — Signalement utilisateur (vidéo de 44 Mo : processeur à 100 % longtemps). Cause :
+#      extract_frames_at faisait un seek par frame ; en H.264 chaque seek redécode depuis l'image clé précédente
+#      (mesuré, 1080p 42 Mo : 300 frames en 145 s, 2,5 cœurs, +2,6 Go). Lecture séquentielle : un seek au début,
+#      grab() jusqu'à chaque timestamp, retrieve() pour les seules images gardées ; mêmes images que l'ancien
+#      seek (formule OpenCV reproduite), ses erreurs de ±1 image corrigées. Pas de réduction des images (changerait
+#      le rendu pixel-perfect). Timestamps non croissants : ancienne méthode.
 # v8 — 2026-07-19 — safe-modify — Échelle de zoom cadrage étendue de 0..1 à
 #      -1.0..+1.0, demande explicite "-100% = resize seul, 0 = crop serré,
 #      +100% = zoom" (voir dmd_converter.py v68 pour le détail UI). Nouvelle
@@ -277,11 +286,74 @@ class VideoEngine:
         return [trim_start + step * i for i in range(n_frames)]
 
     @staticmethod
+    def cut_clip(path: str, start_s: float, duration_s: float, out_path: str,
+                 progress: Optional[Any] = None) -> Dict[str, Any]:
+        """v10 -- écrit le passage [start_s, start_s + duration_s] de `path`
+        dans `out_path` (AVI MJPEG qualité 95 : chaque image est une image
+        clé, pas de perte visible, seek immédiat), mêmes dimensions et même
+        fps que la source. Lecture séquentielle (un seul seek). `progress` :
+        fonction appelée avec la fraction faite (0..1). Retourne les
+        métadonnées du passage écrit (probe_video)."""
+        _require_cv2()
+        cap = cv2.VideoCapture(path)
+        writer = None
+        try:
+            if not cap.isOpened():
+                raise RuntimeError("Impossible de lire ce fichier vidéo (codec non supporté ?)")
+            fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+            w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            n_total = max(1, int(round(duration_s * fps)))
+            if start_s > 0:
+                cap.set(cv2.CAP_PROP_POS_MSEC, start_s * 1000.0)
+            writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*"MJPG"), fps, (w, h))
+            if not writer.isOpened():
+                raise RuntimeError("Impossible d'écrire le passage découpé")
+            writer.set(cv2.VIDEOWRITER_PROP_QUALITY, 95)
+            done = 0
+            while done < n_total:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                writer.write(frame)
+                done += 1
+                if progress is not None and (done % 15 == 0 or done == n_total):
+                    progress(done / n_total)
+            if done == 0:
+                raise RuntimeError("Aucune image lue dans ce passage")
+        finally:
+            cap.release()
+            if writer is not None:
+                writer.release()
+        return VideoEngine.probe_video(out_path)
+
+    @staticmethod
+    def estimate_frames_bytes(meta: Dict[str, Any], duration_s: float, fps: Optional[float] = None) -> int:
+        """v10 -- mémoire (octets) des images gardées par la génération du GIF
+        pour `duration_s` secondes : images RGB pleine résolution, au fps du
+        GIF (par défaut celui de la vidéo)."""
+        f = fps if fps else meta.get("fps", 25.0)
+        return int(max(0.0, duration_s) * f) * meta.get("width", 0) * meta.get("height", 0) * 3
+
+    @staticmethod
     def extract_frames_at(path: str, timestamps: List[float]) -> List[Image.Image]:
-        """Extrait une frame par timestamp (secondes), dans l'ordre. Seek
-        direct par timestamp (CAP_PROP_POS_MSEC) — suffisant pour ce cas
-        d'usage (quelques dizaines de frames), pas d'optimisation par lecture
-        séquentielle nécessaire."""
+        """Extrait une frame par timestamp (secondes), dans l'ordre.
+
+        v9 (2026-09-27) : lecture SÉQUENTIELLE. L'ancienne version faisait un
+        seek (CAP_PROP_POS_MSEC) par frame : en H.264/H.265, chaque seek
+        redécode depuis l'image clé précédente (souvent plusieurs secondes
+        avant), soit des dizaines à centaines d'images décodées PAR frame
+        extraite — mesuré sur une vidéo 1080p de 42 Mo : 300 frames en 145 s,
+        2,5 cœurs pleins. Désormais : un seul seek au premier timestamp, puis
+        grab() image par image (décodage seul, sans conversion) jusqu'à
+        chaque timestamp visé, retrieve() seulement pour les images gardées ;
+        une image source peut servir à plusieurs timestamps (fps cible >
+        fps natif). Même choix d'image que l'ancien seek (formule OpenCV
+        int(ms * fps * 0.001 + 0.5)), vérifié image par image ; là où l'ancien
+        seek tombait à ±1 image de sa propre formule, c'est corrigé.
+        Timestamps non croissants : ancienne méthode (seek par frame).
+        Images gardées en pleine résolution : réduire changerait le rendu en
+        pixel-perfect (diviseur entier calculé sur la taille source)."""
         _require_cv2()
         cap = cv2.VideoCapture(path)
         try:
@@ -290,20 +362,59 @@ class VideoEngine:
                     "Impossible de lire ce fichier vidéo (codec non supporté ?)"
                 )
             frames: List[Image.Image] = []
-            last_frame: Optional[Image.Image] = None
+            if not timestamps:
+                return frames
+            if any(b < a for a, b in zip(timestamps, timestamps[1:])):
+                last_frame: Optional[Image.Image] = None
+                for t in timestamps:
+                    cap.set(cv2.CAP_PROP_POS_MSEC, max(0.0, t) * 1000.0)
+                    ok, frame = cap.read()
+                    if ok:
+                        last_frame = _bgr_frame_to_pil(frame)
+                        frames.append(last_frame)
+                    elif last_frame is not None:
+                        frames.append(last_frame)
+                    else:
+                        raise RuntimeError("Impossible d'extraire une frame de cette vidéo")
+                return frames
+
+            fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+
+            def frame_index(t):
+                # même formule que le seek CAP_PROP_POS_MSEC d'OpenCV (backend
+                # FFmpeg : int(ms * fps * 0.001 + 0.5)) -> mêmes images que
+                # l'ancienne méthode, vérifié image par image
+                return int(max(0.0, t) * 1000.0 * fps * 0.001 + 0.5)
+
+            # jamais au-delà de la dernière image (un grab en fin de flux fait
+            # écrire "retrieveFrame Picture does not contain data" à OpenCV)
+            total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+            if total > 0:
+                _fi = frame_index
+                frame_index = lambda t: min(_fi(t), total - 1)
+            first_idx = frame_index(timestamps[0])
+            if first_idx > 0:
+                cap.set(cv2.CAP_PROP_POS_MSEC, max(0.0, timestamps[0]) * 1000.0)
+            cur_idx = first_idx - 1          # numéro de la dernière image décodée
+            cur_img: Optional[Image.Image] = None
+            pending = False                  # image décodée pas encore convertie
+            ended = False
             for t in timestamps:
-                cap.set(cv2.CAP_PROP_POS_MSEC, max(0.0, t) * 1000.0)
-                ok, frame = cap.read()
-                if ok:
-                    last_frame = _bgr_frame_to_pil(frame)
-                    frames.append(last_frame)
-                elif last_frame is not None:
-                    # Fin de flux/seek imprécis en tout dernier timestamp :
-                    # répète la dernière frame valide plutôt que planter tout
-                    # le pipeline pour 1 frame manquante en bout de trim.
-                    frames.append(last_frame)
-                else:
+                target = frame_index(t)
+                while not ended and cur_idx < target:
+                    if not cap.grab():
+                        ended = True
+                        break
+                    cur_idx += 1
+                    pending = True
+                if pending:
+                    ok, frame = cap.retrieve()
+                    if ok:
+                        cur_img = _bgr_frame_to_pil(frame)
+                    pending = False
+                if cur_img is None:
                     raise RuntimeError("Impossible d'extraire une frame de cette vidéo")
+                frames.append(cur_img)   # fin de flux : répète la dernière image valide
             return frames
         finally:
             cap.release()

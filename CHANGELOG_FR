@@ -83,3 +83,15 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                           + notice : note "Antivirus" (executable non signe, SmartScreen, faux positif
                             anti-rancongiciel possible pendant un lot)
                           - version affichee 3.2.1, lanceur dmd_gif_creator_v321.py
+                v3.2.2 -- - VIDEO : generation du GIF tres lente et processeur a fond longtemps apres
+                            l affichage : les images etaient lues par un saut par image (chaque saut
+                            redecodait la video depuis l image cle precedente) ; lecture dans l ordre,
+                            memes images (1080p, 10 s : 145 s -> 19 s avec le rendu multi-coeurs)
+                          + VIDEO : rendu des images reparti sur plusieurs processus (priorite basse,
+                            nombre de coeurs de PARAMETRES), GIF identique
+                          - VIDEO : le lecteur "Lecture" se dedoublait a chaque chargement et decodait
+                            meme hors de l onglet VIDEO
+                          + VIDEO : video longue -> decoupage d un passage propose juste apres la
+                            selection (debut, duree, memoire necessaire), copie temporaire effacee
+                            ensuite ; alerte si le passage ou la selection depasse 60 % de la memoire libre
+                          - version affichee 3.2.2, lanceur dmd_gif_creator_v322.py

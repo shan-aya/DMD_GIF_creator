@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.2.1
+Version: 3.2.2
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,8 +27,23 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v107
+# Version actuelle : v110
 #
+# v110 — 2026-09-27 — safe-modify — Version 3.2.2 (v108-v109 : onglet VIDEO, extraction séquentielle, rendu
+#      multi-cœurs, découpage des vidéos longues, alertes mémoire, lecteur unique) ; lanceur renommé
+#      dmd_gif_creator_v322.py ; en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v23).
+# v109 — 2026-09-27 — safe-modify — Onglet VIDEO (demandes utilisateur) : (1) rendu DMD des images réparti sur
+#      plusieurs processus (_video_render_frame, priorité basse, nombre de PARAMETRES ; GIF identique, vérifié par
+#      empreinte ; 1080p 10 s : 71 s -> 19 s, 68 -> 45 s avec zone de suivi, le suivi restant séquentiel) ;
+#      (2) vidéo dont le traitement complet dépasserait ~1,5 Go : découpage proposé juste après la sélection, avant
+#      la frise (VideoCutDialog : début/durée, mémoire nécessaire en direct ; passage écrit en AVI MJPEG temporaire,
+#      effacé au chargement suivant et à la fermeture) ; (3) alerte mémoire si le passage gardé, ou la sélection au
+#      moment de générer, dépasse 60 % de la mémoire libre.
+# v108 — 2026-09-27 — safe-modify — Onglet VIDEO, processeur à 100 % (signalement utilisateur, vidéo de 44 Mo) :
+#      (1) extraction des images séquentielle (dmd_video_engine v9 : un seek par image redécodait depuis l'image
+#      clé à chaque fois ; 1080p, 10 s : 145 s -> voir mesures) ; (2) lecteur "Lecture" : une seule boucle
+#      (_anim_schedule "playback" ; charger une vidéo en ajoutait une 2e), pas de décodage quand l'onglet VIDEO
+#      n'est pas affiché.
 # v107 — 2026-09-27 — safe-modify — Version 3.2.1 (v106 : priorité basse des calculs et nombre de cœurs du lot
 #      dans PARAMETRES ; note Antivirus dans les guides) ; lanceur renommé dmd_gif_creator_v321.py ; en-têtes
 #      des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v22).
@@ -2338,6 +2353,35 @@ VIDEO_EXTS = (".mp4", ".m4v", ".mov", ".avi", ".mkv", ".webm", ".wmv", ".flv",
               ".mpg", ".mpeg", ".ts", ".3gp", ".ogv")
 
 
+VIDEO_CUT_PROPOSE_BYTES = 1536 * 2**20   # v109 : au-delà, découpage proposé au chargement
+VIDEO_RAM_ALERT_FRACTION = 0.6           # v109 : alerte si > 60 % de la mémoire libre
+
+
+def available_ram_bytes():
+    """v109 -- (mémoire physique libre, totale) en octets, ou (None, None)."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [("dwLength", wintypes.DWORD), ("dwMemoryLoad", wintypes.DWORD),
+                        ("ullTotalPhys", ctypes.c_ulonglong), ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+        st = MEMORYSTATUSEX()
+        st.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        if ctypes.WinDLL("kernel32").GlobalMemoryStatusEx(ctypes.byref(st)):
+            return st.ullAvailPhys, st.ullTotalPhys
+    except Exception:
+        pass
+    return None, None
+
+
+def _fmt_bytes(n):
+    return f"{n / 2**30:.1f} Go" if n >= 2**30 else f"{n / 2**20:.0f} Mo"
+
+
 def default_batch_workers():
     """v106 -- nombre de processus du lot par défaut (règle v84, mesurée le
     2026-09-24 : ×1,9 de 4 à 12 processus, +6 % seulement au-delà) : cœurs
@@ -2574,6 +2618,8 @@ class DMDConverter:
 
         # Video (onglet VIDEO)
         self.video_path = None
+        self._video_temp_clip = None     # v109 : passage découpé temporaire (AVI)
+        self.video_clip_origin = None    # v109 : (source, début, durée) du passage chargé
         self.video_meta = None
         self.video_thumbnails = []
         self.video_trim_start = tk.DoubleVar(value=0.0)
@@ -2818,7 +2864,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.2.1"
+    APP_VERSION = "3.2.2"
 
     # ========================================================================
 
@@ -4695,10 +4741,20 @@ class DMDConverter:
         flux (voir VideoEngine.read_capture_frame)."""
         if not self.video_playback_playing or self._video_playback_cap is None:
             return
-        frame = VideoEngine.read_capture_frame(self._video_playback_cap)
-        if frame is not None:
-            self._video_playback_show_frame(frame)
-        self.root.after(self._video_playback_delay_ms, self._video_playback_tick)
+        # v108 : pas de décodage quand l'onglet VIDEO n'est pas affiché (vidéo
+        # 1080p = ~1,7 cœur en continu) ; la lecture reprend au retour
+        try:
+            visible = self.notebook.index(self.notebook.select()) == 2
+        except tk.TclError:
+            visible = True
+        if visible:
+            frame = VideoEngine.read_capture_frame(self._video_playback_cap)
+            if frame is not None:
+                self._video_playback_show_frame(frame)
+        # v108 : une seule boucle de lecture (charger une vidéo relançait une
+        # 2e boucle sans arrêter la 1re : 2 décodages en parallèle, mesuré)
+        self._anim_schedule("playback", self._video_playback_delay_ms if visible else 300,
+                            self._video_playback_tick)
 
     def _video_playback_show_frame(self, frame):
         """Affiche `frame` dans video_playback_canvas en mode "resize"
@@ -4731,6 +4787,7 @@ class DMDConverter:
         position courante affichée plutôt qu'un retour au début — plus utile
         pour examiner une frame précise en contexte de prévisualisation)."""
         self.video_playback_playing = False
+        self._anim_cancel("playback")  # v108
 
     def _video_playback_seek(self, delta_seconds):
         """Boutons "⏪"/"⏩" : avance/recule de `delta_seconds` dans le flux
@@ -4750,6 +4807,7 @@ class DMDConverter:
         chargement de vidéo, ou fermeture de l'app) — évite de fuir un
         descripteur de fichier ouvert."""
         self.video_playback_playing = False
+        self._anim_cancel("playback")  # v108
         if self._video_playback_cap is not None:
             VideoEngine.release_capture(self._video_playback_cap)
             self._video_playback_cap = None
@@ -4769,11 +4827,52 @@ class DMDConverter:
         if path:
             self._video_load_from_path(path)
 
-    def _video_load_from_path(self, path):
+    def _video_remove_temp_clip(self):
+        """v109 -- efface le passage découpé temporaire courant (s'il existe)."""
+        clip = getattr(self, "_video_temp_clip", None)
+        if not clip:
+            return
+        if self.video_path and os.path.normcase(self.video_path) == os.path.normcase(clip):
+            self._video_playback_stop_capture()  # fichier ouvert par le lecteur
+        try:
+            if os.path.exists(clip):
+                os.remove(clip)  # copie temporaire créée par l'appli
+        except OSError as e:
+            logger.error(f"Passage temporaire non effacé ({clip}) : {e}")
+        self._video_temp_clip = None
+
+    def _video_start_cut(self, path, start, duration):
+        """v109 -- découpe [start, start+duration] de `path` dans un AVI
+        temporaire (thread, barre de progression), puis le charge."""
+        import tempfile
+        self._video_remove_temp_clip()
+        folder = os.path.join(tempfile.gettempdir(), "DMD_GIF_Creator_clips")
+        os.makedirs(folder, exist_ok=True)
+        out = os.path.join(folder, f"{Path(path).stem}_{start:.1f}-{start + duration:.1f}s.avi")
+        label = tr("t_cut_running", "Découpage du passage…")
+        self.update_progress(0, label)
+
+        def work():
+            try:
+                VideoEngine.cut_clip(path, start, duration, out,
+                                     progress=lambda f: self.root.after(0, lambda p=int(f * 100): self.update_progress(p, label)))
+            except Exception as e:
+                msg = str(e)
+                logger.error(f"Découpage vidéo impossible : {msg}")
+                self.root.after(0, lambda m=msg: messagebox.showerror(lang_manager.get("error", "Erreur"), m))
+                return
+            self.root.after(0, lambda: self._video_load_from_path(out, _from_cut=(path, start, duration)))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _video_load_from_path(self, path, _from_cut=None):
         """Charge un fichier vidéo (bouton ou glisser-déposer) : sonde ses
         métadonnées, réinitialise trim/ROI/aperçu, puis extrait vignettes et
         frame de référence en thread (probe_video peut être lent sur de gros
-        fichiers)."""
+        fichiers). v109 : vidéo dont le traitement complet demanderait
+        beaucoup de mémoire -> découpage d'un passage proposé AVANT la frise
+        (VideoCutDialog) ; `_from_cut` = (source, début, durée) quand `path`
+        est le passage découpé."""
         if not CV2_AVAILABLE:
             messagebox.showerror(
                 lang_manager.get("error", "Erreur"),
@@ -4786,6 +4885,20 @@ class DMDConverter:
             messagebox.showerror(lang_manager.get("error", "Erreur"), str(e))
             logger.error(f"Erreur ouverture vidéo {path}: {e}")
             return
+
+        if _from_cut is None:
+            need = VideoEngine.estimate_frames_bytes(meta, meta["duration"])
+            if need > VIDEO_CUT_PROPOSE_BYTES:
+                dlg = VideoCutDialog(self.root, path, meta)
+                if dlg.result is None:
+                    return
+                if dlg.result[0] == "cut":
+                    self._video_start_cut(path, dlg.result[1], dlg.result[2])
+                    return
+            self._video_remove_temp_clip()  # autre vidéo : l'ancien passage n'est plus utile
+        else:
+            self._video_temp_clip = path
+        self.video_clip_origin = _from_cut
 
         self.video_path = path
         self.video_meta = meta
@@ -4811,9 +4924,15 @@ class DMDConverter:
         self.video_frames = []
         self.video_animating = False
         self.video_gif_size_var.set("—")
-        self.video_status.set(
-            f"{Path(path).name} — {meta['duration']:.1f}s @ {meta['fps']:.0f}fps"
-        )
+        if _from_cut is not None:  # v109 : rappeler la vidéo d'origine et le passage
+            src, s0, d0 = _from_cut
+            self.video_status.set(tr("t_cut_status", "{name} — passage {a}–{b} s ({dur}s @ {fps}fps)",
+                                     name=Path(src).name, a=f"{s0:.1f}", b=f"{s0 + d0:.1f}",
+                                     dur=f"{meta['duration']:.1f}", fps=f"{meta['fps']:.0f}"))
+        else:
+            self.video_status.set(
+                f"{Path(path).name} — {meta['duration']:.1f}s @ {meta['fps']:.0f}fps"
+            )
         self._video_update_source_info()
         self._video_update_gif_info()
         logger.info(f"Vidéo chargée: {Path(path).name} ({meta['duration']:.1f}s)")
@@ -6194,6 +6313,21 @@ class DMDConverter:
             return
         if self.video_processing:
             return
+        # v109 : alerte mémoire (sélection trop longue pour la mémoire libre)
+        try:
+            span = self.video_trim_end.get() - self.video_trim_start.get()
+            need = VideoEngine.estimate_frames_bytes(self.video_meta or {}, span, fps=self.video_fps.get())
+        except (tk.TclError, ValueError):
+            need = 0
+        avail, _total = available_ram_bytes()
+        if avail and need > VIDEO_RAM_ALERT_FRACTION * avail and not messagebox.askyesno(
+            lang_manager.get("warning", "Attention"),
+            tr("t_gen_ram_alert",
+               "Cette sélection demandera environ {need} de mémoire, pour {avail} libres sur ce PC.\n\n"
+               "Le traitement risque d'être très lent et de ralentir tout le PC. Réduisez la durée ou les FPS, "
+               "ou continuez quand même. Continuer ?", need=_fmt_bytes(need), avail=_fmt_bytes(avail)),
+        ):
+            return
         self.video_processing = True
         self.video_animating = False
         threading.Thread(target=self._video_pipeline, daemon=True).start()
@@ -6267,31 +6401,30 @@ class DMDConverter:
 
             self.root.after(0, lambda: self.update_progress(60, tr("t_dmd_render", "Rendu DMD...")))
             pixel_perfect = self._get_force_pixel_perfect()
+            fit = crop_windows is not None
+            jobs = ((frame, crop_windows[i] if crop_windows is not None else None, settings, pixel_perfect, fit)
+                    for i, frame in enumerate(src_frames))
             out_frames = []
-            for i, frame in enumerate(src_frames):
-                if crop_windows is not None:
-                    x0, y0, cw, ch = crop_windows[i]
-                    if cw > 0 and ch > 0:
-                        frame = frame.crop((x0, y0, x0 + cw, y0 + ch))
-                if settings is not None:
-                    frame = DMDEngine.optimize_for_dmd(frame, settings)
-                resized, rw, rh = DMDEngine.adaptive_resize(
-                    frame,
-                    128,
-                    32,
-                    # "fit" (pas "fill") : voir _video_update_crop_preview
-                    # pour la justification complète — nécessaire pour que
-                    # zoom<1.0 affiche le crop entier en letterbox au lieu
-                    # d'en recadrer l'excédent.
-                    mode="fit" if crop_windows is not None else "auto",
-                    pixel_perfect=pixel_perfect,
-                )
-                canvas_frame = Image.new("RGB", (128, 32), (0, 0, 0))
-                canvas_frame.paste(resized, ((128 - rw) // 2, (32 - rh) // 2))
-                canvas_frame = DMDEngine.cleanup_dmd_frame(canvas_frame, power=0.5)
-                out_frames.append(canvas_frame)
-                pct = 60 + int(30 * (i + 1) / len(src_frames))
-                self.root.after(0, lambda p=pct: self.update_progress(p, tr("t_dmd_render", "Rendu DMD...")))
+            n = len(src_frames)
+            # v109 : rendu réparti sur plusieurs processus (priorité basse, nombre
+            # de PARAMETRES) ; même fonction qu'en séquentiel -> GIF identique.
+            # Peu d'images : séquentiel (démarrer les processus coûte ~1-2 s).
+            workers = min(self._batch_workers(), n)
+            if workers >= 2 and n >= 24:
+                pool = ProcessPoolExecutor(max_workers=workers, initializer=_worker_low_priority)
+                try:
+                    for i, canvas_frame in enumerate(pool.map(_video_render_frame, jobs, chunksize=4)):
+                        out_frames.append(canvas_frame)
+                        if i % 8 == 7 or i == n - 1:
+                            pct = 60 + int(30 * (i + 1) / n)
+                            self.root.after(0, lambda p=pct: self.update_progress(p, tr("t_dmd_render", "Rendu DMD...")))
+                finally:
+                    pool.shutdown(wait=True, cancel_futures=True)
+            else:
+                for i, job in enumerate(jobs):
+                    out_frames.append(_video_render_frame(job))
+                    pct = 60 + int(30 * (i + 1) / n)
+                    self.root.after(0, lambda p=pct: self.update_progress(p, tr("t_dmd_render", "Rendu DMD...")))
 
             self.video_frames = out_frames
 
@@ -9857,6 +9990,7 @@ class DMDConverter:
             # Libère le VideoCapture du lecteur intégré (onglet VIDEO) —
             # évite de fuir un descripteur de fichier ouvert.
             self._video_playback_stop_capture()
+            self._video_remove_temp_clip()  # v109 : passage découpé temporaire
 
             # Sauvegarder config
             config_manager.save()
@@ -11046,6 +11180,106 @@ class ProfileEditor:
         self.app._on_profile_selected()
 
 
+class VideoCutDialog:
+    """v109 -- proposé juste après le choix d'une vidéo dont le traitement
+    complet demanderait beaucoup de mémoire (VIDEO_CUT_PROPOSE_BYTES) :
+    choisir le passage à garder AVANT la construction de la frise (demande
+    utilisateur). Mémoire nécessaire affichée en direct ; alerte si le choix
+    dépasse VIDEO_RAM_ALERT_FRACTION de la mémoire libre. Résultat
+    (self.result) : ("cut", début, durée), ("keep",) ou None (annulé)."""
+
+    def __init__(self, parent, path, meta):
+        self.meta, self.result = meta, None
+        self.duration = max(0.1, meta["duration"])
+        self.avail, _total = available_ram_bytes()
+        w = self.win = tk.Toplevel(parent)
+        w.title(tr("t_cut_title", "Vidéo longue — choisir le passage"))
+        w.transient(parent)
+        w.resizable(False, False)
+        f = ttk.Frame(w, padding=16)
+        f.pack(fill=tk.BOTH, expand=True)
+        full = VideoEngine.estimate_frames_bytes(meta, self.duration)
+        ttk.Label(f, wraplength=520, justify=tk.LEFT, text=tr(
+            "t_cut_intro",
+            "{name} : {dur} s, {w}×{h}, {fps} i/s.\nLa traiter entièrement demanderait environ {mem} de mémoire. "
+            "Choisissez le passage à utiliser : seul ce passage sera découpé puis affiché dans la frise.",
+            name=Path(path).name, dur=f"{self.duration:.1f}", w=meta["width"], h=meta["height"],
+            fps=f"{meta['fps']:.0f}", mem=_fmt_bytes(full))).pack(anchor=tk.W, pady=(0, 12))
+        # durée par défaut : la plus longue qui reste sous le seuil de proposition
+        per_s = max(1, VideoEngine.estimate_frames_bytes(meta, 1.0))
+        default = max(1.0, min(self.duration, int(VIDEO_CUT_PROPOSE_BYTES / per_s * 2) / 2))
+        self.start_var = tk.DoubleVar(value=0.0)
+        self.dur_var = tk.DoubleVar(value=default)
+        row = ttk.Frame(f)
+        row.pack(anchor=tk.W)
+        ttk.Label(row, text=tr("t_cut_start", "Début (s) :")).pack(side=tk.LEFT)
+        ttk.Spinbox(row, from_=0, to=self.duration, increment=0.5, width=8, textvariable=self.start_var,
+                    command=self._update).pack(side=tk.LEFT, padx=(4, 16))
+        ttk.Label(row, text=tr("t_cut_duration", "Durée (s) :")).pack(side=tk.LEFT)
+        ttk.Spinbox(row, from_=0.5, to=self.duration, increment=0.5, width=8, textvariable=self.dur_var,
+                    command=self._update).pack(side=tk.LEFT, padx=4)
+        for v in (self.start_var, self.dur_var):
+            v.trace_add("write", lambda *_a: self._update())
+        self.mem_var = tk.StringVar()
+        self.mem_label = ttk.Label(f, textvariable=self.mem_var, justify=tk.LEFT, anchor="w", wraplength=520)
+        self.mem_label.pack(anchor=tk.W, fill=tk.X, pady=(10, 12))
+        btns = ttk.Frame(f)
+        btns.pack(fill=tk.X)
+        ttk.Button(btns, text=tr("t_cut_do", "✂ Couper ce passage"), command=self._cut).pack(side=tk.LEFT)
+        ttk.Button(btns, text=tr("t_cut_keep", "Garder toute la vidéo"), command=self._keep).pack(side=tk.LEFT, padx=8)
+        ttk.Button(btns, text=tr("t_cut_cancel", "Annuler"), command=w.destroy).pack(side=tk.RIGHT)
+        self._update()
+        w.grab_set()
+        parent.wait_window(w)
+
+    def _values(self):
+        try:
+            s = max(0.0, min(float(self.start_var.get()), self.duration - 0.1))
+            d = max(0.1, min(float(self.dur_var.get()), self.duration - s))
+            return s, d
+        except (tk.TclError, ValueError):
+            return None
+
+    def _update(self):
+        v = self._values()
+        if v is None:
+            return
+        need = VideoEngine.estimate_frames_bytes(self.meta, v[1])
+        txt = tr("t_cut_mem", "Mémoire nécessaire pour ce passage : ~{need}", need=_fmt_bytes(need))
+        if self.avail:
+            txt += tr("t_cut_mem_avail", " (libre sur ce PC : {avail})", avail=_fmt_bytes(self.avail))
+        heavy = self.avail is not None and need > VIDEO_RAM_ALERT_FRACTION * self.avail
+        if heavy:
+            txt += "\n" + tr("t_cut_mem_warn", "⚠ Trop long pour la mémoire libre : le PC risque de ralentir fortement.")
+        self.mem_var.set(txt)
+        self.mem_label.configure(foreground="#ff6b6b" if heavy else "#9fd39f")
+
+    def _confirm_ram(self, need):
+        """Alerte mémoire (demande utilisateur) : True si on continue."""
+        if self.avail is None or need <= VIDEO_RAM_ALERT_FRACTION * self.avail:
+            return True
+        return messagebox.askyesno(
+            lang_manager.get("warning", "Attention"),
+            tr("t_cut_ram_alert",
+               "Ce passage demandera environ {need} de mémoire, pour {avail} libres sur ce PC.\n\n"
+               "Le traitement risque d'être très lent et de ralentir tout le PC. Continuer quand même ?",
+               need=_fmt_bytes(need), avail=_fmt_bytes(self.avail)),
+            parent=self.win)
+
+    def _cut(self):
+        v = self._values()
+        if v is None or not self._confirm_ram(VideoEngine.estimate_frames_bytes(self.meta, v[1])):
+            return
+        self.result = ("cut", v[0], v[1])
+        self.win.destroy()
+
+    def _keep(self):
+        if not self._confirm_ram(VideoEngine.estimate_frames_bytes(self.meta, self.duration)):
+            return
+        self.result = ("keep",)
+        self.win.destroy()
+
+
 def review_replace_gif(folder, rel, new_path, quality, code):
     """v97 -- remplace le GIF `rel` d'un dossier de lot par `new_path` :
     l'original part dans _a_revoir/_avant_correction/ (jamais supprimé,
@@ -11925,6 +12159,33 @@ def process_one_image(
         return (image_path, True, None, output_name, len(frames), color_count, quality)
     except Exception as e:
         return (image_path, False, str(e), None, 0, 0, None)
+
+
+def _video_render_frame(job):
+    """v109 -- rendu DMD 128×32 d'UNE image de l'onglet VIDEO (corps de
+    l'ancienne boucle de _video_pipeline, inchangé) : recadrage éventuel,
+    qualité auto, redimensionnement, nettoyage. Module-level PICKLABLE : utilisé
+    en séquentiel ou par les processus de calcul (ProcessPoolExecutor)."""
+    frame, crop, settings, pixel_perfect, fit = job
+    if crop is not None:
+        x0, y0, cw, ch = crop
+        if cw > 0 and ch > 0:
+            frame = frame.crop((x0, y0, x0 + cw, y0 + ch))
+    if settings is not None:
+        frame = DMDEngine.optimize_for_dmd(frame, settings)
+    resized, rw, rh = DMDEngine.adaptive_resize(
+        frame,
+        128,
+        32,
+        # "fit" (pas "fill") : voir _video_update_crop_preview pour la
+        # justification complète — nécessaire pour que zoom<1.0 affiche le
+        # crop entier en letterbox au lieu d'en recadrer l'excédent.
+        mode="fit" if fit else "auto",
+        pixel_perfect=pixel_perfect,
+    )
+    canvas_frame = Image.new("RGB", (128, 32), (0, 0, 0))
+    canvas_frame.paste(resized, ((128 - rw) // 2, (32 - rh) // 2))
+    return DMDEngine.cleanup_dmd_frame(canvas_frame, power=0.5)
 
 
 def autofix_one(rel, src, batch_params, color_count_fallback, loop_mode, loop_count, base_score, work_dir):

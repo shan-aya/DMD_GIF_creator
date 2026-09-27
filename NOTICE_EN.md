@@ -325,6 +325,13 @@ missing, the tab says so.
 
 - **📹 Load Video**: opens a video file. You can also **drag and drop** a video
   anywhere on the window, whatever tab is shown.
+- **Long video**: if processing the whole video would need a lot of memory (beyond about
+  1.5 GB: for example more than 8 s in 1080p at 30 fps), a window opens right after the
+  choice: **Start** and **Duration** of the section to keep, with the memory needed shown
+  live. "✂ Cut this section" creates a temporary copy of the section (deleted later):
+  the timeline, playback and generation only cover it. "Keep the whole video" is still
+  possible. An **alert** warns if the kept section, or the selection when generating,
+  exceeds 60 % of the PC's free memory.
 - **Playback**: the video loops as a thumbnail. **Click it** to open it full size in
   the Windows video player.
 - **ℹ️ Source Video**: file name, resolution, duration, frames per second, total

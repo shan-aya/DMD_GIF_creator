@@ -3,8 +3,9 @@ from __future__ import annotations
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v22
+# Version actuelle : v23
 #
+# v23 — 2026-09-27 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.2.2".
 # v22 — 2026-09-27 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.2.1".
 # v21 — 2026-09-27 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.2.0".
 # v20 — 2026-09-26 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.1.0".
@@ -467,7 +468,7 @@ TEXT_MAP: Dict[str, str] = {
     "✅ Traiter sélection": "process_sel",
     "📂 Charger": "load",
     "✂️ Crop 128×32": "crop",
-    "DMD Creator v3.2.1": "app_header",
+    "DMD Creator v3.2.2": "app_header",
     "💾 Exporter GIF": "export_gif",
     "📚 Multi-images": "multi_images",
     "🎬 Morphing": "morphing",

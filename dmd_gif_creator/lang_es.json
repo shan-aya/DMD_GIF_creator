@@ -1,7 +1,7 @@
 {
-  "app_title": "DMD GIF Creator 128x32 - IA Mejorado v3.2.1",
+  "app_title": "DMD GIF Creator 128x32 - IA Mejorado v3.2.2",
   "scanning_images": "Buscando imágenes… {n}",
-  "app_header": "DMD Creator v3.2.1",
+  "app_header": "DMD Creator v3.2.2",
   "tab_auto": "AUTO",
   "tab_manual": "MANUAL",
   "tab_video": "VIDEO",
@@ -430,5 +430,19 @@
   "t_batch_workers": "Núcleos para el procesamiento por lotes:",
   "t_batch_workers_auto": "Auto ({n})",
   "t_batch_workers_note": "Los cálculos del lote se ejecutan con prioridad baja: el PC sigue utilizable durante el procesamiento. {cpu} núcleos lógicos en este PC.",
-  "tooltip_batch_workers": "Número de imágenes procesadas a la vez por el procesamiento por lotes (y por las correcciones de la ventana Revisar). Auto = núcleos lógicos menos 2, como máximo 12: por encima de 12, la ganancia medida es solo del 6 %. Menos núcleos = lote más lento pero PC más disponible."
+  "tooltip_batch_workers": "Número de imágenes procesadas a la vez por el procesamiento por lotes (y por las correcciones de la ventana Revisar). Auto = núcleos lógicos menos 2, como máximo 12: por encima de 12, la ganancia medida es solo del 6 %. Menos núcleos = lote más lento pero PC más disponible.",
+  "t_cut_title": "Vídeo larga — elegir el fragmento",
+  "t_cut_intro": "{name}: {dur} s, {w}×{h}, {fps} i/s.\nProcesarlo entero necesitaría unos {mem} de memoria. Elija el fragmento que desea usar: solo este fragmento se recortará y se mostrará en la línea de tiempo.",
+  "t_cut_start": "Inicio (s):",
+  "t_cut_duration": "Duración (s):",
+  "t_cut_mem": "Memoria necesaria para este fragmento: ~{need}",
+  "t_cut_mem_avail": " (libre en este PC: {avail})",
+  "t_cut_mem_warn": "⚠ Demasiado largo para la memoria libre: el PC puede ralentizarse mucho.",
+  "t_cut_do": "✂ Recortar este fragmento",
+  "t_cut_keep": "Conservar todo el vídeo",
+  "t_cut_cancel": "Cancelar",
+  "t_cut_ram_alert": "Este fragmento necesitará unos {need} de memoria, con {avail} libres en este PC.\n\nEl procesamiento puede ser muy lento y ralentizar todo el PC. ¿Continuar de todos modos?",
+  "t_cut_running": "Recortando el fragmento…",
+  "t_cut_status": "{name} — fragmento {a}–{b} s ({dur}s @ {fps}fps)",
+  "t_gen_ram_alert": "Esta selección necesitará unos {need} de memoria, con {avail} libres en este PC.\n\nEl procesamiento puede ser muy lento y ralentizar todo el PC. Reduzca la duración o los FPS, o continúe de todos modos. ¿Continuar?"
 }

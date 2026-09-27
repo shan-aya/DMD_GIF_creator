@@ -1,7 +1,7 @@
 {
-  "app_title": "DMD GIF Creator 128x32 - AI Enhanced v3.2.1",
+  "app_title": "DMD GIF Creator 128x32 - AI Enhanced v3.2.2",
   "scanning_images": "Searching images… {n}",
-  "app_header": "DMD Creator v3.2.1",
+  "app_header": "DMD Creator v3.2.2",
   "tab_auto": "AUTO",
   "tab_manual": "MANUAL",
   "tab_video": "VIDEO",
@@ -430,5 +430,19 @@
   "t_batch_workers": "Cores for batch processing:",
   "t_batch_workers_auto": "Auto ({n})",
   "t_batch_workers_note": "Batch computations run at low priority: the PC stays usable during processing. {cpu} logical cores on this PC.",
-  "tooltip_batch_workers": "Number of images processed at the same time by batch processing (and by the Review window fixes). Auto = logical cores minus 2, at most 12: beyond 12, the measured gain is only 6 %. Fewer cores = slower batch but a more available PC."
+  "tooltip_batch_workers": "Number of images processed at the same time by batch processing (and by the Review window fixes). Auto = logical cores minus 2, at most 12: beyond 12, the measured gain is only 6 %. Fewer cores = slower batch but a more available PC.",
+  "t_cut_title": "Long video — choose the section",
+  "t_cut_intro": "{name}: {dur} s, {w}×{h}, {fps} fps.\nProcessing it entirely would need about {mem} of memory. Choose the section to use: only this section will be cut and shown on the timeline.",
+  "t_cut_start": "Start (s):",
+  "t_cut_duration": "Duration (s):",
+  "t_cut_mem": "Memory needed for this section: ~{need}",
+  "t_cut_mem_avail": " (free on this PC: {avail})",
+  "t_cut_mem_warn": "⚠ Too long for the free memory: the PC may slow down heavily.",
+  "t_cut_do": "✂ Cut this section",
+  "t_cut_keep": "Keep the whole video",
+  "t_cut_cancel": "Cancel",
+  "t_cut_ram_alert": "This section will need about {need} of memory, with {avail} free on this PC.\n\nProcessing may be very slow and slow down the whole PC. Continue anyway?",
+  "t_cut_running": "Cutting the section…",
+  "t_cut_status": "{name} — section {a}–{b} s ({dur}s @ {fps}fps)",
+  "t_gen_ram_alert": "This selection will need about {need} of memory, with {avail} free on this PC.\n\nProcessing may be very slow and slow down the whole PC. Reduce the duration or the FPS, or continue anyway. Continue?"
 }

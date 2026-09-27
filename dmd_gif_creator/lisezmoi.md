@@ -330,6 +330,13 @@ l'onglet l'indique.
 
 - **📹 Charger Vidéo** : ouvre un fichier vidéo. On peut aussi **glisser-déposer**
   une vidéo n'importe où dans la fenêtre, quel que soit l'onglet affiché.
+- **Vidéo longue** : si traiter toute la vidéo demanderait beaucoup de mémoire (au-delà
+  d'environ 1,5 Go : par exemple plus de 8 s en 1080p à 30 i/s), une fenêtre s'ouvre
+  juste après le choix : **Début** et **Durée** du passage à garder, avec la mémoire
+  nécessaire affichée en direct. « ✂ Couper ce passage » crée une copie temporaire du
+  passage (effacée ensuite) : la frise, la lecture et la génération ne portent que sur
+  lui. « Garder toute la vidéo » reste possible. Une **alerte** prévient si le passage
+  gardé, ou la sélection au moment de générer, dépasse 60 % de la mémoire libre du PC.
 - **Lecture** : la vidéo tourne en boucle en miniature. **Cliquer dessus** l'ouvre en
   taille réelle dans le lecteur vidéo de Windows.
 - **ℹ️ Vidéo Source** : nom du fichier, définition, durée, images par seconde, nombre
