@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · [🇬🇧 English](./README_EN.md) · 🇪🇸 **Español**
 
-# DMD GIF Creator 128x32 — v3.2.0
+# DMD GIF Creator 128x32 — v3.2.1
 
 Cree GIF optimizados para pantallas DMD 128×32 (máquina arcade, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) a partir de **imágenes**, de
@@ -13,7 +13,7 @@ procesamiento por lotes de carpetas enteras.
 
 ## Descarga
 
-**Windows**: descargue `dmd_gif_creator_v320.exe` desde la
+**Windows**: descargue `dmd_gif_creator_v321.exe` desde la
 [última Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) y
 ejecútelo — no hace falta instalar nada.
 
@@ -25,7 +25,7 @@ positivo: vea «Antivirus» en la [guía](./NOTICE_ES.md#buenas-prácticas-y-lim
 **Desde las fuentes** (carpeta [`dmd_gif_creator/`](./dmd_gif_creator)):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v320.py
+    python dmd_gif_creator/dmd_gif_creator_v321.py
 
 `opencv-contrib-python` (y no `opencv-python`) es necesario para el seguimiento
 automático de la pestaña VIDEO; los dos paquetes no deben instalarse a la vez.
@@ -94,6 +94,12 @@ Matrix, glitch…), con una duración ajustada automáticamente a la longitud de
 - **AYUDA**: la guía completa dentro de la aplicación.
 
 ## Novedades
+
+**v3.2.1**
+- Los cálculos del procesamiento por lotes se ejecutan con **prioridad baja**: el PC
+  sigue utilizable durante un lote, sin pérdida de velocidad cuando está libre.
+- **AJUSTES**: número de núcleos usados por el lote (Auto por defecto).
+- Información de versión en el ejecutable; nota «Antivirus» en la guía.
 
 **v3.2.0**
 - Ventana **Revisar**: **correcciones propuestas** para los GIF bajos (vacío eliminado,

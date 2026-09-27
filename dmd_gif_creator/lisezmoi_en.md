@@ -448,7 +448,10 @@ Global application settings (not tied to any particular image or project):
 - **Appearance**: Dark or Light theme (applied immediately).
 - **Behavior**: "Add animation type to filename" checkbox for exports.
 - **Export**: default GIF color count (8 to 256).
-- **Performance**: "Enable AI cache" checkbox and "🗑️ Clear cache" button.
+- **Performance**: "Enable AI cache" checkbox, "🗑️ Clear cache" button, and **Cores for
+  batch processing**: number of images processed at the same time by the batch and by the
+  Review fixes (Auto = logical cores minus 2, at most 12). These computations run at low
+  priority: the PC stays usable during a batch.
 - **Logs**: "Auto-save logs" checkbox and "📄 Export logs" button (writes the
   activity log to a file).
 

@@ -75,3 +75,11 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                           - AUTO : propositions 4 a 6 de nouveau visibles en entier (parametres sur 2 lignes)
                           - vider un champ numerique pour le retaper provoquait une erreur
                           - version affichee 3.2.0, lanceur dmd_gif_creator_v320.py
+                v3.2.1 -- + traitement par lot (et corrections de "Revoir") en priorite basse : le PC reste
+                            utilisable pendant un lot, sans perte de vitesse quand il est libre
+                          + PARAMETRES > Performance : nombre de coeurs du lot (Auto = coeurs logiques - 2,
+                            12 au plus, comme avant ; ou 1 a N)
+                          + informations de version Windows dans l executable (produit, auteur, version)
+                          + notice : note "Antivirus" (executable non signe, SmartScreen, faux positif
+                            anti-rancongiciel possible pendant un lot)
+                          - version affichee 3.2.1, lanceur dmd_gif_creator_v321.py

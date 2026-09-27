@@ -1,7 +1,7 @@
 {
-  "app_title": "DMD GIF Creator 128x32 - IA Enhanced v3.2.0",
+  "app_title": "DMD GIF Creator 128x32 - IA Enhanced v3.2.1",
   "scanning_images": "Recherche d'images… {n}",
-  "app_header": "DMD Creator v3.2.0",
+  "app_header": "DMD Creator v3.2.1",
   "tab_auto": "AUTO",
   "tab_manual": "MANUEL",
   "tab_video": "VIDEO",
@@ -426,5 +426,9 @@
   "tooltip_zone_clear": "Efface la zone : les effets s'appliquent de nouveau à toute l'image.",
   "t_zone_cleared": "Zone effacée : effets sur toute l'image",
   "t_zone_label": "Zone {w}×{h}",
-  "t_zone_hint": "Zone : tracez un rectangle (glisser), glissez dedans pour le déplacer ; curseurs et filtres ne touchent que la zone. Échap ou ▭ Zone = terminer"
+  "t_zone_hint": "Zone : tracez un rectangle (glisser), glissez dedans pour le déplacer ; curseurs et filtres ne touchent que la zone. Échap ou ▭ Zone = terminer",
+  "t_batch_workers": "Cœurs pour le traitement par lot :",
+  "t_batch_workers_auto": "Auto ({n})",
+  "t_batch_workers_note": "Les calculs du lot tournent en priorité basse : le PC reste utilisable pendant un traitement. {cpu} cœurs logiques sur ce PC.",
+  "tooltip_batch_workers": "Nombre d'images traitées en même temps par le traitement par lot (et par les corrections de la fenêtre Revoir). Auto = cœurs logiques moins 2, au plus 12 : au-delà de 12, le gain mesuré n'est que de 6 %. Moins de cœurs = lot plus lent mais PC plus disponible."
 }

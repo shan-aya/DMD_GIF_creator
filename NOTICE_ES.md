@@ -478,7 +478,10 @@ particular):
 - **Apariencia**: tema Oscuro o Claro (se aplica de inmediato).
 - **Comportamiento**: casilla "Añadir tipo de animación al nombre" al exportar.
 - **Exportar**: número de colores GIF por defecto (8 a 256).
-- **Rendimiento**: casilla "Activar caché IA" y botón "🗑️ Vaciar caché".
+- **Rendimiento**: casilla "Activar caché IA", botón "🗑️ Vaciar caché" y **Núcleos para
+  el procesamiento por lotes**: número de imágenes procesadas a la vez por el lote y por
+  las correcciones de Revisar (Auto = núcleos lógicos menos 2, como máximo 12). Estos
+  cálculos se ejecutan con prioridad baja: el PC sigue utilizable durante un lote.
 - **Registros**: casilla "Guardar registros automáticamente" y botón "📄 Exportar
   registros" (escribe el registro de actividad en un archivo).
 

@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.2.0
+Version: 3.2.1
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,8 +27,17 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v105
+# Version actuelle : v107
 #
+# v107 — 2026-09-27 — safe-modify — Version 3.2.1 (v106 : priorité basse des calculs et nombre de cœurs du lot
+#      dans PARAMETRES ; note Antivirus dans les guides) ; lanceur renommé dmd_gif_creator_v321.py ; en-têtes
+#      des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v22).
+# v106 — 2026-09-27 — safe-modify — Demande utilisateur (lot très gourmand en processeur ; mesuré : 12 processus =
+#      11,93 cœurs occupés, aucune surcharge, rien ne reste actif après le lot) : (1) processus de calcul du lot
+#      et des corrections de Revoir en PRIORITÉ BASSE (initialiseur _worker_low_priority, SetPriorityClass
+#      BELOW_NORMAL) : le PC reste utilisable, sans perte de vitesse quand il est libre ; (2) PARAMETRES >
+#      Performance : "Cœurs pour le traitement par lot" (Auto = règle actuelle default_batch_workers, ou 1 à N),
+#      config batch_workers (0 = Auto).
 # v105 — 2026-09-27 — safe-modify — Version 3.2.0 (v95 à v104 : corrections proposées et édition dans Revoir,
 #      zone d'effets, zoom, recadrage à cadre mobile, formats vidéo, aperçus à la bonne vitesse…) ; lanceur
 #      renommé dmd_gif_creator_v320.py ; en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v21).
@@ -2329,6 +2338,37 @@ VIDEO_EXTS = (".mp4", ".m4v", ".mov", ".avi", ".mkv", ".webm", ".wmv", ".flv",
               ".mpg", ".mpeg", ".ts", ".3gp", ".ogv")
 
 
+def default_batch_workers():
+    """v106 -- nombre de processus du lot par défaut (règle v84, mesurée le
+    2026-09-24 : ×1,9 de 4 à 12 processus, +6 % seulement au-delà) : cœurs
+    logiques - 2, plafonné à 12, jamais moins que min(4, cœurs)."""
+    cpu = os.cpu_count() or 1
+    return max(min(4, cpu), min(12, cpu - 2), 1)
+
+
+def _worker_low_priority():
+    """v106 -- initialiseur des processus de calcul (lot, corrections de
+    Revoir) : priorité basse, pour que Windows donne la main aux autres
+    programmes dès qu'ils en ont besoin ; aucune perte de vitesse quand le PC
+    est libre. Jamais bloquant."""
+    try:
+        if os.name == "nt":
+            import ctypes
+            from ctypes import wintypes
+            BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
+            k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            # types déclarés : sans eux, le pseudo-handle (-1) est tronqué à
+            # 32 bits en 64 bits et SetPriorityClass échoue (erreur 6, vérifié)
+            k32.GetCurrentProcess.restype = wintypes.HANDLE
+            k32.SetPriorityClass.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+            k32.SetPriorityClass.restype = wintypes.BOOL
+            k32.SetPriorityClass(k32.GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS)
+        else:
+            os.nice(10)
+    except Exception:
+        pass
+
+
 def tr(key, default, **kwargs):
     """v83 -- texte dynamique traduit : lang_manager.get(key, default) puis
     str.format(**kwargs). Si la cle manque dans la langue active, le texte FR
@@ -2778,7 +2818,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.2.0"
+    APP_VERSION = "3.2.1"
 
     # ========================================================================
 
@@ -6761,6 +6801,31 @@ class DMDConverter:
             anchor=tk.W, pady=5
         )
 
+        # v106 -- nombre de processus du traitement par lot (0 = Auto) ; tous en
+        # priorité basse (_worker_low_priority)
+        cpu = os.cpu_count() or 1
+        wrow = ttk.Frame(cache_frame)
+        wrow.pack(anchor=tk.W, pady=5)
+        wl = ttk.Label(wrow, text=tr("t_batch_workers", "Cœurs pour le traitement par lot :"))
+        wl.pack(side=tk.LEFT)
+        add_help_tooltip(wl, "tooltip_batch_workers")
+        choices = [tr("t_batch_workers_auto", "Auto ({n})", n=default_batch_workers())] + [str(i) for i in range(1, cpu + 1)]
+        self.batch_workers_combo = ttk.Combobox(wrow, values=choices, state="readonly", width=12)
+        try:
+            cur = int(config_manager.get("batch_workers", 0) or 0)
+        except (TypeError, ValueError):
+            cur = 0
+        self.batch_workers_combo.current(cur if 1 <= cur <= cpu else 0)
+        self.batch_workers_combo.pack(side=tk.LEFT, padx=5)
+        self.batch_workers_combo.bind(
+            "<<ComboboxSelected>>",
+            lambda _e: config_manager.set("batch_workers", self.batch_workers_combo.current()),
+        )
+        ttk.Label(cache_frame, text=tr("t_batch_workers_note",
+                                       "Les calculs du lot tournent en priorité basse : le PC reste utilisable "
+                                       "pendant un traitement. {cpu} cœurs logiques sur ce PC.", cpu=cpu),
+                  wraplength=600, justify=tk.LEFT).pack(anchor=tk.W, pady=(0, 5))
+
         # Logs
         logs_frame = ttk.LabelFrame(main_frame, text="Logs", padding="10")
         logs_frame.pack(fill=tk.X)
@@ -8208,6 +8273,16 @@ class DMDConverter:
             "max_scroll_cycle_s": self._get_scroll_cap(),
         }
 
+    def _batch_workers(self):
+        """v106 -- processus de calcul du lot : réglage PARAMETRES
+        (config batch_workers, 0 = Auto) borné au nombre de cœurs logiques."""
+        cpu = os.cpu_count() or 1
+        try:
+            n = int(config_manager.get("batch_workers", 0) or 0)
+        except (TypeError, ValueError):
+            n = 0
+        return min(n, cpu) if n >= 1 else default_batch_workers()
+
     def _get_fill_min_ratio(self):
         """v86/v91 -- rapport L/H à partir duquel Fill est imposé, ou None si
         l'option est décochée (choix au score) ; borné, défaut si invalide."""
@@ -8529,8 +8604,8 @@ class DMDConverter:
         # ×1,9, 12 → 16 seulement +6 % (saturation). Règle : cpu logiques - 2
         # (garde de la marge pour l'interface et le système), plafonnée à 12,
         # jamais moins que l'ancien défaut min(4, cpu).
-        cpu = os.cpu_count() or 1
-        max_workers = max(min(4, cpu), min(12, cpu - 2), 1)
+        # v106 : nombre choisi dans PARAMETRES (Auto = default_batch_workers)
+        max_workers = self._batch_workers()
 
         # v96 -- réglages du lot dans dmd_batch.json (les corrections proposées
         # par Revoir refont le rendu avec les mêmes) ; jamais bloquant
@@ -8550,7 +8625,9 @@ class DMDConverter:
         except Exception as e:
             logger.error(f"Réglages du lot non écrits ({dmd_autofix.BATCH_FILE}) : {e}")
 
-        pool = ProcessPoolExecutor(max_workers=max_workers)
+        # v106 : processus de calcul en priorité basse (PC utilisable pendant le lot)
+        pool = ProcessPoolExecutor(max_workers=max_workers, initializer=_worker_low_priority)
+        logger.info(f"Lot : {max_workers} processus de calcul, priorité basse")
         futures = {
             pool.submit(
                 process_one_image,
@@ -11364,8 +11441,9 @@ class ReviewWindow:
     def _run_fixes(self, jobs, seq0):
         """Thread : calcule les propositions en parallèle (processus), résultat
         remis au fil Tk un GIF à la fois."""
-        cpu = os.cpu_count() or 1
-        pool = ProcessPoolExecutor(max_workers=max(1, min(12, cpu - 2, len(jobs))))
+        # v106 : même nombre de processus que le lot (PARAMETRES), priorité basse
+        pool = ProcessPoolExecutor(max_workers=max(1, min(self.app._batch_workers(), len(jobs))),
+                                   initializer=_worker_low_priority)
         futs = [pool.submit(autofix_one, rel, src, p[0], p[1], p[2], p[3], score,
                             os.path.join(self._work_root, f"{seq0 + i:05d}"))
                 for i, (rel, src, p, score) in enumerate(jobs)]

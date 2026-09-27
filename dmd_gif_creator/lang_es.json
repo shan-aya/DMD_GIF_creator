@@ -1,7 +1,7 @@
 {
-  "app_title": "DMD GIF Creator 128x32 - IA Mejorado v3.2.0",
+  "app_title": "DMD GIF Creator 128x32 - IA Mejorado v3.2.1",
   "scanning_images": "Buscando imágenes… {n}",
-  "app_header": "DMD Creator v3.2.0",
+  "app_header": "DMD Creator v3.2.1",
   "tab_auto": "AUTO",
   "tab_manual": "MANUAL",
   "tab_video": "VIDEO",
@@ -426,5 +426,9 @@
   "tooltip_zone_clear": "Borra la zona: los efectos vuelven a aplicarse a toda la imagen.",
   "t_zone_cleared": "Zona borrada: efectos sobre toda la imagen",
   "t_zone_label": "Zona {w}×{h}",
-  "t_zone_hint": "Zona: trace un rectángulo (arrastrar), arrastre dentro para moverlo; controles y filtros solo afectan a la zona. Escape o ▭ Zona = terminar"
+  "t_zone_hint": "Zona: trace un rectángulo (arrastrar), arrastre dentro para moverlo; controles y filtros solo afectan a la zona. Escape o ▭ Zona = terminar",
+  "t_batch_workers": "Núcleos para el procesamiento por lotes:",
+  "t_batch_workers_auto": "Auto ({n})",
+  "t_batch_workers_note": "Los cálculos del lote se ejecutan con prioridad baja: el PC sigue utilizable durante el procesamiento. {cpu} núcleos lógicos en este PC.",
+  "tooltip_batch_workers": "Número de imágenes procesadas a la vez por el procesamiento por lotes (y por las correcciones de la ventana Revisar). Auto = núcleos lógicos menos 2, como máximo 12: por encima de 12, la ganancia medida es solo del 6 %. Menos núcleos = lote más lento pero PC más disponible."
 }

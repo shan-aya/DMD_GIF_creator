@@ -454,7 +454,10 @@ Réglages globaux de l'application (pas liés à une image ou un projet particul
 - **Apparence** : thème Sombre ou Clair (appliqué immédiatement).
 - **Comportement** : case « Ajouter type d'animation au nom de fichier » à l'export.
 - **Export** : nombre de couleurs GIF par défaut (8 à 256).
-- **Performance** : case « Activer cache IA » et bouton « 🗑️ Vider cache ».
+- **Performance** : case « Activer cache IA », bouton « 🗑️ Vider cache », et **Cœurs pour
+  le traitement par lot** : nombre d'images traitées en même temps par le lot et par les
+  corrections de Revoir (Auto = cœurs logiques moins 2, au plus 12). Ces calculs tournent
+  en priorité basse : le PC reste utilisable pendant un lot.
 - **Logs** : case « Sauvegarder logs automatiquement » et bouton « 📄 Exporter logs »
   (écrit le journal d'activité dans un fichier).
 

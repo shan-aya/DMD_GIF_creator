@@ -1,7 +1,7 @@
 {
-  "app_title": "DMD GIF Creator 128x32 - AI Enhanced v3.2.0",
+  "app_title": "DMD GIF Creator 128x32 - AI Enhanced v3.2.1",
   "scanning_images": "Searching images… {n}",
-  "app_header": "DMD Creator v3.2.0",
+  "app_header": "DMD Creator v3.2.1",
   "tab_auto": "AUTO",
   "tab_manual": "MANUAL",
   "tab_video": "VIDEO",
@@ -426,5 +426,9 @@
   "tooltip_zone_clear": "Clears the zone: effects apply to the whole image again.",
   "t_zone_cleared": "Zone cleared: effects on the whole image",
   "t_zone_label": "Zone {w}×{h}",
-  "t_zone_hint": "Zone: draw a rectangle (drag), drag inside it to move it; sliders and filters only affect the zone. Escape or ▭ Zone = done"
+  "t_zone_hint": "Zone: draw a rectangle (drag), drag inside it to move it; sliders and filters only affect the zone. Escape or ▭ Zone = done",
+  "t_batch_workers": "Cores for batch processing:",
+  "t_batch_workers_auto": "Auto ({n})",
+  "t_batch_workers_note": "Batch computations run at low priority: the PC stays usable during processing. {cpu} logical cores on this PC.",
+  "tooltip_batch_workers": "Number of images processed at the same time by batch processing (and by the Review window fixes). Auto = logical cores minus 2, at most 12: beyond 12, the measured gain is only 6 %. Fewer cores = slower batch but a more available PC."
 }

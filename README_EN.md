@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · 🇬🇧 **English** · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.2.0
+# DMD GIF Creator 128x32 — v3.2.1
 
 Create GIFs optimized for 128×32 DMD displays (arcade cabinet, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) from **images**, a **video**
@@ -13,7 +13,7 @@ processing of whole folders.
 
 ## Download
 
-**Windows**: download `dmd_gif_creator_v320.exe` from the
+**Windows**: download `dmd_gif_creator_v321.exe` from the
 [latest Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) and run
 it — nothing to install.
 
@@ -25,7 +25,7 @@ processing (anti-ransomware protection), it is a false positive: see "Antivirus"
 **From the sources** ([`dmd_gif_creator/`](./dmd_gif_creator) folder):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v320.py
+    python dmd_gif_creator/dmd_gif_creator_v321.py
 
 `opencv-contrib-python` (not `opencv-python`) is required for the automatic tracking of
 the VIDEO tab; the two packages must not be installed at the same time.
@@ -92,6 +92,12 @@ fitted automatically to the text length.
 - **HELP**: the full guide inside the application.
 
 ## What's new
+
+**v3.2.1**
+- Batch processing computations run at **low priority**: the PC stays usable during a
+  batch, with no speed loss when it is idle.
+- **SETTINGS**: number of cores used by the batch (Auto by default).
+- Version information in the executable; "Antivirus" note in the user guide.
 
 **v3.2.0**
 - **Review** window: **suggested fixes** for weak GIFs (empty space removed, dark parts
