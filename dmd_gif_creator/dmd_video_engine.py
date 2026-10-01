@@ -3,7 +3,18 @@ from __future__ import annotations
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v10
+# Version actuelle : v11
+#
+# v11 — 2026-10-01 — safe-modify — Mémoire de la génération (banc d'essai calib_quality/video_res_bench.py :
+#      réduire la vidéo de travail ne change presque pas le GIF tant que la zone garde >= 128×32 px, mais garder
+#      toutes les images en pleine résolution coûtait 712 Mo pour 10 s de 1080p à 12 fps). (1) iter_frames_at :
+#      mêmes images qu'extract_frames_at, une à la fois (génération en flux, rien de gardé) ; max_height réduit
+#      les images au décodage (INTER_AREA). (2) extract_thumbnails en THUMB_MAX_HEIGHT (frise : 370 Mo -> 4 Mo
+#      en 1080p). (3) track_roi et compute_crop_windows_from_events(full_sizes=...) acceptent un FLUX d'images
+#      (suivi en pleine résolution au fil de la lecture, rien de gardé ; zone fixe : aucune image lue) -> mêmes
+#      fenêtres que v10. Le suivi sur images réduites a été essayé et écarté : le traqueur ne se comporte pas
+#      pareil à une autre échelle (jusqu'à 6 LED de décalage en 540p, 1 LED en 720p). (4) estimate_frames_bytes :
+#      la génération ne garde plus d'images, reste les images en attente des processus de rendu.
 #
 # v10 — 2026-09-27 — safe-modify — Découpage des vidéos longues avant la frise (demande utilisateur, mémoire) :
 #      cut_clip (passage écrit en AVI MJPEG qualité 95, mêmes dimensions/fps, lecture séquentielle) et
@@ -154,6 +165,7 @@ RuntimeError explicite (l'appelant Tkinter doit vérifier CV2_AVAILABLE
 avant d'activer l'onglet, voir dmd_converter.py).
 """
 
+import itertools
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -182,8 +194,17 @@ def _require_cv2() -> None:
         )
 
 
-def _bgr_frame_to_pil(frame_bgr: "np.ndarray") -> Image.Image:
-    """Convertit une frame OpenCV (BGR, np.ndarray) en image PIL RGB."""
+THUMB_MAX_HEIGHT = 180  # v11 : vignettes de la frise (affichées en 100 px de haut)
+RENDER_IN_FLIGHT = 24   # v11 : images en attente de rendu, au plus (2 par processus, 12 processus)
+
+
+def _bgr_frame_to_pil(frame_bgr: "np.ndarray", max_height: Optional[int] = None) -> Image.Image:
+    """Convertit une frame OpenCV (BGR, np.ndarray) en image PIL RGB ;
+    v11 : réduite à `max_height` px de haut (INTER_AREA) si elle dépasse."""
+    h, w = frame_bgr.shape[:2]
+    if max_height and h > max_height:
+        frame_bgr = cv2.resize(frame_bgr, (max(1, round(w * max_height / h)), max_height),
+                               interpolation=cv2.INTER_AREA)
     return Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
 
 
@@ -267,7 +288,7 @@ class VideoEngine:
         if duration <= 0:
             return [VideoEngine.extract_reference_frame(path, 0.0)]
         timestamps = [duration * i / max(1, count - 1) for i in range(count)]
-        return VideoEngine.extract_frames_at(path, timestamps)
+        return VideoEngine.extract_frames_at(path, timestamps, max_height=THUMB_MAX_HEIGHT)
 
     @staticmethod
     def sample_frame_timestamps(
@@ -330,14 +351,25 @@ class VideoEngine:
     @staticmethod
     def estimate_frames_bytes(meta: Dict[str, Any], duration_s: float, fps: Optional[float] = None) -> int:
         """v10 -- mémoire (octets) des images gardées par la génération du GIF
-        pour `duration_s` secondes : images RGB pleine résolution, au fps du
-        GIF (par défaut celui de la vidéo)."""
+        pour `duration_s` secondes, au fps du GIF (par défaut celui de la
+        vidéo). v11 : la génération ne garde plus les images source (suivi et
+        rendu en flux) : images 128×32 produites + images pleine résolution en
+        attente des processus de rendu (RENDER_IN_FLIGHT au plus)."""
         f = fps if fps else meta.get("fps", 25.0)
-        return int(max(0.0, duration_s) * f) * meta.get("width", 0) * meta.get("height", 0) * 3
+        n = int(max(0.0, duration_s) * f)
+        return n * 128 * 32 * 3 + min(n, RENDER_IN_FLIGHT) * meta.get("width", 0) * meta.get("height", 0) * 3
 
     @staticmethod
-    def extract_frames_at(path: str, timestamps: List[float]) -> List[Image.Image]:
-        """Extrait une frame par timestamp (secondes), dans l'ordre.
+    def extract_frames_at(path: str, timestamps: List[float],
+                          max_height: Optional[int] = None) -> List[Image.Image]:
+        """Liste des images d'iter_frames_at (toutes gardées en mémoire)."""
+        return list(VideoEngine.iter_frames_at(path, timestamps, max_height=max_height))
+
+    @staticmethod
+    def iter_frames_at(path: str, timestamps: List[float], max_height: Optional[int] = None):
+        """Une frame par timestamp (secondes), dans l'ordre, fournie UNE À LA
+        FOIS (v11 : génération en flux, l'appelant ne garde que ce qu'il veut) ;
+        `max_height` : images réduites au décodage (suivi, vignettes).
 
         v9 (2026-09-27) : lecture SÉQUENTIELLE. L'ancienne version faisait un
         seek (CAP_PROP_POS_MSEC) par frame : en H.264/H.265, chaque seek
@@ -352,8 +384,9 @@ class VideoEngine:
         int(ms * fps * 0.001 + 0.5)), vérifié image par image ; là où l'ancien
         seek tombait à ±1 image de sa propre formule, c'est corrigé.
         Timestamps non croissants : ancienne méthode (seek par frame).
-        Images gardées en pleine résolution : réduire changerait le rendu en
-        pixel-perfect (diviseur entier calculé sur la taille source)."""
+        Le rendu du GIF reçoit les images en pleine résolution : les réduire
+        changerait le rendu en pixel-perfect (diviseur entier calculé sur la
+        taille source)."""
         _require_cv2()
         cap = cv2.VideoCapture(path)
         try:
@@ -361,22 +394,21 @@ class VideoEngine:
                 raise RuntimeError(
                     "Impossible de lire ce fichier vidéo (codec non supporté ?)"
                 )
-            frames: List[Image.Image] = []
             if not timestamps:
-                return frames
+                return
             if any(b < a for a, b in zip(timestamps, timestamps[1:])):
                 last_frame: Optional[Image.Image] = None
                 for t in timestamps:
                     cap.set(cv2.CAP_PROP_POS_MSEC, max(0.0, t) * 1000.0)
                     ok, frame = cap.read()
                     if ok:
-                        last_frame = _bgr_frame_to_pil(frame)
-                        frames.append(last_frame)
+                        last_frame = _bgr_frame_to_pil(frame, max_height)
+                        yield last_frame
                     elif last_frame is not None:
-                        frames.append(last_frame)
+                        yield last_frame
                     else:
                         raise RuntimeError("Impossible d'extraire une frame de cette vidéo")
-                return frames
+                return
 
             fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
 
@@ -410,12 +442,11 @@ class VideoEngine:
                 if pending:
                     ok, frame = cap.retrieve()
                     if ok:
-                        cur_img = _bgr_frame_to_pil(frame)
+                        cur_img = _bgr_frame_to_pil(frame, max_height)
                     pending = False
                 if cur_img is None:
                     raise RuntimeError("Impossible d'extraire une frame de cette vidéo")
-                frames.append(cur_img)   # fin de flux : répète la dernière image valide
-            return frames
+                yield cur_img   # fin de flux : répète la dernière image valide
         finally:
             cap.release()
 
@@ -574,35 +605,43 @@ class VideoEngine:
           sujet.
         - Si cv2 absent, une seule frame, ou aucun tracker disponible :
           fallback trivial, ROI fixe sur toute la séquence.
+
+        v11 : `frames` peut être un itérateur (images lues au fil de l'eau,
+        pleine résolution, aucune gardée) ; mêmes positions qu'avec une liste.
         """
-        if not frames:
+        it = iter(frames)
+        first = next(it, None)
+        if first is None:
             return []
         positions: List[Tuple[int, int, int, int]] = [tuple(initial_roi)]  # type: ignore[list-item]
 
-        if not CV2_AVAILABLE or len(frames) <= 1:
-            return positions * len(frames)
+        def fixed():  # ROI fixe : une position par image, images restantes consommées
+            return positions * (1 + sum(1 for _ in it))
+
+        if not CV2_AVAILABLE:
+            return fixed()
 
         tracker = VideoEngine._create_tracker()
         if tracker is None:
-            return positions * len(frames)
+            return fixed()
 
-        safe_initial = VideoEngine._sanitize_initial_roi(initial_roi, frames[0].size)
+        safe_initial = VideoEngine._sanitize_initial_roi(initial_roi, first.size)
         if safe_initial is None:
-            return positions * len(frames)
+            return fixed()
         try:
-            tracker.init(_pil_to_bgr(frames[0]), tuple(int(v) for v in safe_initial))
+            tracker.init(_pil_to_bgr(first), tuple(int(v) for v in safe_initial))
         except Exception:
             # Défense en profondeur : même une boîte a priori valide peut
             # faire planter certains trackers OpenCV pour d'autres raisons
             # (image invalide, etc.) — repli sur le comportement "aucun
             # tracker disponible" plutôt qu'un crash.
-            return positions * len(frames)
+            return fixed()
 
         last_good = tuple(int(v) for v in safe_initial)
         consecutive_failures = 0
         MAX_CONSECUTIVE_FAILURES = 5
 
-        for frame in frames[1:]:
+        for frame in it:
             if consecutive_failures < MAX_CONSECUTIVE_FAILURES:
                 ok, box = tracker.update(_pil_to_bgr(frame))
             else:
@@ -785,8 +824,15 @@ class VideoEngine:
         zoom: float | List[float] = 0.0,
         canvas_w: int = 128,
         canvas_h: int = 32,
+        full_sizes: Optional[List[Tuple[int, int]]] = None,
     ) -> List[Tuple[int, int, int, int]]:
-        """Orchestrateur central du cadrage vidéo (remplace l'ancien choix
+        """v11 -- `full_sizes` (taille de chaque frame) : `frames` ne sert alors
+        qu'au suivi et peut être un ITÉRATEUR consommé dans l'ordre (images lues
+        au fil de l'eau, aucune gardée), ou None s'il n'y a aucun segment
+        "auto" ; fenêtres identiques à celles obtenues avec la liste complète.
+        Sans `full_sizes` : `frames` est une liste, comme avant.
+
+        Orchestrateur central du cadrage vidéo (remplace l'ancien choix
         binaire tracking-global / keyframes-manuelles-interpolées). Segmente
         `frames`/`timestamps` selon `events` (liste de {"t", "roi",
         "mode": "auto"|"manual"}, pas nécessairement triée), et calcule la
@@ -812,10 +858,11 @@ class VideoEngine:
         seule passe sur toute la vidéo), pour qu'un changement de zone
         manuelle reste un cut net plutôt que de "baver" sur quelques frames
         de transition à la frontière."""
-        if not events or not frames:
+        n = len(full_sizes) if full_sizes is not None else len(frames or [])
+        if not events or n == 0:
             return []
         ev = sorted(events, key=lambda e: e["t"])
-        zoom_list = zoom if isinstance(zoom, (list, tuple)) else [zoom] * len(frames)
+        zoom_list = zoom if isinstance(zoom, (list, tuple)) else [zoom] * n
 
         # Index du segment (dans `ev`) auquel appartient chaque frame : le
         # dernier événement dont t <= timestamp de la frame (ou le premier
@@ -827,14 +874,16 @@ class VideoEngine:
                 ev_i += 1
             segment_idx_per_frame.append(ev_i)
 
+        sizes = list(full_sizes) if full_sizes is not None else [f.size for f in frames]
+        frame_it = iter(frames) if frames is not None else None
         windows: List[Tuple[int, int, int, int]] = []
         start = 0
-        for i in range(1, len(frames) + 1):
-            if i == len(frames) or segment_idx_per_frame[i] != segment_idx_per_frame[start]:
+        for i in range(1, n + 1):
+            if i == n or segment_idx_per_frame[i] != segment_idx_per_frame[start]:
                 seg_event = ev[segment_idx_per_frame[start]]
-                seg_frames = frames[start:i]
-                seg_sizes = [f.size for f in seg_frames]
+                seg_sizes = sizes[start:i]
                 seg_zoom = zoom_list[start:i]
+                seg_frames = itertools.islice(frame_it, i - start) if frame_it is not None else None
                 if seg_event["mode"] == "auto":
                     roi_positions = VideoEngine.track_roi(seg_frames, seg_event["roi"])
                     seg_windows = VideoEngine.compute_crop_windows(
@@ -842,7 +891,10 @@ class VideoEngine:
                         smoothing=0.25, zoom=seg_zoom,
                     )
                 else:
-                    roi_positions = [seg_event["roi"]] * len(seg_frames)
+                    if seg_frames is not None:
+                        for _ in seg_frames:  # images de ce segment sautées : le flux reste aligné
+                            pass
+                    roi_positions = [seg_event["roi"]] * len(seg_sizes)
                     seg_windows = VideoEngine.compute_crop_windows(
                         seg_sizes, roi_positions, canvas_w, canvas_h,
                         smoothing=0.0, zoom=seg_zoom,

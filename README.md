@@ -1,6 +1,6 @@
 🇫🇷 **Français** · [🇬🇧 English](./README_EN.md) · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.2.2
+# DMD GIF Creator 128x32 — v3.2.3
 
 Créez des GIF optimisés pour les écrans DMD 128×32 (borne d'arcade, flipper,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) à partir d'**images**, d'une
@@ -13,7 +13,7 @@ traitement par lot de dossiers entiers.
 
 ## Téléchargement
 
-**Windows** : téléchargez `dmd_gif_creator_v322.exe` dans la
+**Windows** : téléchargez `dmd_gif_creator_v323.exe` dans la
 [dernière Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) et
 lancez-le — aucune installation nécessaire.
 
@@ -25,7 +25,7 @@ c'est un faux positif : voir « Antivirus » dans la [notice](./NOTICE_FR.md#bon
 **Depuis les sources** (dossier [`dmd_gif_creator/`](./dmd_gif_creator)) :
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v322.py
+    python dmd_gif_creator/dmd_gif_creator_v323.py
 
 `opencv-contrib-python` (et non `opencv-python`) est nécessaire pour le suivi
 automatique de l'onglet VIDEO ; les deux paquets ne doivent pas être installés en même
@@ -94,6 +94,15 @@ glitch…), avec une durée ajustée automatiquement à la longueur du texte.
 - **AIDE** : le guide complet dans l'application.
 
 ## Nouveautés
+
+**v3.2.3**
+- **Grands écrans** (4K, affichage à 125 % ou plus, fenêtre maximisée) : les aperçus
+  s'agrandissent avec la fenêtre dans tous les onglets et la fenêtre Revoir, au lieu de
+  rester petits au milieu de grands cadres vides.
+- Onglet **VIDEO** : la génération ne garde plus la vidéo en mémoire (32 s de 1080p :
+  3,4 Go → 0,5 Go), GIF identique.
+- **Pixel-perfect** en VIDEO : plus de bande noire autour de l'image quand la zone ou le
+  zoom de cadrage ne tombe pas juste.
 
 **v3.2.2**
 - Onglet **VIDEO** bien plus rapide et plus léger : génération du GIF jusqu'à 7 fois plus

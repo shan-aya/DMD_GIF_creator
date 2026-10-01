@@ -5,7 +5,7 @@ animations GIF optimisées pour un afficheur DMD 128×32 (arcade / flipper / bor
 RetroBox). Ce guide décrit, onglet par onglet, chaque fonction de l'interface et son
 usage concret.
 
-> Guide à jour pour la version **3.1**. Les captures d'écran datent de la version
+> Guide à jour pour la version **3.2**. Les captures d'écran datent de la version
 > **2.7.4** (thème sombre, interface en français) : l'onglet VIDEO et l'onglet AIDE,
 > apparus depuis, n'y figurent pas.
 
@@ -49,6 +49,12 @@ Chaque onglet correspond à une méthode différente pour produire une animation
 Survoler un réglage peu évident (pixel-perfect, profil, tolérance, easing,
 modes de cadrage vidéo...) affiche une **infobulle d'aide** dans la langue de
 l'interface.
+
+Les **aperçus** (image originale, aperçu DMD, propositions, zone d'édition, zone
+d'intérêt, fenêtre Revoir) **s'agrandissent avec la fenêtre** : sur un grand écran ou
+une fenêtre maximisée, ils grandissent jusqu'à 2 fois (en facteurs entiers pour les
+LED, toujours nettes), et reprennent leur taille habituelle quand la fenêtre est
+réduite.
 
 ---
 
@@ -330,9 +336,11 @@ l'onglet l'indique.
 
 - **📹 Charger Vidéo** : ouvre un fichier vidéo. On peut aussi **glisser-déposer**
   une vidéo n'importe où dans la fenêtre, quel que soit l'onglet affiché.
-- **Vidéo longue** : si traiter toute la vidéo demanderait beaucoup de mémoire (au-delà
-  d'environ 1,5 Go : par exemple plus de 8 s en 1080p à 30 i/s), une fenêtre s'ouvre
-  juste après le choix : **Début** et **Durée** du passage à garder, avec la mémoire
+- **Mémoire** : la génération lit la vidéo au fil de l'eau et ne garde que les images
+  128×32 produites (environ 500 Mo au plus en 1080p, quelle que soit la durée).
+- **Vidéo très lourde** : si la traiter demandait malgré tout beaucoup de mémoire
+  (au-delà d'environ 1,5 Go, cas rare : vidéo 8K ou de plusieurs heures), une fenêtre
+  s'ouvre juste après le choix : **Début** et **Durée** du passage à garder, avec la mémoire
   nécessaire affichée en direct. « ✂ Couper ce passage » crée une copie temporaire du
   passage (effacée ensuite) : la frise, la lecture et la génération ne portent que sur
   lui. « Garder toute la vidéo » reste possible. Une **alerte** prévient si le passage
@@ -505,7 +513,10 @@ Elle a deux effets combinés :
 
 1. **Mise à l'échelle** : impose un facteur d'échelle entier exact plutôt qu'un
    redimensionnement à échelle fractionnaire, pour un alignement pixel parfait sur la
-   grille DMD.
+   grille DMD. Dans l'onglet VIDEO, la fenêtre de cadrage est légèrement ajustée (même
+   centre) pour que l'image remplisse exactement les 128×32 LED, sans bande noire ;
+   seules les largeurs 128, 256, 384… px tombant juste, une zone de moins de 512 px
+   de large peut changer sensiblement de taille.
 2. **Rendu d'aperçu** : dans les 4 canvas d'aperçu animé, chaque frame est simulée en
    style LED physique (points ronds séparés par un bezel sombre, avec un léger halo)
    au lieu d'un simple agrandissement carré — pour visualiser à l'écran un rendu

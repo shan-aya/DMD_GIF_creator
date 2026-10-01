@@ -4,7 +4,7 @@ Python/Tkinter application that converts images, logos, and text into GIF animat
 optimized for a 128×32 DMD display (arcade / pinball / RetroBox cabinet). This guide
 describes, tab by tab, every function of the interface and how to use it.
 
-> Guide up to date for version **3.1**. Screenshots were taken with version
+> Guide up to date for version **3.2**. Screenshots were taken with version
 > **2.7.4**, dark theme, interface set to English: the VIDEO and HELP tabs, added
 > since, are not shown.
 >
@@ -52,6 +52,11 @@ Each tab corresponds to a different way of producing a 128×32 GIF animation:
 
 Hovering over a non-obvious setting (pixel-perfect, profile, tolerance,
 easing, video framing modes...) shows a **help tooltip** in the interface language.
+
+The **previews** (original image, DMD preview, proposals, editing area, region of
+interest, Review window) **grow with the window**: on a large screen or a maximized
+window they become up to 2 times larger (whole-number factors for the LEDs, always
+sharp), and return to their usual size when the window is made smaller.
 
 ---
 
@@ -325,8 +330,10 @@ missing, the tab says so.
 
 - **📹 Load Video**: opens a video file. You can also **drag and drop** a video
   anywhere on the window, whatever tab is shown.
-- **Long video**: if processing the whole video would need a lot of memory (beyond about
-  1.5 GB: for example more than 8 s in 1080p at 30 fps), a window opens right after the
+- **Memory**: generation reads the video as it goes and only keeps the 128×32 images
+  it produces (about 500 MB at most in 1080p, whatever the length).
+- **Very heavy video**: if processing it would still need a lot of memory (beyond about
+  1.5 GB, a rare case: 8K or several-hour video), a window opens right after the
   choice: **Start** and **Duration** of the section to keep, with the memory needed shown
   live. "✂ Cut this section" creates a temporary copy of the section (deleted later):
   the timeline, playback and generation only cover it. "Keep the whole video" is still
@@ -500,7 +507,10 @@ checks it in the others.
 It has two combined effects:
 
 1. **Scaling**: enforces an exact integer scale factor instead of a fractional-scale
-   resize, for perfect pixel alignment on the DMD grid.
+   resize, for perfect pixel alignment on the DMD grid. In the VIDEO tab, the framing
+   window is adjusted slightly (same center) so that the image fills exactly the
+   128×32 LEDs, with no black border; since only widths of 128, 256, 384… px fit
+   exactly, a region narrower than 512 px may change size noticeably.
 2. **Preview rendering**: in all 4 animated preview canvases, every frame is
    simulated in physical LED style (round dots separated by a dark bezel, with a
    slight glow) instead of a simple square upscale — to visualize on screen a render

@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.2.2
+Version: 3.2.3
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,8 +27,40 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v110
+# Version actuelle : v117
 #
+# v117 — 2026-10-01 — safe-modify — Version 3.2.3 (v111-v116 : aperçus adaptés à la taille de la fenêtre,
+#      génération VIDEO en flux, liseré pixel-perfect VIDEO) ; lanceur renommé dmd_gif_creator_v323.py ;
+#      en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v24).
+# v116 — 2026-10-01 — safe-modify — VIDEO, liseré noir en pixel-perfect (banc d'essai video_res_bench) : le diviseur
+#      entier est arrondi vers le haut, toute zone dont la taille n'est pas un multiple de 128×32 sortait plus petite
+#      (zone 600×150 : 120×30). _pp_snap_crop ajuste la fenêtre (même centre, mêmes proportions, côté dominant
+#      multiple exact de 128 ou 32) dans _video_render_frame et dans l'aperçu du cadrage ; fenêtre couvrant toute
+#      l'image laissée telle quelle. Testé sur 4000 fenêtres : liseré dans 3696 cas avant, 3 après (image source
+#      trop petite). Taille de zone changée d'un demi-pas au plus (128/256/384… px de large : sensible sous 512 px).
+# v115 — 2026-10-01 — safe-modify — Génération VIDEO sans garder les images en pleine résolution (banc d'essai
+#      calib_quality/video_res_bench.py : 712 Mo pour 10 s de 1080p à 12 fps) : _video_pipeline lit les 3 images
+#      de la qualité auto, fait le suivi automatique au fil d'une lecture (dmd_video_engine v11) et rend les
+#      images au fil d'une autre (iter_frames_at), au plus 2 par processus en attente. GIF identique à v114
+#      (vérifié : sans zone, zone fixe, suivi automatique). Vignettes de la frise réduites.
+# v114 — 2026-09-27 — safe-modify — Fenêtre Revoir adaptée à l'écran et à sa taille (suite v111-v113) : ouverture
+#      en 1280×880, ou 60 % × 80 % de la fenêtre principale si elle est plus grande ; ReviewWindow._fit : source 512×96, GIF ×4 et
+#      propositions ×3 → jusqu'à ×2, place réservée pour 2 propositions (maximum de dmd_autofix.choose) pour que
+#      les tailles ne changent pas d'un GIF à l'autre.
+# v113 — 2026-09-27 — safe-modify — TEXTSCROLL et VIDEO adaptés à la taille de la fenêtre (suite v111/v112) :
+#      TEXTSCROLL, aperçu ×4 → ×8 (_fit_preview_on_resize) ; VIDEO (_video_fit), aperçu ×4 → ×8, zone d'intérêt
+#      620×270 → jusqu'à ×2 (video_roi_canvas_w/h, déjà utilisées par tous les calculs souris) et aperçu du cadrage
+#      ×2 → ×4. La frise suivait déjà la largeur de la rangée du haut (_video_sync_canvas_widths).
+# v112 — 2026-09-27 — safe-modify — Onglet MANUEL, même principe que v111 (_manual_fit) : canvas d'édition
+#      640×480 → jusqu'à 1280×800 (zone image _man_box 640×320 → 1280×640, marge du bas fixe de 160) et aperçu ×4 → ×8 ; clic
+#      (remplissage/gomme), cadre de recadrage, zone d'effets et texte d'aide suivent _man_box via _crop_geom.
+# v111 — 2026-09-27 — safe-modify — Onglet AUTO : aperçus adaptés à la taille de la fenêtre (retour d'un
+#      utilisateur 4K à 125 % : fenêtre maximisée = beaucoup de place, cadres étirés mais image originale,
+#      aperçu DMD et propositions restés à leur taille fixe en pixels). _auto_fit_previews (sur <Configure> du
+#      panneau central, différé 150 ms) choisit un facteur commun : aperçu DMD ×4→×8 et propositions ×3→×6
+#      (facteurs ENTIERS, rendu LED/pixel-perfect net), image originale proportionnelle ; jamais sous la taille
+#      d'avant (fenêtre petite = inchangé). Le calcul part des tailles demandées actuelles et de la place
+#      allouée, il ne peut donc pas agrandir la fenêtre lui-même (pas de boucle de redimensionnement).
 # v110 — 2026-09-27 — safe-modify — Version 3.2.2 (v108-v109 : onglet VIDEO, extraction séquentielle, rendu
 #      multi-cœurs, découpage des vidéos longues, alertes mémoire, lecteur unique) ; lanceur renommé
 #      dmd_gif_creator_v322.py ; en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v23).
@@ -2047,7 +2079,7 @@ from tkinter import Canvas, Text, Scrollbar
 from tkinterdnd2 import TkinterDnD, DND_FILES
 import threading
 import numpy as np
-from collections import Counter
+from collections import Counter, deque
 import time
 import datetime
 import math
@@ -2864,7 +2896,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.2.2"
+    APP_VERSION = "3.2.3"
 
     # ========================================================================
 
@@ -3312,6 +3344,13 @@ class DMDConverter:
         # CENTRE: Previews
         center_panel = ttk.Frame(content_frame)
         center_panel.grid(row=0, column=1, sticky="wnes", padx=5)
+        # v111 -- tailles des aperçus AUTO, recalculées selon la place (_auto_fit_previews)
+        self._auto_center_panel = center_panel
+        self._auto_dmd_scale = 4
+        self._auto_prop_scale = 3
+        self._auto_orig_size = (640, 130)
+        self._auto_orig_path = None
+        self._auto_fit_job = None
 
         # Original
         original_frame = ttk.LabelFrame(
@@ -3341,6 +3380,7 @@ class DMDConverter:
 
         dmd_main_row = ttk.Frame(dmd_main_frame)
         dmd_main_row.pack()
+        self._auto_dmd_row = dmd_main_row
 
         self.canvas_dmd_main = Canvas(dmd_main_row, width=512, height=128, bg="black")
         self.canvas_dmd_main.pack(side=tk.LEFT)
@@ -3370,6 +3410,7 @@ class DMDConverter:
 
         proposals_grid = ttk.Frame(proposals_frame)
         proposals_grid.pack(fill=tk.X, expand=True)
+        self._auto_prop_grid = proposals_grid
 
         # Grille 3 colonnes × 2 rangées : rangée 0 = propositions "de base" (resize,
         # fill, optimisé), rangée 1 = les 3 propositions artistiques. Avant, les 5
@@ -3476,6 +3517,90 @@ class DMDConverter:
             1, weight=3
         )  # Centre (previews + propositions IA)
         content_frame.rowconfigure(0, weight=1)
+        center_panel.bind("<Configure>", self._auto_fit_schedule, add="+")
+
+    # v111 -- aperçus AUTO adaptés à la taille de la fenêtre
+    AUTO_FIT_MAX = 2.0   # ×2 au plus : aperçu DMD ×8, propositions ×6
+
+    def _auto_fit_schedule(self, event=None):
+        if self._auto_fit_job is not None:
+            self.root.after_cancel(self._auto_fit_job)
+        self._auto_fit_job = self.root.after(150, self._auto_fit_previews)
+
+    def _auto_fit_previews(self):
+        """Choisit le plus grand facteur f (1 à AUTO_FIT_MAX) pour lequel les aperçus
+        tiennent dans la place allouée au panneau central : aperçu DMD 128*int(4f),
+        propositions 128*int(3f) (facteurs entiers, rendu net), image originale
+        640f×130f. Les tailles demandées actuelles servent de base (bordures, textes,
+        marges déjà comptés) : on n'ajoute que l'écart des canvas."""
+        self._auto_fit_job = None
+        panel = self._auto_center_panel
+        try:
+            avail_w, avail_h = panel.winfo_width(), panel.winfo_height()
+            if avail_w <= 1 or avail_h <= 1:
+                return
+            sd0, sp0 = self._auto_dmd_scale, self._auto_prop_scale
+            ow0, oh0 = self._auto_orig_size
+            rows = {
+                "orig": self.canvas_original.winfo_reqwidth(),
+                "dmd": self._auto_dmd_row.winfo_reqwidth(),
+                "prop": self._auto_prop_grid.winfo_reqwidth(),
+            }
+            pad_w = panel.winfo_reqwidth() - max(rows.values())
+            req_h = panel.winfo_reqheight()
+        except tk.TclError:
+            return
+
+        def sizes(f):
+            return (max(4, int(4 * f)), max(3, int(3 * f)),
+                    (max(640, int(640 * f)), max(130, int(130 * f))))
+
+        def fits(f):
+            sd, sp, (ow, oh) = sizes(f)
+            w = max(rows["orig"] + ow - ow0,
+                    rows["dmd"] + 128 * (sd - sd0),
+                    rows["prop"] + 3 * 128 * (sp - sp0)) + pad_w
+            h = req_h + (oh - oh0) + 32 * (sd - sd0) + 2 * 32 * (sp - sp0)
+            return w <= avail_w and h <= avail_h
+
+        best = 1.0
+        f = 1.0
+        while f <= self.AUTO_FIT_MAX + 1e-9:
+            if fits(f):
+                best = f
+            f += 0.05
+        sd, sp, (ow, oh) = sizes(best)
+        if (sd, sp, (ow, oh)) == (sd0, sp0, (ow0, oh0)):
+            return
+        self._auto_dmd_scale, self._auto_prop_scale, self._auto_orig_size = sd, sp, (ow, oh)
+        self.canvas_original.config(width=ow, height=oh)
+        self.canvas_dmd_main.config(width=128 * sd, height=32 * sd)
+        pw = 128 * sp
+        for i, cv in enumerate(self.proposal_canvases):
+            cv.config(width=pw, height=32 * sp)
+            self.proposal_info_labels[i].config(wraplength=pw)
+            lock = self.proposal_lock_checks[i]
+            if isinstance(lock, tk.Checkbutton):
+                lock.config(wraplength=pw)
+            self.proposal_tooltips[i].wraplength = pw
+            # redessine les propositions déjà affichées à la nouvelle taille
+            if cv.find_all() and i < len(self.proposals):
+                self._show_proposal_image(i, self.proposals[i][2])
+        if self._auto_orig_path:
+            try:
+                self.show_original(self._auto_orig_path)
+            except Exception:
+                pass
+
+    def _show_proposal_image(self, idx, frame):
+        """Affiche la vignette 128×32 d'une proposition à l'échelle courante."""
+        sp = self._auto_prop_scale
+        display = frame.resize((128 * sp, 32 * sp), Image.Resampling.NEAREST)
+        photo = ImageTk.PhotoImage(display)
+        cv = self.proposal_canvases[idx]
+        cv.delete("all")
+        cv.create_image(64 * sp, 16 * sp, image=photo)
+        cv.image = photo
 
     def setup_manual_tab(self):
         """Configuration onglet MANUEL avec effets avancés"""
@@ -3682,6 +3807,12 @@ class DMDConverter:
             canvas_frame, width=640, height=480, bg="black", cursor="crosshair"
         )
         self.manual_canvas.pack()
+        # v112 -- tailles adaptées à la fenêtre (_manual_fit) : zone image
+        # 640×320 (en haut du canvas 640×480), aperçu ×4 au départ
+        self._man_box = (640, 320)
+        self._man_preview_scale = 4
+        self._man_fit_job = None
+        self._man_parts = (main_frame, left_panel, right_panel, canvas_frame)
         self.manual_canvas.bind("<Button-1>", self.on_manual_click)
 
         self.manual_status = tk.StringVar(
@@ -3700,6 +3831,8 @@ class DMDConverter:
 
         manual_preview_row = ttk.Frame(preview_frame)
         manual_preview_row.pack(pady=5)
+        self._man_preview_frame = preview_frame
+        main_frame.bind("<Configure>", self._manual_fit_schedule, add="+")
 
         self.manual_preview_canvas = Canvas(
             manual_preview_row, width=512, height=128, bg="black"
@@ -4618,6 +4751,69 @@ class DMDConverter:
             self._video_redraw_roi_time_indicator()
 
         top_row.bind("<Configure>", _video_sync_canvas_widths)
+        # v113 -- aperçu, zone d'intérêt et aperçu du cadrage adaptés à la fenêtre
+        self._video_fit_f = 1.0
+        self._video_fit_parts = (main_frame, top_row, row_left, preview_col, roi_content)
+        self._video_fit_job = None
+        main_frame.bind("<Configure>", self._video_fit_schedule, add="+")
+
+    def _video_fit_sizes(self, f):
+        """(aperçu ×, zone d'intérêt w×h, aperçu du cadrage ×) pour le facteur f."""
+        return (max(4, int(4 * f)), (max(620, int(620 * f)), max(270, int(270 * f))),
+                max(2, int(2 * f)))
+
+    def _video_fit_schedule(self, event=None):
+        if self._video_fit_job is not None:
+            self.root.after_cancel(self._video_fit_job)
+        self._video_fit_job = self.root.after(150, self._video_fit)
+
+    def _video_fit(self):
+        """Même principe que _auto_fit_previews : plus grand f (1 à AUTO_FIT_MAX)
+        qui tient dans la place allouée à l'onglet, à partir des tailles demandées."""
+        self._video_fit_job = None
+        main, top_row, row_left, preview_col, roi_content = self._video_fit_parts
+        try:
+            avail_w, avail_h = main.winfo_width(), main.winfo_height()
+            if avail_w <= 1 or avail_h <= 1:
+                return
+            main_rw, main_rh = main.winfo_reqwidth(), main.winfo_reqheight()
+            top_rw, roi_rw = top_row.winfo_reqwidth(), roi_content.winfo_reqwidth()
+            left_rh, prev_rh = row_left.winfo_reqheight(), preview_col.winfo_reqheight()
+            roi_rh = roi_content.winfo_reqheight()
+        except tk.TclError:
+            return
+        sd0, (rw0, rh0), cp0 = self._video_fit_sizes(self._video_fit_f)
+        pad_w = main_rw - max(top_rw, roi_rw)
+
+        def fits(f):
+            sd, (rw, rh), cp = self._video_fit_sizes(f)
+            w = max(top_rw + 128 * (sd - sd0), roi_rw + (rw - rw0) + 128 * (cp - cp0)) + pad_w
+            top_h0 = max(left_rh, prev_rh)
+            d_top = max(left_rh, prev_rh + 32 * (sd - sd0)) - top_h0
+            d_roi = max(roi_rh, roi_rh + (rh - rh0), roi_rh + 32 * (cp - cp0)) - roi_rh
+            return w <= avail_w and main_rh + d_top + d_roi <= avail_h
+
+        best, f = 1.0, 1.0
+        while f <= self.AUTO_FIT_MAX + 1e-9:
+            if fits(f):
+                best = f
+            f += 0.05
+        if self._video_fit_sizes(best) == self._video_fit_sizes(self._video_fit_f):
+            self._video_fit_f = best
+            return
+        self._video_fit_f = best
+        sd, (rw, rh), cp = self._video_fit_sizes(best)
+        self._video_preview_scale = sd
+        self.video_preview_canvas.config(width=128 * sd, height=32 * sd)
+        self.video_roi_canvas_w, self.video_roi_canvas_h = rw, rh
+        self.video_roi_canvas.config(width=rw, height=rh)
+        self._video_crop_scale = cp
+        self.video_crop_preview_canvas.config(width=128 * cp, height=32 * cp)
+        if getattr(self, "video_ref_frame", None) is not None:
+            try:
+                self._video_display_ref_frame()
+            except Exception as e:
+                logger.error(f"VIDEO redessin après agrandissement : {e}")
 
     def _video_update_source_info(self):
         """Rafraîchit le cadre "ℹ️ Vidéo Source" (même pattern Text lecture-
@@ -5871,6 +6067,8 @@ class DMDConverter:
         roi = roi if roi is not None else self.video_roi
         frame = self.video_ref_frame
         if roi is not None:
+            if self._get_force_pixel_perfect():
+                roi = _pp_snap_crop(roi, frame.size)  # v116 : comme la génération
             x, y, w, h = roi
             if w > 0 and h > 0:
                 frame = frame.crop((x, y, x + w, y + h))
@@ -5894,18 +6092,19 @@ class DMDConverter:
             return
         canvas_frame = Image.new("RGB", (128, 32), (0, 0, 0))
         canvas_frame.paste(resized, ((128 - rw) // 2, (32 - rh) // 2))
+        cp = getattr(self, "_video_crop_scale", 2)
         if self._get_force_pixel_perfect():
             display = DMDEngine.render_led_style(
                 canvas_frame,
-                scale=2,
+                scale=cp,
                 led_ratio=0.525,
                 glow=True,
                 brightness=self.led_brightness_var.get(),
             )
         else:
-            display = canvas_frame.resize((256, 64), Image.Resampling.NEAREST)
+            display = canvas_frame.resize((128 * cp, 32 * cp), Image.Resampling.NEAREST)
         self._video_crop_preview_photo = ImageTk.PhotoImage(display)
-        canvas.create_image(128, 32, image=self._video_crop_preview_photo)
+        canvas.create_image(64 * cp, 16 * cp, image=self._video_crop_preview_photo)
 
     def _video_roi_reset(self):
         """Bouton "🔄 Recentrer" — triple comportement selon le mode de
@@ -6349,7 +6548,13 @@ class DMDConverter:
             timestamps = VideoEngine.sample_frame_timestamps(
                 start, end, self.video_meta["fps"], fps
             )
-            src_frames = VideoEngine.extract_frames_at(self.video_path, timestamps)
+            n = len(timestamps)
+            # v115 : plus aucune image pleine résolution gardée. La qualité auto
+            # lit ses 3 images ; le suivi (s'il y en a) et le rendu lisent la
+            # vidéo au fil de l'eau.
+            sample_idxs = sorted({0, n // 2, n - 1})
+            samples = VideoEngine.extract_frames_at(self.video_path, [timestamps[i] for i in sample_idxs])
+            full_size = samples[0].size
 
             zoom = self._video_effective_zoom()
             crop_windows = None
@@ -6384,28 +6589,32 @@ class DMDConverter:
                     if len(self.video_zoom_keyframes) >= 2
                     else zoom
                 )
-                crop_windows = VideoEngine.compute_crop_windows_from_events(
-                    src_frames, timestamps, events, zoom=zoom_values
+                # v115 : suivi au fil d'une lecture de la vidéo (pleine résolution,
+                # aucune image gardée) ; zone fixe : aucune image lue ici
+                track_frames = (
+                    VideoEngine.iter_frames_at(self.video_path, timestamps)
+                    if any(e.get("mode") == "auto" for e in events) else None
                 )
+                crop_windows = VideoEngine.compute_crop_windows_from_events(
+                    track_frames, timestamps, events, zoom=zoom_values, full_sizes=[full_size] * n
+                )
+                track_frames = None
             # sinon : aucun point de zone -> pas de crop du tout
             # (comportement historique, crop_windows reste None).
 
             settings = None
             if self.video_quality_auto.get():
-                sample_idxs = sorted(
-                    {0, len(src_frames) // 2, len(src_frames) - 1}
-                )
-                settings = VideoEngine.auto_quality_settings(
-                    [src_frames[i] for i in sample_idxs]
-                )
+                settings = VideoEngine.auto_quality_settings(samples)
+            samples = None
 
             self.root.after(0, lambda: self.update_progress(60, tr("t_dmd_render", "Rendu DMD...")))
             pixel_perfect = self._get_force_pixel_perfect()
             fit = crop_windows is not None
+            # v115 : images lues au fil du rendu (pleine résolution, mêmes images
+            # qu'avant), jamais toutes en mémoire
             jobs = ((frame, crop_windows[i] if crop_windows is not None else None, settings, pixel_perfect, fit)
-                    for i, frame in enumerate(src_frames))
+                    for i, frame in enumerate(VideoEngine.iter_frames_at(self.video_path, timestamps)))
             out_frames = []
-            n = len(src_frames)
             # v109 : rendu réparti sur plusieurs processus (priorité basse, nombre
             # de PARAMETRES) ; même fonction qu'en séquentiel -> GIF identique.
             # Peu d'images : séquentiel (démarrer les processus coûte ~1-2 s).
@@ -6413,11 +6622,20 @@ class DMDConverter:
             if workers >= 2 and n >= 24:
                 pool = ProcessPoolExecutor(max_workers=workers, initializer=_worker_low_priority)
                 try:
-                    for i, canvas_frame in enumerate(pool.map(_video_render_frame, jobs, chunksize=4)):
-                        out_frames.append(canvas_frame)
-                        if i % 8 == 7 or i == n - 1:
-                            pct = 60 + int(30 * (i + 1) / n)
-                            self.root.after(0, lambda p=pct: self.update_progress(p, tr("t_dmd_render", "Rendu DMD...")))
+                    # v115 : au plus 2 images par processus en attente (Executor.map
+                    # soumettrait tout de suite toutes les images)
+                    pending = deque()
+                    i = 0
+                    for job in jobs:
+                        pending.append(pool.submit(_video_render_frame, job))
+                        while len(pending) >= 2 * workers:
+                            out_frames.append(pending.popleft().result())
+                            i += 1
+                            if i % 8 == 0:
+                                pct = 60 + int(30 * i / n)
+                                self.root.after(0, lambda p=pct: self.update_progress(p, tr("t_dmd_render", "Rendu DMD...")))
+                    while pending:
+                        out_frames.append(pending.popleft().result())
                 finally:
                     pool.shutdown(wait=True, cancel_futures=True)
             else:
@@ -6485,20 +6703,21 @@ class DMDConverter:
             return
         try:
             frame = self.video_frames[self.video_frame_idx]
+            sd = getattr(self, "_video_preview_scale", 4)
             if self._get_force_pixel_perfect():
                 display = DMDEngine.render_led_style(
                     frame,
-                    scale=4,
+                    scale=sd,
                     led_ratio=0.525,
                     glow=True,
                     brightness=self.led_brightness_var.get(),
                 )
             else:
-                display = frame.resize((512, 128), Image.Resampling.NEAREST)
+                display = frame.resize((128 * sd, 32 * sd), Image.Resampling.NEAREST)
             self.video_preview_photo = ImageTk.PhotoImage(display)
             self.video_preview_canvas.delete("all")
             self.video_preview_canvas.create_image(
-                256, 64, image=self.video_preview_photo
+                64 * sd, 16 * sd, image=self.video_preview_photo
             )
 
             self.video_frame_idx = (self.video_frame_idx + 1) % len(self.video_frames)
@@ -6782,6 +7001,10 @@ class DMDConverter:
             text_preview_row, width=512, height=128, bg="black"
         )
         self.text_preview_canvas.pack(side=tk.LEFT)
+        # v113 -- aperçu adapté à la fenêtre (_preview_fit)
+        self._text_preview_scale = 4
+        self._fit_preview_on_resize(main_frame, right_panel, self.text_preview_canvas,
+                                    "_text_preview_scale")
         self._add_led_zoom_icon(
             self.text_preview_canvas,
             get_frames=lambda: self.text_frames,
@@ -7708,14 +7931,16 @@ class DMDConverter:
         else:
             img_orig = img_orig.convert("RGB")
 
+        self._auto_orig_path = image_path
+        cw, ch = self._auto_orig_size
         w, h = img_orig.size
-        scale = min(640 / w, 130 / h)
-        display_w, display_h = int(w * scale), int(h * scale)
+        scale = min(cw / w, ch / h)
+        display_w, display_h = max(1, int(w * scale)), max(1, int(h * scale))
         img_display = img_orig.resize((display_w, display_h), Image.Resampling.LANCZOS)
 
         self.preview_original = ImageTk.PhotoImage(img_display)
         self.canvas_original.delete("all")
-        self.canvas_original.create_image(320, 65, image=self.preview_original)
+        self.canvas_original.create_image(cw // 2, ch // 2, image=self.preview_original)
 
     def update_image_info(self, image_path):
         """Met à jour les informations de l'image"""
@@ -7870,11 +8095,7 @@ class DMDConverter:
                 self.proposal_info_labels[j].config(text="")
 
             for i, (score, variant, canvas) in enumerate(self.proposals):
-                display = canvas.resize((384, 96), Image.Resampling.NEAREST)
-                photo = ImageTk.PhotoImage(display)
-                self.proposal_canvases[i].delete("all")
-                self.proposal_canvases[i].create_image(192, 48, image=photo)
-                self.proposal_canvases[i].image = photo
+                self._show_proposal_image(i, canvas)
 
                 score_text = f"{score:.2f}" if score is not None else "—"
                 self.proposal_labels[i].config(
@@ -8243,11 +8464,7 @@ class DMDConverter:
         )
         self.proposals[idx] = (None, settings, canvas)
 
-        display = canvas.resize((384, 96), Image.Resampling.NEAREST)
-        photo = ImageTk.PhotoImage(display)
-        self.proposal_canvases[idx].delete("all")
-        self.proposal_canvases[idx].create_image(192, 48, image=photo)
-        self.proposal_canvases[idx].image = photo
+        self._show_proposal_image(idx, canvas)
         self.proposal_labels[idx].config(text=f"{idx+1}. {settings['name']}")
         info_text = tr(
             "t_prop_info_new", "Score : —\nEffet : {effect} | Mode resize : {resize}\nFPS : {fps} | Durée : {dur}s",
@@ -8303,19 +8520,20 @@ class DMDConverter:
 
         try:
             frame = self.preview_frames[self.preview_index]
+            sd = self._auto_dmd_scale
             if self._get_force_pixel_perfect():
                 display = DMDEngine.render_led_style(
                     frame,
-                    scale=4,
+                    scale=sd,
                     led_ratio=0.525,
                     glow=True,
                     brightness=self.led_brightness_var.get(),
                 )
             else:
-                display = frame.resize((512, 128), Image.Resampling.NEAREST)
+                display = frame.resize((128 * sd, 32 * sd), Image.Resampling.NEAREST)
             self.preview_dmd = ImageTk.PhotoImage(display)
             self.canvas_dmd_main.delete("all")
-            self.canvas_dmd_main.create_image(256, 64, image=self.preview_dmd)
+            self.canvas_dmd_main.create_image(64 * sd, 16 * sd, image=self.preview_dmd)
 
             self.preview_index = (self.preview_index + 1) % len(self.preview_frames)
             delay = int(1000 / self.current_fps) if self.current_fps > 0 else 100
@@ -9091,16 +9309,17 @@ class DMDConverter:
         if self.manual_image is None:
             return
 
+        bw, bh = self._man_box
         w, h = self.manual_image.size
-        scale = min(640 / w, 320 / h)
-        display_w, display_h = int(w * scale), int(h * scale)
+        scale = min(bw / w, bh / h)
+        display_w, display_h = max(1, int(w * scale)), max(1, int(h * scale))
         img_display = self.manual_image.resize(
             (display_w, display_h), Image.Resampling.LANCZOS
         )
 
         self.manual_preview = ImageTk.PhotoImage(img_display)
         self.manual_canvas.delete("all")
-        self.manual_canvas.create_image(320, 160, image=self.manual_preview)
+        self.manual_canvas.create_image(bw // 2, bh // 2, image=self.manual_preview)
         if getattr(self, "crop_mode", False):  # v98 : cadre de recadrage redessiné
             self.crop_preview_rect = None
             self._crop_draw()
@@ -9292,11 +9511,8 @@ class DMDConverter:
 
         # Convertir coordonnées canvas vers image
         w, h = self.manual_image.size
-        scale = min(640 / w, 320 / h)
+        scale, offset_x, offset_y = self._crop_geom()
         display_w, display_h = int(w * scale), int(h * scale)
-
-        offset_x = (640 - display_w) // 2
-        offset_y = (320 - display_h) // 2
 
         click_x = event.x - offset_x
         click_y = event.y - offset_y
@@ -9637,20 +9853,21 @@ class DMDConverter:
 
         try:
             frame = self.manual_frames[self.manual_frame_idx]
+            sp = self._man_preview_scale
             if self._get_force_pixel_perfect():
                 display = DMDEngine.render_led_style(
                     frame,
-                    scale=4,
+                    scale=sp,
                     led_ratio=0.525,
                     glow=True,
                     brightness=self.led_brightness_var.get(),
                 )
             else:
-                display = frame.resize((512, 128), Image.Resampling.NEAREST)
+                display = frame.resize((128 * sp, 32 * sp), Image.Resampling.NEAREST)
             self.manual_preview_photo = ImageTk.PhotoImage(display)
             self.manual_preview_canvas.delete("all")
             self.manual_preview_canvas.create_image(
-                256, 64, image=self.manual_preview_photo
+                64 * sp, 16 * sp, image=self.manual_preview_photo
             )
 
             self.manual_frame_idx = (self.manual_frame_idx + 1) % len(
@@ -9865,20 +10082,21 @@ class DMDConverter:
 
         try:
             frame = self.text_frames[self.text_frame_idx]
+            sp = self._text_preview_scale
             if self._get_force_pixel_perfect():
                 display = DMDEngine.render_led_style(
                     frame,
-                    scale=4,
+                    scale=sp,
                     led_ratio=0.525,
                     glow=True,
                     brightness=self.led_brightness_var.get(),
                 )
             else:
-                display = frame.resize((512, 128), Image.Resampling.NEAREST)
+                display = frame.resize((128 * sp, 32 * sp), Image.Resampling.NEAREST)
             self.text_preview_photo = ImageTk.PhotoImage(display)
             self.text_preview_canvas.delete("all")
             self.text_preview_canvas.create_image(
-                256, 64, image=self.text_preview_photo
+                64 * sp, 16 * sp, image=self.text_preview_photo
             )
 
             self.text_frame_idx = (self.text_frame_idx + 1) % len(self.text_frames)
@@ -10248,18 +10466,108 @@ class DMDConverter:
         if self.zone_mode:
             text = tr("t_zone_hint", "Zone : tracez un rectangle (glisser), glissez dedans pour le déplacer ; "
                                      "curseurs et filtres ne touchent que la zone. Échap ou ▭ Zone = terminer")
-            t = c.create_text(6, 4, text=text, anchor="nw", fill="white", width=628,
+            t = c.create_text(6, 4, text=text, anchor="nw", fill="white", width=self._man_box[0] - 12,
                               font=("Segoe UI", 9), tags="zone")
             bx = c.bbox(t)
             c.tag_lower(c.create_rectangle(bx[0] - 3, bx[1] - 2, bx[2] + 3, bx[3] + 2, fill="#202020",
                                            outline="#505050", tags="zone"), t)
 
     def _crop_geom(self):
-        """(échelle, décalage x, décalage y) de l'image dans le canvas 640×320
-        (même calcul que display_manual_image)."""
+        """(échelle, décalage x, décalage y) de l'image dans la zone image du
+        canvas (640×320 au départ, _man_box ; même calcul que display_manual_image)."""
+        bw, bh = self._man_box
         w, h = self.manual_image.size
-        s = min(640 / w, 320 / h)
-        return s, (640 - int(w * s)) // 2, (320 - int(h * s)) // 2
+        s = min(bw / w, bh / h)
+        return s, (bw - int(w * s)) // 2, (bh - int(h * s)) // 2
+
+    # v113 -- aperçu seul dans un panneau latéral (TEXTSCROLL, VIDEO)
+    def _fit_preview_on_resize(self, container, side_panel, canvas, attr):
+        """Relie l'aperçu `canvas` (128×32 × self.<attr>, 4 au départ) à la taille
+        de `container` : le panneau latéral `side_panel` s'élargit de l'écart du
+        canvas, l'autre panneau (extensible) cède la place."""
+        job = {"id": None}
+
+        def fit():
+            job["id"] = None
+            try:
+                avail_w, side_h = container.winfo_width(), side_panel.winfo_height()
+                if avail_w <= 1 or side_h <= 1:
+                    return
+                req_w, side_reqh = container.winfo_reqwidth(), side_panel.winfo_reqheight()
+            except tk.TclError:
+                return
+            s0 = getattr(self, attr)
+            best, f = 4, 1.0
+            while f <= self.AUTO_FIT_MAX + 1e-9:
+                s = max(4, int(4 * f))
+                if req_w + 128 * (s - s0) <= avail_w and side_reqh + 32 * (s - s0) <= side_h:
+                    best = s
+                f += 0.05
+            if best != s0:
+                setattr(self, attr, best)
+                canvas.config(width=128 * best, height=32 * best)
+
+        def schedule(event=None):
+            if job["id"] is not None:
+                self.root.after_cancel(job["id"])
+            job["id"] = self.root.after(150, fit)
+
+        container.bind("<Configure>", schedule, add="+")
+
+    # v112 -- zone d'édition et aperçu MANUEL adaptés à la taille de la fenêtre
+    def _manual_fit_schedule(self, event=None):
+        if self._man_fit_job is not None:
+            self.root.after_cancel(self._man_fit_job)
+        self._man_fit_job = self.root.after(150, self._manual_fit)
+
+    def _manual_fit(self):
+        """Plus grand facteur f (1 à AUTO_FIT_MAX) pour lequel la zone d'édition
+        (640f × 320f+160, image dans les 640f×320f du haut) et l'aperçu (×int(4f)) tiennent
+        dans la place allouée ; même principe que _auto_fit_previews (tailles
+        demandées actuelles + écart des canvas, jamais sous la taille d'origine)."""
+        self._man_fit_job = None
+        main, left, right, edit_frame = self._man_parts
+        try:
+            avail_w = main.winfo_width()
+            left_h, right_h = left.winfo_height(), right.winfo_height()
+            if avail_w <= 1 or left_h <= 1:
+                return
+            main_req = main.winfo_reqwidth()
+            left_req, right_req = left.winfo_reqwidth(), right.winfo_reqwidth()
+            edit_req = edit_frame.winfo_reqwidth()
+            prev_req = self._man_preview_frame.winfo_reqwidth()
+            left_reqh, right_reqh = left.winfo_reqheight(), right.winfo_reqheight()
+        except tk.TclError:
+            return
+        bw0, bh0 = self._man_box
+        sp0 = self._man_preview_scale
+
+        def sizes(f):
+            return (max(640, int(640 * f)), max(320, int(320 * f))), max(4, int(4 * f))
+
+        def fits(f):
+            (bw, bh), sp = sizes(f)
+            lw = max(left_req, edit_req + bw - bw0)
+            rw = max(right_req, prev_req + 128 * (sp - sp0))
+            w = main_req - left_req - right_req + lw + rw
+            return (w <= avail_w and left_reqh + (bh - bh0) <= left_h
+                    and right_reqh + 32 * (sp - sp0) <= right_h)
+
+        best, f = 1.0, 1.0
+        while f <= self.AUTO_FIT_MAX + 1e-9:
+            if fits(f):
+                best = f
+            f += 0.05
+        (bw, bh), sp = sizes(best)
+        if ((bw, bh), sp) == ((bw0, bh0), sp0):
+            return
+        self._man_box, self._man_preview_scale = (bw, bh), sp
+        self.manual_canvas.config(width=bw, height=bh + 160)
+        self.manual_preview_canvas.config(width=128 * sp, height=32 * sp)
+        if self.manual_image is not None:
+            self.display_manual_image()
+        else:
+            self.manual_canvas.delete("all")
 
     def _crop_clamp(self):
         w, h = self.manual_image.size
@@ -10290,7 +10598,7 @@ class DMDConverter:
         self.manual_status.set(text)
         # le libellé d'état est sous le canvas, hors de la fenêtre sur un écran
         # de 1080 px : l'aide du cadre est aussi écrite en haut du canvas
-        t = c.create_text(6, 4, text=text, anchor="nw", fill="white", width=628,
+        t = c.create_text(6, 4, text=text, anchor="nw", fill="white", width=self._man_box[0] - 12,
                           font=("Segoe UI", 9), tags="crop_hint")
         bx = c.bbox(t)
         c.tag_lower(c.create_rectangle(bx[0] - 3, bx[1] - 2, bx[2] + 3, bx[3] + 2, fill="#202020",
@@ -11341,8 +11649,15 @@ class ReviewWindow:
 
         win = self.win = tk.Toplevel(app.root)
         win.title(tr("t_review_title", "Revoir les GIF — {folder}", folder=self.folder))
-        win.geometry("1280x880")
+        # v114 : 1280×880, plus grande si la fenêtre principale est grande (60 % ×
+        # 80 % de celle-ci) ; pas la taille de l'écran : en multi-écran étendu
+        # (Surround…) Windows voit un seul écran de 5760 px de large
+        rw_, rh_ = app.root.winfo_width(), app.root.winfo_height()
+        sh = win.winfo_screenheight()
+        win.geometry(f"{max(1280, int(rw_ * 0.6))}x{min(max(880, sh - 60), max(880, int(rh_ * 0.8)))}")
         win.protocol("WM_DELETE_WINDOW", self.close)
+        self._rv_f = 1.0
+        self._rv_fit_job = None
 
         # Pastilles dessinées (les emoji couleur s'affichent en gris dans Tk sous Windows)
         self.dots = {}
@@ -11405,7 +11720,8 @@ class ReviewWindow:
         self.canvas = tk.Canvas(right, width=512, height=128, bg="black", highlightthickness=0)
         self.canvas.pack(pady=(0, 8))
         self.detail_var = tk.StringVar()
-        ttk.Label(right, textvariable=self.detail_var, wraplength=512, justify=tk.LEFT).pack(anchor=tk.W)
+        self._detail_label = ttk.Label(right, textvariable=self.detail_var, wraplength=512, justify=tk.LEFT)
+        self._detail_label.pack(anchor=tk.W)
         self.edit_btn = ttk.Button(right, text=tr("t_review_edit", "✎ Éditer dans MANUEL"), command=self.edit_manual)
         self.edit_btn.pack(anchor=tk.W, pady=(6, 0))
         self.edit_btn.state(["disabled"])
@@ -11413,8 +11729,68 @@ class ReviewWindow:
         self.fix_frame = ttk.Frame(right)  # v96 -- propositions du GIF sélectionné
         self.fix_frame.pack(fill=tk.X, anchor=tk.W, pady=(10, 0))
         body.add(right, weight=2)
+        self._rv_right = right
+        right.bind("<Configure>", self._fit_schedule, add="+")
 
         self.reload()
+
+    # --- v114 : aperçus adaptés à la taille de la fenêtre ----------------------
+    PROP_EXTRA_H = 60   # libellé + bouton d'une proposition (hors canvas)
+    REFUSE_H = 30       # bouton « Refuser les propositions »
+
+    @staticmethod
+    def _fit_sizes(f):
+        """(source w×h, GIF ×, propositions ×) pour le facteur f."""
+        return ((max(512, int(512 * f)), max(96, int(96 * f))), max(4, int(4 * f)), max(3, int(3 * f)))
+
+    def _fit_schedule(self, event=None):
+        if self._rv_fit_job is not None:
+            self.win.after_cancel(self._rv_fit_job)
+        self._rv_fit_job = self.win.after(150, self._fit)
+
+    def _fit(self):
+        """Plus grand facteur f (1 à AUTO_FIT_MAX) qui tient dans le panneau de
+        droite, en réservant la place de 2 propositions (maximum proposé par
+        dmd_autofix.choose) : les tailles ne changent pas d'un GIF à l'autre."""
+        self._rv_fit_job = None
+        right = self._rv_right
+        try:
+            aw, ah = right.winfo_width() - 16, right.winfo_height()
+            if aw <= 1 or ah <= 1:
+                return
+            reqh = right.winfo_reqheight()
+        except tk.TclError:
+            return
+        (sw0, sh0), sd0, sp0 = self._fit_sizes(self._rv_f)
+        n = len(self._players)
+        base = (reqh - sh0 - 32 * sd0 - n * 32 * sp0 + (2 - n) * self.PROP_EXTRA_H
+                + (self.REFUSE_H if n == 0 else 0))
+
+        def fits(f):
+            (sw, sh), sd, sp = self._fit_sizes(f)
+            return (max(sw, 128 * sd, 128 * sp) <= aw
+                    and base + sh + 32 * sd + 2 * 32 * sp <= ah)
+
+        best, f = 1.0, 1.0
+        while f <= DMDConverter.AUTO_FIT_MAX + 1e-9:
+            if fits(f):
+                best = f
+            f += 0.05
+        new, old = self._fit_sizes(best), self._fit_sizes(self._rv_f)
+        self._rv_f = best
+        if new == old:
+            return
+        (sw, sh), sd, _sp = new
+        self.src_canvas.config(width=sw, height=sh)
+        self.canvas.config(width=128 * sd, height=32 * sd)
+        self._detail_label.config(wraplength=sw)
+        rel = self._current_rel
+        if rel is not None:
+            info = dict(self.items).get(rel, {})
+            self._show_source(rel, info)
+            self._show_fixes(rel, info)
+            if len(getattr(self, "_frames", [])) == 1:
+                self._animate()  # image fixe : pas de boucle pour la redessiner
 
     # --- données -----------------------------------------------------------
     def reload(self):
@@ -11491,11 +11867,12 @@ class ReviewWindow:
         if not self._frames:
             return
         frame = self._frames[self._idx]
-        display = DMDEngine.render_led_style(frame, scale=4, led_ratio=0.525, glow=True,
+        sd = self._fit_sizes(self._rv_f)[1]
+        display = DMDEngine.render_led_style(frame, scale=sd, led_ratio=0.525, glow=True,
                                              brightness=self.app.led_brightness_var.get())
         self._photo = ImageTk.PhotoImage(display)
         self.canvas.delete("all")
-        self.canvas.create_image(256, 64, image=self._photo)
+        self.canvas.create_image(64 * sd, 16 * sd, image=self._photo)
         delay = self._delays[self._idx]
         self._idx = (self._idx + 1) % len(self._frames)
         if len(self._frames) > 1:
@@ -11759,9 +12136,10 @@ class ReviewWindow:
             ttk.Label(box, text=tr("t_fix_prop", "Proposition : {name} — {score}/100 (+{gain})",
                                    name=self._fix_label(p["code"]), score=p["score"],
                                    gain=p["score"] - info.get("score", 0))).pack(anchor=tk.W)
-            cv = tk.Canvas(box, width=384, height=96, bg="black", highlightthickness=0)
+            sp = self._fit_sizes(self._rv_f)[2]
+            cv = tk.Canvas(box, width=128 * sp, height=32 * sp, bg="black", highlightthickness=0)
             cv.pack(anchor=tk.W, pady=2)
-            self._players.append(_GifPlayer(self.win, cv, p["path"], 3, self.app.led_brightness_var.get))
+            self._players.append(_GifPlayer(self.win, cv, p["path"], sp, self.app.led_brightness_var.get))
             ttk.Button(box, text=tr("t_fix_accept", "✓ Garder cette version"),
                        command=lambda pp=p: self.accept_fix(rel, pp)).pack(anchor=tk.W)
         ttk.Button(self.fix_frame, text=tr("t_fix_refuse", "✗ Refuser les propositions"),
@@ -11859,7 +12237,8 @@ class ReviewWindow:
             # sur le DMD) doivent rester visibles, c'est tout l'intérêt
             img = DMDEngine.load_image(src).convert("RGBA")
             w, h = img.size
-            img.thumbnail((512, 96), Image.Resampling.LANCZOS)
+            cw, ch = self._fit_sizes(self._rv_f)[0]
+            img.thumbnail((cw, ch), Image.Resampling.LANCZOS)
             board = Image.new("RGBA", img.size, (72, 72, 72, 255))
             dr = ImageDraw.Draw(board)
             for y in range(0, img.size[1], 8):
@@ -11868,7 +12247,7 @@ class ReviewWindow:
             board.alpha_composite(img)
             img = board.convert("RGB")
             self._src_photo = ImageTk.PhotoImage(img)
-            self.src_canvas.create_image(256, 48, image=self._src_photo)
+            self.src_canvas.create_image(cw // 2, ch // 2, image=self._src_photo)
             self.src_var.set(tr("t_review_src", "Source {w}×{h} — {name}", w=w, h=h, name=os.path.basename(src)))
         except Exception as e:
             self.src_var.set(tr("t_review_src_unknown", "Source : inconnue") + f" ({e})")
@@ -12161,6 +12540,38 @@ def process_one_image(
         return (image_path, False, str(e), None, 0, 0, None)
 
 
+def _pp_snap_crop(crop, frame_size):
+    """v116 -- fenêtre de recadrage ajustée pour le pixel-perfect : son côté
+    dominant devient un multiple EXACT de 128 (ou 32), même centre, même
+    proportions. Sans ça, le diviseur entier arrondi vers le haut rendait
+    une image trop petite avec un liseré noir (zone 600×150 : diviseur 5,
+    image 120×30). La taille change d'un demi-pas au plus (zone de 600 px :
+    640 px, soit 6 %). Reste dans l'image source."""
+    x0, y0, cw, ch = crop
+    fw, fh = frame_size
+    if cw <= 0 or ch <= 0 or (cw >= fw and ch >= fh):
+        return crop  # image entière (zoom -100 % = redimensionnement seul) : jamais rognée
+    horiz = cw / 128 >= ch / 32
+    unit, side = (128, cw) if horiz else (32, ch)
+    d = max(1, round(side / unit))
+    while True:
+        # axe secondaire plafonné à d × 32 (ou 128) : un pixel de trop ferait
+        # repasser le diviseur au cran au-dessus
+        if horiz:
+            nw, nh = unit * d, max(1, min(32 * d, round(ch * unit * d / cw)))
+        else:
+            nw, nh = max(1, min(128 * d, round(cw * unit * d / ch))), unit * d
+        if (nw <= fw and nh <= fh) or d == 1:
+            break
+        d -= 1
+    if nw > fw or nh > fh:
+        return crop  # image source plus petite que 128×32 : rien à ajuster
+    cx, cy = x0 + cw / 2, y0 + ch / 2
+    x = int(max(0, min(fw - nw, round(cx - nw / 2))))
+    y = int(max(0, min(fh - nh, round(cy - nh / 2))))
+    return (x, y, nw, nh)
+
+
 def _video_render_frame(job):
     """v109 -- rendu DMD 128×32 d'UNE image de l'onglet VIDEO (corps de
     l'ancienne boucle de _video_pipeline, inchangé) : recadrage éventuel,
@@ -12168,6 +12579,8 @@ def _video_render_frame(job):
     en séquentiel ou par les processus de calcul (ProcessPoolExecutor)."""
     frame, crop, settings, pixel_perfect, fit = job
     if crop is not None:
+        if pixel_perfect:
+            crop = _pp_snap_crop(crop, frame.size)  # v116 : plus de liseré noir
         x0, y0, cw, ch = crop
         if cw > 0 and ch > 0:
             frame = frame.crop((x0, y0, x0 + cw, y0 + ch))

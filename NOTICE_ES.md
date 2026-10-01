@@ -5,7 +5,7 @@ GIF optimizadas para una pantalla DMD 128×32 (arcade / pinball / mueble RetroBo
 Esta guía describe, pestaña por pestaña, cada función de la interfaz y su uso
 concreto.
 
-> Guía actualizada para la versión **3.1**. Las capturas se hicieron con la versión
+> Guía actualizada para la versión **3.2**. Las capturas se hicieron con la versión
 > **2.7.4**, tema oscuro, interfaz en español: las pestañas VIDEO y AYUDA, añadidas
 > después, no aparecen.
 >
@@ -55,6 +55,12 @@ Cada pestaña corresponde a una forma diferente de producir una animación GIF 1
 Pasar el ratón por encima de un ajuste poco evidente (pixel-perfect, perfil,
 tolerancia, easing, modos de encuadre de vídeo...) muestra una **ayuda
 emergente** en el idioma de la interfaz.
+
+Las **vistas previas** (imagen original, vista previa DMD, propuestas, zona de
+edición, zona de interés, ventana Revisar) **crecen con la ventana**: en una pantalla
+grande o una ventana maximizada llegan a ser hasta 2 veces más grandes (factores
+enteros para los LED, siempre nítidos) y recuperan su tamaño habitual al reducir la
+ventana.
 
 ---
 
@@ -348,8 +354,10 @@ la pestaña lo indica.
 
 - **📹 Cargar Vídeo**: abre un archivo de vídeo. También puede **arrastrar y soltar**
   un vídeo en cualquier lugar de la ventana, sea cual sea la pestaña mostrada.
-- **Vídeo largo**: si procesar todo el vídeo necesitaría mucha memoria (más de unos
-  1,5 GB: por ejemplo más de 8 s en 1080p a 30 i/s), se abre una ventana justo después
+- **Memoria**: la generación lee el vídeo sobre la marcha y solo conserva las imágenes
+  128×32 producidas (unos 500 MB como máximo en 1080p, sea cual sea la duración).
+- **Vídeo muy pesado**: si procesarlo necesitara aun así mucha memoria (más de unos
+  1,5 GB, caso raro: vídeo 8K o de varias horas), se abre una ventana justo después
   de elegirlo: **Inicio** y **Duración** del fragmento que se conserva, con la memoria
   necesaria mostrada en directo. «✂ Recortar este fragmento» crea una copia temporal del
   fragmento (borrada después): la línea de tiempo, la reproducción y la generación solo
@@ -534,7 +542,10 @@ Tiene dos efectos combinados:
 
 1. **Escalado**: impone un factor de escala entero exacto en lugar de un
    redimensionado a escala fraccionaria, para un alineado de píxeles perfecto en la
-   cuadrícula DMD.
+   cuadrícula DMD. En la pestaña VIDEO, la ventana de encuadre se ajusta ligeramente
+   (mismo centro) para que la imagen llene exactamente los 128×32 LED, sin banda
+   negra; como solo los anchos de 128, 256, 384… px encajan exactamente, una zona de
+   menos de 512 px de ancho puede cambiar de tamaño de forma apreciable.
 2. **Renderizado de la vista previa**: en los 4 lienzos de vista previa animada, cada
    fotograma se simula en estilo LED físico (puntos redondos separados por un marco
    oscuro, con un ligero halo) en lugar de un simple ampliado cuadrado — para

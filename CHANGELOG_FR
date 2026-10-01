@@ -95,3 +95,16 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                             selection (debut, duree, memoire necessaire), copie temporaire effacee
                             ensuite ; alerte si le passage ou la selection depasse 60 % de la memoire libre
                           - version affichee 3.2.2, lanceur dmd_gif_creator_v322.py
+                v3.2.3 -- - grands ecrans (4K, affichage a 125 %, fenetre maximisee) : apercus restes a
+                            leur taille fixe au milieu de grands cadres vides ; ils s agrandissent
+                            maintenant avec la fenetre (AUTO, MANUEL, VIDEO, TEXTSCROLL, Revoir),
+                            jusqu a 2 fois, facteurs entiers pour le rendu LED ; inchange en 1080p
+                          + fenetre Revoir : ouverte plus grande si la fenetre principale est grande
+                          - VIDEO : toutes les images de la selection etaient gardees en pleine
+                            resolution pendant la generation (32 s de 1080p : 3,4 Go) ; suivi et rendu
+                            lisent maintenant la video au fil de l eau (0,5 Go), GIF identique ;
+                            vignettes de la frise en petit
+                          - VIDEO, pixel-perfect : bande noire autour de l image quand la zone ou le
+                            zoom de cadrage ne tombait pas sur un multiple de 128x32 ; la fenetre de
+                            cadrage est ajustee pour remplir exactement le DMD
+                          - version affichee 3.2.3, lanceur dmd_gif_creator_v323.py
