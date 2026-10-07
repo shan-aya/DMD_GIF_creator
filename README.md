@@ -172,6 +172,7 @@ Notice complète : [🇫🇷 Français](./NOTICE_FR.md) · [🇬🇧 English](./
 ## ☕ Soutenir le projet
 
 Si ce projet t'a aidé, tu peux m'offrir un café :
+👉 [☕ Buy Me a Coffee](https://buymeacoffee.com/shan_aya)
 👉 [☕ Donate via PayPal](https://www.paypal.com/paypalme/felysaya)
 
 ## Contact

@@ -630,3 +630,10 @@ The list stays smooth even with tens of thousands of GIFs.
   TEXTSCROLL size-estimate line, some proposal-caption words, and every internal log
   message) remain hardcoded in French regardless of the selected language. This is a
   tracked, known limitation — not a bug in this translated guide.
+
+---
+
+## ☕ Support the project
+
+If this project helped you, you can buy me a coffee:
+👉 [☕ Buy Me a Coffee](https://buymeacoffee.com/shan_aya)

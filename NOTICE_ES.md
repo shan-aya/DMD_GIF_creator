@@ -678,3 +678,10 @@ La lista sigue fluida incluso con decenas de miles de GIF.
   mensajes de registro internos) permanecen fijas en francés sin importar el idioma
   seleccionado. Es una limitación conocida y registrada — no un error de esta guía
   traducida.
+
+---
+
+## ☕ Apoya el proyecto
+
+Si este proyecto te ha ayudado, puedes invitarme a un café:
+👉 [☕ Buy Me a Coffee](https://buymeacoffee.com/shan_aya)

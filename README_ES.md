@@ -173,6 +173,7 @@ Guía completa: [🇫🇷 Français](./NOTICE_FR.md) · [🇬🇧 English](./NOT
 ## ☕ Apoyar el proyecto
 
 Si este proyecto te ha ayudado, puedes invitarme a un café:
+👉 [☕ Buy Me a Coffee](https://buymeacoffee.com/shan_aya)
 👉 [☕ Donate via PayPal](https://www.paypal.com/paypalme/felysaya)
 
 ## Contacto

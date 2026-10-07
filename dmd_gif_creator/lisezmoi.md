@@ -639,3 +639,10 @@ La liste reste fluide même avec des dizaines de milliers de GIF.
   orange devient bleu). Elle n'est gardée que si le score s'améliore nettement ; si
   le résultat ne vous convient pas, décochez l'option ou choisissez une autre
   proposition.
+
+---
+
+## ☕ Soutenir le projet
+
+Si ce projet t'a aidé, tu peux m'offrir un café :
+👉 [☕ Buy Me a Coffee](https://buymeacoffee.com/shan_aya)

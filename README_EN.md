@@ -169,6 +169,7 @@ Full user guide: [🇫🇷 Français](./NOTICE_FR.md) · [🇬🇧 English](./NO
 ## ☕ Support the project
 
 If this project helped you, you can buy me a coffee:
+👉 [☕ Buy Me a Coffee](https://buymeacoffee.com/shan_aya)
 👉 [☕ Donate via PayPal](https://www.paypal.com/paypalme/felysaya)
 
 ## Contact
