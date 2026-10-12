@@ -9,6 +9,8 @@ processing of whole folders.
 
 (Formerly "DMD GIF Converter".)
 
+👉 **[Project presentation page](https://shan-aya.github.io/DMD_GIF_creator/)**
+
 ![AUTO tab](./screenshots/auto_en.png)
 
 ## Download

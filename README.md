@@ -9,6 +9,8 @@ traitement par lot de dossiers entiers.
 
 (Anciennement « DMD GIF Converter ».)
 
+👉 **[Page de présentation du projet](https://shan-aya.github.io/DMD_GIF_creator/)**
+
 ![Onglet AUTO](./screenshots/auto_fr.png)
 
 ## Téléchargement

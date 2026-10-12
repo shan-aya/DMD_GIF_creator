@@ -9,6 +9,8 @@ procesamiento por lotes de carpetas enteras.
 
 (Antes « DMD GIF Converter ».)
 
+👉 **[Página de presentación del proyecto](https://shan-aya.github.io/DMD_GIF_creator/)**
+
 ![Pestaña AUTO](./screenshots/auto_es.png)
 
 ## Descarga
