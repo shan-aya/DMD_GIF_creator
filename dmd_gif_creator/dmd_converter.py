@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.2.3
+Version: 3.2.4
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,8 +27,20 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v117
+# Version actuelle : v119
 #
+# v119 — 2026-10-12 — safe-modify — Version 3.2.4 (v118 : zone de progression lisible, bouton Interrompre
+#      réactif, lot protégé contre la mort d'un processus de calcul) ; lanceur renommé
+#      dmd_gif_creator_v324.py ; en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v25).
+# v118 — 2026-10-12 — safe-modify — Zone de progression (retour utilisateur) : (1) le libellé « Traitement 42 % :
+#      nom.png » changeait de largeur à chaque image et faisait bouger toute la zone, illisible ; maintenant le nom du
+#      fichier (sans titre) est centré AU-DESSUS de la barre, de largeur fixe (width=1, tronqué au milieu si > 90
+#      caractères), et le pourcentage est dessiné AU CENTRE de la barre (classe PercentBar, canvas, texte blanc cerclé
+#      de sombre, lisible sur fond et sur remplissage dans les 2 thèmes). (2) Bouton Interrompre du lot : l'état
+#      d'interruption n'était lu qu'à la fin d'une image (as_completed) puis shutdown(wait=True) attendait les images en
+#      cours ; maintenant wait(timeout=0,1 s) → réaction en ≤ 0,1 s, shutdown(wait=False, cancel_futures=True),
+#      barre remise à 0. update_progress ne force plus update_idletasks (traitement d'événements en rafale depuis chaque
+#      callback).
 # v117 — 2026-10-01 — safe-modify — Version 3.2.3 (v111-v116 : aperçus adaptés à la taille de la fenêtre,
 #      génération VIDEO en flux, liseré pixel-perfect VIDEO) ; lanceur renommé dmd_gif_creator_v323.py ;
 #      en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v24).
@@ -2058,7 +2070,8 @@ from pathlib import Path
 # numpy court et d'overhead Python entre chaque itération (grille de
 # variantes, frames de scroll) -- profil où un pool de threads n'apporterait
 # qu'un gain limité.
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed, wait, FIRST_COMPLETED
+from concurrent.futures.process import BrokenProcessPool
 from PIL import (
     Image,
     ImageEnhance,
@@ -2457,6 +2470,58 @@ def tr(key, default, **kwargs):
         return text.format(**kwargs)
     except (KeyError, IndexError, ValueError):
         return default.format(**kwargs)
+
+
+class PercentBar(tk.Canvas):
+    """v118 -- barre de progression avec le pourcentage centré SUR la barre.
+    Dessinée à la main (canvas) : taille fixe, rien ne bouge quand le texte
+    change (l'ancien libellé « Traitement 42 % : nom.png » élargissait/rétrécissait
+    la zone et décalait tout). Pilotée par une DoubleVar (0-100) comme l'ancienne
+    ttk.Progressbar ; le texte, blanc cerclé de sombre, reste lisible sur le fond
+    comme sur la partie remplie, dans les deux thèmes."""
+
+    FILL = "#3d9a46"
+
+    def __init__(self, master, variable, **kw):
+        kw.setdefault("height", 20)
+        kw.setdefault("highlightthickness", 0)
+        super().__init__(master, **kw)
+        self._var = variable
+        self._shown = None
+        self._font = ("Arial", 9, "bold")
+        self._var.trace_add("write", lambda *a: self._redraw())
+        self.bind("<Configure>", lambda e: self._redraw(force=True))
+
+    def _trough(self):
+        try:
+            bg = ttk.Style().lookup("TFrame", "background") or "#f0f0f0"
+            r, g, b = (v // 257 for v in self.winfo_rgb(bg))
+            dark = (r * 299 + g * 587 + b * 114) / 1000 < 128
+        except tk.TclError:
+            dark = False
+        return "#404040" if dark else "#d0d0d0"
+
+    def _redraw(self, force=False):
+        try:
+            pct = max(0.0, min(100.0, float(self._var.get())))
+        except (tk.TclError, ValueError):
+            pct = 0.0
+        w, h = self.winfo_width(), self.winfo_height()
+        if w <= 1 or h <= 1:
+            return
+        if not force and self._shown == (int(pct), w):
+            return
+        self._shown = (int(pct), w)
+        self.delete("all")
+        self.create_rectangle(0, 0, w, h, fill=self._trough(), outline="")
+        if pct > 0:
+            self.create_rectangle(0, 0, int(w * pct / 100), h, fill=self.FILL, outline="")
+        if pct > 0:
+            txt = f"{int(pct)}%"
+            cx, cy = w // 2, h // 2
+            for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)):
+                self.create_text(cx + dx, cy + dy, text=txt, fill="#202020", font=self._font)
+            self.create_text(cx, cy, text=txt, fill="white", font=self._font)
 
 
 # Gabarits FR multi-lignes (textes par defaut des panneaux d'information)
@@ -2896,7 +2961,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.2.3"
+    APP_VERSION = "3.2.4"
 
     # ========================================================================
 
@@ -3004,18 +3069,16 @@ class DMDConverter:
         progress_frame = ttk.Frame(footer)
         progress_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
         progress_frame.columnconfigure(0, weight=1)
-        progress_frame.columnconfigure(1, weight=0)
-        progress_frame.columnconfigure(2, weight=1)
 
-        ttk.Label(progress_frame, textvariable=self.progress_text_var).grid(
-            row=0, column=1, pady=(5, 0), sticky="ew"
-        )
-        self.progressbar = ttk.Progressbar(
-            progress_frame, variable=self.progress_bar_var, maximum=100
-        )
-        self.progressbar.grid(
-            row=1, column=0, columnspan=3, sticky="ew", padx=10, pady=5
-        )
+        # v118 -- nom du fichier (ou état) centré AU-DESSUS de la barre, sans
+        # titre ; width=1 : la largeur demandée ne dépend pas du texte, la
+        # zone ne bouge plus (le texte s'étire sur toute la largeur allouée).
+        # Le pourcentage est dessiné au centre de la barre (PercentBar).
+        ttk.Label(
+            progress_frame, textvariable=self.progress_text_var, anchor="center", width=1
+        ).grid(row=0, column=0, pady=(5, 0), sticky="ew", padx=10)
+        self.progressbar = PercentBar(progress_frame, self.progress_bar_var)
+        self.progressbar.grid(row=1, column=0, sticky="ew", padx=10, pady=5)
 
         # Bouton Quitter : placé COMME un onglet de navigation supplémentaire,
         # dans la bande de tabs latérale du Notebook (tabposition="wn"), au
@@ -8999,35 +9062,66 @@ class DMDConverter:
         completed = 0
         canceled_mid_batch = False
         quality_rows = {}  # v87 -- collecté ici (thread consommateur), jamais par les workers
-        for future in as_completed(futures):
+        # v118 -- l'interruption est testée toutes les 0,1 s (wait avec délai) et
+        # non plus seulement à la fin d'une image : avec des images lourdes, le
+        # bouton ne réagissait qu'après la prochaine complétion.
+        pending = set(futures)
+        while pending:
             if self.processing_canceled:
                 canceled_mid_batch = True
                 break
-            img_path, ok, err, output_name, nframes, color_count, quality = future.result()
-            if quality is not None:
-                if batch_no is not None:
-                    quality[1]["b"] = batch_no
-                quality_rows[quality[0]] = quality[1]
-            completed += 1
-            percent = int((completed / total) * 100)
-            self.root.after(
-                0, lambda p=percent, f=Path(img_path).name: self.update_progress(p, f)
-            )
-            if ok:
-                logger.info(f"GIF créé: {output_name} ({nframes} frames, {color_count} couleurs)")
-                success_count += 1
-            else:
-                errors.append(f"{Path(img_path).name}: {err}")
-                logger.error(f"Erreur {Path(img_path).name}: {err}")
+            done, pending = wait(pending, timeout=0.1, return_when=FIRST_COMPLETED)
+            for future in done:
+                try:
+                    img_path, ok, err, output_name, nframes, color_count, quality = future.result()
+                except BrokenProcessPool as e:
+                    # v118 -- un processus de calcul est mort (mémoire, antivirus…) :
+                    # le pool entier est inutilisable. Avant, l'exception tuait le fil
+                    # du lot en silence (barre figée, plus aucun retour).
+                    logger.error(f"Lot : processus de calcul interrompu ({e})")
+                    pool.shutdown(wait=False, cancel_futures=True)
+                    self._save_quality_index(output_dir_str, quality_rows)
+
+                    def _broken_ui(n=success_count):
+                        self.progress_text_var.set(tr(
+                            "t_batch_pool_broken",
+                            "Lot interrompu : un processus de calcul s'est arrêté ({n} GIF créés)", n=n))
+                        self.progress_bar_var.set(0)
+                    self.root.after(0, _broken_ui)
+                    return
+                except Exception as e:
+                    logger.error(f"Lot : résultat illisible ({e})")
+                    errors.append(str(e))
+                    completed += 1
+                    continue
+                if quality is not None:
+                    if batch_no is not None:
+                        quality[1]["b"] = batch_no
+                    quality_rows[quality[0]] = quality[1]
+                completed += 1
+                percent = int((completed / total) * 100)
+                self.root.after(
+                    0, lambda p=percent, f=Path(img_path).name: self.update_progress(p, f)
+                )
+                if ok:
+                    logger.info(f"GIF créé: {output_name} ({nframes} frames, {color_count} couleurs)")
+                    success_count += 1
+                else:
+                    errors.append(f"{Path(img_path).name}: {err}")
+                    logger.error(f"Erreur {Path(img_path).name}: {err}")
 
         if canceled_mid_batch:
             # Annule les futures pas encore démarrées ; celles déjà en cours
-            # (jusqu'à max_workers) vont à leur terme -- changement de
-            # comportement assumé vs l'ancien arrêt strict avant la prochaine
-            # image (plan perf batch, Tier 2).
-            pool.shutdown(wait=True, cancel_futures=True)
+            # (jusqu'à max_workers) vont à leur terme en arrière-plan, sans
+            # bloquer : l'interface est rendue tout de suite (v118, avant :
+            # shutdown(wait=True) attendait la fin des images en cours).
+            pool.shutdown(wait=False, cancel_futures=True)
             self._save_quality_index(output_dir_str, quality_rows)
-            self.root.after(0, lambda: self.progress_text_var.set(tr("t_interrupted", "Interrompu")))
+
+            def _interrupted_ui():
+                self.progress_text_var.set(tr("t_interrupted", "Interrompu"))
+                self.progress_bar_var.set(0)
+            self.root.after(0, _interrupted_ui)
             logger.info("Batch interrompu par l'utilisateur")
             return
 
@@ -11086,10 +11180,13 @@ class DMDConverter:
             return ["Arial", "Times New Roman", "Courier New"]
 
     def update_progress(self, percent, filename):
-        self.progress_text_var.set(tr("t_batch_progress", "Traitement {pct}% : {name}", pct=percent, name=filename))
+        # v118 : le pourcentage est affiché sur la barre, le texte = nom seul
+        # (tronqué au milieu s'il est très long : la zone garde sa taille)
+        name = str(filename)
+        if len(name) > 90:
+            name = name[:45] + "…" + name[-44:]
+        self.progress_text_var.set(name)
         self.progress_bar_var.set(percent)
-        if hasattr(self, "progressbar"):
-            self.progressbar.update_idletasks()
 
     # v87 -- notes de dmd_quality, du meilleur au pire : (code, libellé FR par
     # défaut, couleur de pastille). v88 : libellés traduits au lieu des emoji
