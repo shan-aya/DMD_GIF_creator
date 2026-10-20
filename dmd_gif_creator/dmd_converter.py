@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.2.4
+Version: 3.2.5
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,8 +27,14 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v119
+# Version actuelle : v120
 #
+# v120 — 2026-10-20 — safe-modify — Version 3.2.5 (pixel-perfect : échelle exacte quand le diviseur entier
+#      rapetisse de plus de 3 %, voir dmd_engine v19) ; lanceur renommé dmd_gif_creator_v325.py ;
+#      en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v26). Aucun appelant modifié :
+#      tous passent leurs paramètres par mot-clé, le nouveau défaut s'applique partout.
+#      Aide au survol (add_help_tooltip) ajoutée aux 3 boutons ✓ / ✗ / ⇄ de la liste d'images de l'onglet AUTO
+#      (tooltip_select_all, tooltip_deselect_all, tooltip_invert_selection dans les 3 lang_*.json).
 # v119 — 2026-10-12 — safe-modify — Version 3.2.4 (v118 : zone de progression lisible, bouton Interrompre
 #      réactif, lot protégé contre la mort d'un processus de calcul) ; lanceur renommé
 #      dmd_gif_creator_v324.py ; en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v25).
@@ -2961,7 +2967,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.2.4"
+    APP_VERSION = "3.2.5"
 
     # ========================================================================
 
@@ -3335,15 +3341,21 @@ class DMDConverter:
         )
         btn_images.pack(side=tk.LEFT, padx=(1, 8))
         add_help_tooltip(btn_images, "tooltip_add_images")
-        ttk.Button(
+        btn_sel_all = ttk.Button(
             toolbar_frame, text="✓", command=self.select_all_images, width=3
-        ).pack(side=tk.LEFT, padx=1)
-        ttk.Button(
+        )
+        btn_sel_all.pack(side=tk.LEFT, padx=1)
+        add_help_tooltip(btn_sel_all, "tooltip_select_all")
+        btn_sel_none = ttk.Button(
             toolbar_frame, text="✗", command=self.deselect_all_images, width=3
-        ).pack(side=tk.LEFT, padx=1)
-        ttk.Button(
+        )
+        btn_sel_none.pack(side=tk.LEFT, padx=1)
+        add_help_tooltip(btn_sel_none, "tooltip_deselect_all")
+        btn_sel_inv = ttk.Button(
             toolbar_frame, text="⇄", command=self.invert_selection, width=3
-        ).pack(side=tk.LEFT, padx=1)
+        )
+        btn_sel_inv.pack(side=tk.LEFT, padx=1)
+        add_help_tooltip(btn_sel_inv, "tooltip_invert_selection")
         reauthorize_btn = ttk.Button(
             toolbar_frame, text="🔓 Réautoriser", command=self.reauthorize_image
         )

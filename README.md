@@ -1,6 +1,6 @@
 🇫🇷 **Français** · [🇬🇧 English](./README_EN.md) · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.2.4
+# DMD GIF Creator 128x32 — v3.2.5
 
 Créez des GIF optimisés pour les écrans DMD 128×32 (borne d'arcade, flipper,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) à partir d'**images**, d'une
@@ -15,7 +15,7 @@ traitement par lot de dossiers entiers.
 
 ## Téléchargement
 
-**Windows** : téléchargez `dmd_gif_creator_v324.exe` dans la
+**Windows** : téléchargez `dmd_gif_creator_v325.exe` dans la
 [dernière Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) et
 lancez-le — aucune installation nécessaire.
 
@@ -27,7 +27,7 @@ c'est un faux positif : voir « Antivirus » dans la [notice](./NOTICE_FR.md#bon
 **Depuis les sources** (dossier [`dmd_gif_creator/`](./dmd_gif_creator)) :
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v324.py
+    python dmd_gif_creator/dmd_gif_creator_v325.py
 
 `opencv-contrib-python` (et non `opencv-python`) est nécessaire pour le suivi
 automatique de l'onglet VIDEO ; les deux paquets ne doivent pas être installés en même
@@ -96,6 +96,16 @@ glitch…), avec une durée ajustée automatiquement à la longueur du texte.
 - **AIDE** : le guide complet dans l'application.
 
 ## Nouveautés
+
+**v3.2.5**
+- **Pixel-perfect : logos à pleine taille** : quand le diviseur entier rapetissait l'image
+  de plus de 3 % par rapport au cadre (par exemple 60×30 au lieu de 64×32), la réduction
+  se fait maintenant à l'échelle exacte : chaque LED est la moyenne exacte de son bloc de
+  pixels, donc la même quantité de lumière que l'original, sans perdre de rangée ni de
+  colonne de LED. En défilement, l'axe fixe remplit toute la hauteur (ou la largeur) sans
+  jamais déborder.
+- Onglet **AUTO** : les trois boutons de sélection de la liste d'images (tout sélectionner,
+  tout désélectionner, inverser) ont maintenant une aide au survol.
 
 **v3.2.4**
 - **Zone de progression lisible** : le nom du fichier en cours est centré au-dessus de la

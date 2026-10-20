@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · 🇬🇧 **English** · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.2.4
+# DMD GIF Creator 128x32 — v3.2.5
 
 Create GIFs optimized for 128×32 DMD displays (arcade cabinet, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) from **images**, a **video**
@@ -15,7 +15,7 @@ processing of whole folders.
 
 ## Download
 
-**Windows**: download `dmd_gif_creator_v324.exe` from the
+**Windows**: download `dmd_gif_creator_v325.exe` from the
 [latest Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) and run
 it — nothing to install.
 
@@ -27,7 +27,7 @@ processing (anti-ransomware protection), it is a false positive: see "Antivirus"
 **From the sources** ([`dmd_gif_creator/`](./dmd_gif_creator) folder):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v324.py
+    python dmd_gif_creator/dmd_gif_creator_v325.py
 
 `opencv-contrib-python` (not `opencv-python`) is required for the automatic tracking of
 the VIDEO tab; the two packages must not be installed at the same time.
@@ -94,6 +94,15 @@ fitted automatically to the text length.
 - **HELP**: the full guide inside the application.
 
 ## What's new
+
+**v3.2.5**
+- **Pixel-perfect: logos at full size**: when the integer divisor shrank the image by more
+  than 3 % compared with the frame (for example 60×30 instead of 64×32), the reduction is
+  now done at the exact scale: each LED is the exact average of its block of pixels, so the
+  amount of light matches the original and no row or column of LEDs is lost. When
+  scrolling, the fixed axis fills the whole height (or width) without ever overflowing.
+- **AUTO** tab: the three selection buttons of the image list (select all, deselect all,
+  invert) now have hover help.
 
 **v3.2.4**
 - **Readable progress area**: the name of the file being processed is centered above the

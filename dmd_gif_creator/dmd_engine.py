@@ -3,8 +3,17 @@ from __future__ import annotations
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v18
+# Version actuelle : v19
 #
+# v19 — 2026-10-20 — safe-modify — adaptive_resize, pixel_perfect : paramètre pp_max_shrink (défaut 0,03).
+#      Quand le diviseur entier de _pixel_perfect_dims rapetisse l'image de plus de 3 % (largeur ou hauteur)
+#      par rapport à l'échelle exacte du cadre (ex. 600×300 : 60×30 au lieu de 64×32 ; zone vidéo 960×240 :
+#      120×30 au lieu de 128×32), réduction BOX à l'échelle exacte (moyenne exacte par LED, même lumière :
+#      99-101 % de l'original sur 12 logos et 3 vidéos, banc proto/). En fill avec direction, l'échelle de
+#      référence est celle de l'axe fixe (hauteur en horizontal, largeur en vertical : jamais de débordement, v15).
+#      Taille toujours comprise entre l'ancienne et l'échelle exacte. pp_max_shrink=0 = ancien comportement.
+#      Ajout (non branché) : paramètre sharp -> dmd_sharp_reduce (épaississement des traits fins + garde-fou
+#      de luminance +8 %), gain de netteté jugé marginal au banc, désactivé par défaut.
 # v18 — 2026-09-25 — safe-modify — Plafond OPTIONNEL de durée du défilement :
 #      settings["max_scroll_cycle_s"] (secondes, aller-retour complet), fixé par
 #      un profil (ex. « Logos Recalbox »), JAMAIS par défaut — décision
@@ -532,9 +541,15 @@ class DMDEngine:
         mode: str = "auto",
         pixel_perfect: bool = False,
         direction: str = None,
+        sharp: bool = False,
+        pp_max_shrink: float = 0.03,
     ) -> Tuple[Image.Image, int, int]:
         """
         Redimensionnement adaptatif pour DMD.
+
+        sharp (prototype, dev/engine-reduction) : reduction « aire exacte + traits fins
+        epaissis » a pleine largeur (dmd_sharp_reduce), seulement en REDUCTION, sans
+        pixel_perfect, et si le fond est sombre ; sinon repli sur LANCZOS.
         """
         w, h = img.size
 
@@ -547,6 +562,19 @@ class DMDEngine:
             new_w, new_h, resample = DMDEngine._pixel_perfect_dims(
                 w, h, target_w, target_h, mode, direction=direction
             )
+            if pp_max_shrink and resample == Image.Resampling.BOX:
+                # Prototype (dev/engine-reduction) : si le diviseur entier rapetisse l'image de
+                # plus de `pp_max_shrink` (ex. 0.10 = 10 %) par rapport a l'echelle exacte du
+                # cadre, on reduit a l'echelle exacte (BOX fractionnaire = moyenne exacte par LED).
+                if mode == "fill" and direction == "horizontal":
+                    sc = target_h / h          # axe fixe = hauteur : ne doit jamais deborder (v15)
+                elif mode == "fill" and direction == "vertical":
+                    sc = target_w / w          # axe fixe = largeur
+                else:
+                    sc = (min if mode == "fit" else max)(target_w / w, target_h / h)
+                fw, fh = max(1, int(w * sc)), max(1, int(h * sc))
+                if new_w < fw * (1 - pp_max_shrink) or new_h < fh * (1 - pp_max_shrink):
+                    return img.resize((fw, fh), Image.Resampling.BOX), fw, fh
             img = img.resize((new_w, new_h), resample)
             return img, new_w, new_h
 
@@ -557,6 +585,13 @@ class DMDEngine:
 
         new_w = int(w * scale)
         new_h = int(h * scale)
+
+        if sharp and scale < 1 and new_w >= 2 and new_h >= 2:
+            from dmd_sharp_reduce import area_downscale, is_dark_background
+            if is_dark_background(img):
+                bg = Image.new("RGBA", img.size, (0, 0, 0, 255))
+                bg.alpha_composite(img.convert("RGBA"))
+                return area_downscale(bg.convert("RGB"), new_w, new_h), new_w, new_h
 
         img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
         return img, new_w, new_h

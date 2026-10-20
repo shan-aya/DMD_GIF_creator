@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · [🇬🇧 English](./README_EN.md) · 🇪🇸 **Español**
 
-# DMD GIF Creator 128x32 — v3.2.4
+# DMD GIF Creator 128x32 — v3.2.5
 
 Cree GIF optimizados para pantallas DMD 128×32 (máquina arcade, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) a partir de **imágenes**, de
@@ -15,7 +15,7 @@ procesamiento por lotes de carpetas enteras.
 
 ## Descarga
 
-**Windows**: descargue `dmd_gif_creator_v324.exe` desde la
+**Windows**: descargue `dmd_gif_creator_v325.exe` desde la
 [última Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) y
 ejecútelo — no hace falta instalar nada.
 
@@ -27,7 +27,7 @@ positivo: vea «Antivirus» en la [guía](./NOTICE_ES.md#buenas-prácticas-y-lim
 **Desde las fuentes** (carpeta [`dmd_gif_creator/`](./dmd_gif_creator)):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v324.py
+    python dmd_gif_creator/dmd_gif_creator_v325.py
 
 `opencv-contrib-python` (y no `opencv-python`) es necesario para el seguimiento
 automático de la pestaña VIDEO; los dos paquetes no deben instalarse a la vez.
@@ -96,6 +96,15 @@ Matrix, glitch…), con una duración ajustada automáticamente a la longitud de
 - **AYUDA**: la guía completa dentro de la aplicación.
 
 ## Novedades
+
+**v3.2.5**
+- **Pixel-perfect: logotipos a tamaño completo**: cuando el divisor entero reducía la imagen
+  en más de un 3 % respecto al marco (por ejemplo 60×30 en lugar de 64×32), la reducción se
+  hace ahora a la escala exacta: cada LED es el promedio exacto de su bloque de píxeles, con
+  la misma cantidad de luz que el original y sin perder ninguna fila ni columna de LED. En el
+  desplazamiento, el eje fijo ocupa toda la altura (o la anchura) sin desbordar nunca.
+- Pestaña **AUTO**: los tres botones de selección de la lista de imágenes (seleccionar todo,
+  deseleccionar todo, invertir) tienen ahora ayuda al pasar el ratón.
 
 **v3.2.4**
 - **Zona de progreso legible**: el nombre del archivo en curso está centrado sobre la

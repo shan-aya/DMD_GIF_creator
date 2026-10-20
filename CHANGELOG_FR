@@ -118,3 +118,15 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                           - lot : si un processus de calcul s arrete (memoire, antivirus), un message
                             l indique au lieu de laisser la barre figee en silence
                           - version affichee 3.2.4, lanceur dmd_gif_creator_v324.py
+                v3.2.5 -- - pixel-perfect : quand le diviseur entier rapetissait l image de plus de
+                            3 % par rapport au cadre (ex. 60x30 au lieu de 64x32, 67x29 au lieu de
+                            73x32), la reduction se fait maintenant a l echelle exacte (BOX
+                            fractionnaire : chaque LED = moyenne exacte de son bloc) ; luminance
+                            99-101 % de l original sur 12 logos, taille pleine. En defilement,
+                            l axe fixe (hauteur en horizontal, largeur en vertical) remplit tout le
+                            cadre sans jamais deborder
+                          - dmd_sharp_reduce.py (epaississement des traits fins, garde-fou de
+                            luminance) ajoute mais NON branche : gain de nettete juge marginal au banc
+                          - onglet AUTO, liste d images : aide au survol sur les 3 boutons de
+                            selection (tout selectionner, tout deselectionner, inverser)
+                          - version affichee 3.2.5, lanceur dmd_gif_creator_v325.py
