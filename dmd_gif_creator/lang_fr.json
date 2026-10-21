@@ -1,7 +1,7 @@
 {
-  "app_title": "DMD GIF Creator 128x32 - IA Enhanced v3.2.5",
+  "app_title": "DMD GIF Creator 128x32 - IA Enhanced v3.2.6",
   "scanning_images": "Recherche d'images… {n}",
-  "app_header": "DMD Creator v3.2.5",
+  "app_header": "DMD Creator v3.2.6",
   "tab_auto": "AUTO",
   "tab_manual": "MANUEL",
   "tab_video": "VIDEO",
@@ -149,6 +149,8 @@
   "tooltip_letter_threshold": "Hauteur minimale de lettre (en pixels après redimensionnement) en dessous de laquelle le texte est jugé illisible et le mode Fill/scroll est forcé à la place de Resize.",
   "tooltip_scroll_speed": "Vitesse de défilement en pixels/frame pour le mode Fill. En dessous de 1, l'image répète des frames pour simuler un défilement plus lent qu'un pixel entier.",
   "tooltip_add_folder": "Ajoute un dossier entier (toujours scanné récursivement, y compris les sous-dossiers).",
+  "tooltip_coffee": "Payez-moi un café ☕  —  buymeacoffee.com/shan_aya",
+  "coffee_label": "Payez-moi un café",
   "tooltip_add_images": "Ajoute un ou plusieurs fichiers image individuellement.",
   "tooltip_reauthorize": "Réautorise une image déjà marquée comme exportée, pour permettre un nouveau traitement par lot.",
   "tooltip_select_all": "Sélectionne toutes les images de la liste.",

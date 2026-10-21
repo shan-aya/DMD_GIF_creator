@@ -1,6 +1,6 @@
 🇫🇷 **Français** · [🇬🇧 English](./README_EN.md) · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.2.5
+# DMD GIF Creator 128x32 — v3.2.6
 
 Créez des GIF optimisés pour les écrans DMD 128×32 (borne d'arcade, flipper,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) à partir d'**images**, d'une
@@ -15,7 +15,7 @@ traitement par lot de dossiers entiers.
 
 ## Téléchargement
 
-**Windows** : téléchargez `dmd_gif_creator_v325.exe` dans la
+**Windows** : téléchargez `dmd_gif_creator_v326.exe` dans la
 [dernière Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) et
 lancez-le — aucune installation nécessaire.
 
@@ -27,7 +27,7 @@ c'est un faux positif : voir « Antivirus » dans la [notice](./NOTICE_FR.md#bon
 **Depuis les sources** (dossier [`dmd_gif_creator/`](./dmd_gif_creator)) :
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v325.py
+    python dmd_gif_creator/dmd_gif_creator_v326.py
 
 `opencv-contrib-python` (et non `opencv-python`) est nécessaire pour le suivi
 automatique de l'onglet VIDEO ; les deux paquets ne doivent pas être installés en même
@@ -96,6 +96,11 @@ glitch…), avec une durée ajustée automatiquement à la longueur du texte.
 - **AIDE** : le guide complet dans l'application.
 
 ## Nouveautés
+
+**v3.2.6**
+- **Logo Shan_ayA et lien de soutien** : le logo apparaît en bas de la colonne des onglets (le bouton
+  « Quitter » est remonté pour lui laisser la place) et le texte « Shan_ayA 2026 » est remplacé par
+  l'icône ☕ « Payez-moi un café », avec une bulle au survol ; un clic ouvre la page Buy Me a Coffee.
 
 **v3.2.5**
 - **Pixel-perfect : logos à pleine taille** : quand le diviseur entier rapetissait l'image

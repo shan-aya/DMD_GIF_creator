@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.2.5
+Version: 3.2.6
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,8 +27,14 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v120
+# Version actuelle : v121
 #
+# v121 — 2026-10-21 — safe-modify — Pied de la colonne des onglets : le texte « Shan_ayA 2026 » (footer) est
+#      remplacé par l'icône ☕ « Payez-moi un café » (bulle au survol, clé tooltip_coffee des 3 lang_*.json,
+#      ouvre buymeacoffee.com/shan_aya) alignée sur la barre de progression ; le logo Shan_ayA
+#      (images/shan_aya_logo.png) est posé au-dessus, et le bouton Quitter est remonté pour lui laisser la
+#      place (_sync_quit_btn_placement). Version 3.2.6 ; lanceur renommé
+#      dmd_gif_creator_v326.py ; en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v27).
 # v120 — 2026-10-20 — safe-modify — Version 3.2.5 (pixel-perfect : échelle exacte quand le diviseur entier
 #      rapetisse de plus de 3 %, voir dmd_engine v19) ; lanceur renommé dmd_gif_creator_v325.py ;
 #      en-têtes des 3 lang_*.json et clé TEXT_MAP (dmd_ui_constants v26). Aucun appelant modifié :
@@ -2822,6 +2828,12 @@ class DMDConverter:
         # Mettre à jour titre
         self.update_title()
 
+        # v121 : libellé du lien « Payez-moi un café » (sous l'icône du pied de la colonne des onglets)
+        try:
+            self._coffee_text_label.configure(text=lang_manager.get("coffee_label", "Payez-moi un café"))
+        except Exception:
+            pass
+
         # Mettre à jour onglets — libellés centrés sur la largeur EN PIXELS du plus
         # long (onglets en colonne latérale depuis v21). Le padding par nombre de
         # caractères (v22) suppose une police à chasse fixe ; la police par défaut Tk
@@ -2967,7 +2979,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.2.5"
+    APP_VERSION = "3.2.6"
 
     # ========================================================================
 
@@ -3067,9 +3079,22 @@ class DMDConverter:
         # progression (demande explicite après clarification : seul le
         # bouton Quitter change de zone, pas le copyright, qui garde sa
         # position simple à gauche du footer).
-        ttk.Label(footer, text="Shan_ayA 2026", font=("Arial", 8, "italic")).pack(
-            side=tk.LEFT, padx=(0, 10), pady=5
+        # v121 : remplacé par l'icône « Payez-moi un café » (même emplacement, au niveau de la barre de progression).
+        self._coffee_label = ttk.Frame(footer)  # icône + libellé dessous (le cadre sert aussi de repère de position)
+        self._coffee_label.pack(side=tk.LEFT, padx=(0, 10), pady=(2, 0))
+        _coffee_icon = ttk.Label(
+            self._coffee_label, text="☕", font=("Segoe UI Emoji", 14), foreground="#FFDD00",
+            cursor="hand2", anchor="center", width=7,
         )
+        _coffee_icon.pack(side=tk.TOP)
+        self._coffee_text_label = ttk.Label(
+            self._coffee_label, text="Payez-moi un café", font=("Arial", 8, "bold"), foreground="#FFDD00",
+            cursor="hand2", anchor="center", justify="center", wraplength=104,
+        )
+        self._coffee_text_label.pack(side=tk.TOP)
+        for _w in (_coffee_icon, self._coffee_text_label):
+            _w.bind("<Button-1>", lambda e: webbrowser.open_new_tab("https://buymeacoffee.com/shan_aya"))
+            add_help_tooltip(_w, "tooltip_coffee", wraplength=400)
 
         # Progression centrée et occuppe l'espace libre restant
         progress_frame = ttk.Frame(footer)
@@ -3109,6 +3134,25 @@ class DMDConverter:
             self.notebook, text="Quitter", command=self.root.destroy
         )
 
+        # v121 : logo Shan_ayA au-dessus de l'icône café, sous le bouton Quitter (remonté pour lui laisser la place)
+        self._brand_logo_photo = None
+        self._brand_logo_label = None
+        try:
+            _style_bg = ttk.Style().lookup("TFrame", "background") or self.root.cget("bg")
+            self._brand_logo_label = tk.Label(self.root, bd=0, highlightthickness=0, bg=_style_bg, cursor="hand2")
+            self._brand_logo_label.bind("<Button-1>", lambda e: webbrowser.open_new_tab("https://buymeacoffee.com/shan_aya"))
+            add_help_tooltip(self._brand_logo_label, "tooltip_coffee", wraplength=400)
+            _logo_dir = (
+                (Path(getattr(sys, "_MEIPASS", None) or Path(sys.executable).parent) / "_internal")
+                if getattr(sys, "frozen", False)
+                else Path(__file__).parent
+            )
+            if getattr(sys, "frozen", False) and not _logo_dir.exists():
+                _logo_dir = Path(getattr(sys, "_MEIPASS", None) or Path(sys.executable).parent)
+            self._brand_logo_src = Image.open(_logo_dir / "images" / "shan_aya_logo.png").convert("RGBA")
+        except Exception:
+            self._brand_logo_label = None  # décoratif : jamais bloquant
+
         def _sync_quit_btn_placement(event=None):
             try:
                 tabstrip_w = self.auto_frame.winfo_x()
@@ -3118,6 +3162,31 @@ class DMDConverter:
                 return
             btn_h = self.quit_btn.winfo_reqheight() or 28
             y = self.notebook_height - btn_h
+            lbl = self._brand_logo_label
+            if lbl is not None:
+                try:
+                    lw = tabstrip_w + 16  # plus large que la colonne : déborde sur le bord du cadre (transparence)
+                    src = self._brand_logo_src
+                    lh = max(1, int(lw * src.height / src.width))
+                    self.root.update_idletasks()
+                    r_x, r_y = self.root.winfo_rootx(), self.root.winfo_rooty()
+                    nb_x = self.notebook.winfo_rootx() - r_x
+                    nb_y = self.notebook.winfo_rooty() - r_y
+                    coffee_top = self._coffee_label.winfo_rooty() - r_y
+                    logo_x, logo_y = 2, coffee_top - lh - 2  # collé au bord gauche de la fenêtre (cadre)
+                    if coffee_top > nb_y + self.notebook_height // 2:  # mise en page terminée
+                        key = (lw, logo_x, logo_y)
+                        if key != getattr(self, "_brand_key", None):
+                            self._brand_key = key
+                            # composition différée : le fond doit être celui de la fenêtre FINIE, logo masqué
+                            lbl.place_forget()
+                            self.root.after(150, lambda: self._brand_compose(logo_x, logo_y, lw, lh))
+                        y = min(y, logo_y - nb_y - btn_h - 6)  # Quitter remonté au-dessus du logo
+                    elif getattr(self, "_brand_sync_tries", 0) < 20:
+                        self._brand_sync_tries = getattr(self, "_brand_sync_tries", 0) + 1
+                        self.root.after(250, _sync_quit_btn_placement)  # footer pas encore placé : on réessaie
+                except Exception:
+                    pass
             self.quit_btn.place(x=0, y=y, width=tabstrip_w, height=btn_h)
 
         self.notebook.bind("<Configure>", _sync_quit_btn_placement, add="+")
@@ -3128,6 +3197,78 @@ class DMDConverter:
 
         # Appliquer traductions (après création de tous les widgets)
         self.apply_translations()
+
+    def _render_window_rgb(self, w, h):
+        """Rendu (PIL RGB w x h) du contenu de la fenêtre via PrintWindow : fonctionne même si une autre
+        fenêtre la recouvre. None si indisponible (hors Windows, erreur)."""
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            u32, g32 = ctypes.windll.user32, ctypes.windll.gdi32
+            vp = ctypes.c_void_p
+            u32.GetDC.restype, u32.GetDC.argtypes = vp, [vp]
+            u32.ReleaseDC.argtypes = [vp, vp]
+            u32.PrintWindow.argtypes = [vp, vp, wintypes.UINT]
+            g32.CreateCompatibleDC.restype, g32.CreateCompatibleDC.argtypes = vp, [vp]
+            g32.CreateCompatibleBitmap.restype, g32.CreateCompatibleBitmap.argtypes = vp, [vp, ctypes.c_int, ctypes.c_int]
+            g32.SelectObject.restype, g32.SelectObject.argtypes = vp, [vp, vp]
+            g32.DeleteObject.argtypes = [vp]
+            g32.DeleteDC.argtypes = [vp]
+            g32.GetDIBits.argtypes = [vp, vp, wintypes.UINT, wintypes.UINT, vp, vp, wintypes.UINT]
+            hwnd = self.root.winfo_id()
+            hdc_screen = u32.GetDC(0)
+            hdc = g32.CreateCompatibleDC(hdc_screen)
+            bmp = g32.CreateCompatibleBitmap(hdc_screen, w, h)
+            old = g32.SelectObject(hdc, bmp)
+
+            class _BIH(ctypes.Structure):
+                _fields_ = [("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG), ("biHeight", wintypes.LONG),
+                            ("biPlanes", wintypes.WORD), ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD),
+                            ("biSizeImage", wintypes.DWORD), ("biXPelsPerMeter", wintypes.LONG),
+                            ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD),
+                            ("biClrImportant", wintypes.DWORD)]
+
+            try:
+                if not u32.PrintWindow(hwnd, hdc, 3):  # PW_CLIENTONLY | PW_RENDERFULLCONTENT
+                    return None
+                bih = _BIH(ctypes.sizeof(_BIH), w, -h, 1, 32, 0, 0, 0, 0, 0, 0)
+                buf = ctypes.create_string_buffer(w * h * 4)
+                if not g32.GetDIBits(hdc, bmp, 0, h, buf, ctypes.byref(bih), 0):
+                    return None
+                img = Image.frombuffer("RGBA", (w, h), buf, "raw", "BGRA", 0, 1).convert("RGB")
+                return img if img.getbbox() else None  # tout noir = rendu raté
+            finally:
+                g32.SelectObject(hdc, old)
+                g32.DeleteObject(bmp)
+                g32.DeleteDC(hdc)
+                u32.ReleaseDC(0, hdc_screen)
+        except Exception:
+            return None
+
+    def _brand_compose(self, x, y, lw, lh):
+        """Logo Shan_ayA composé sur le fond RÉEL de la fenêtre (bords de cadres compris) : Tk ne sait pas rendre
+        un PNG semi-transparent par-dessus d'autres widgets, on recoupe donc la zone sous le logo."""
+        lbl = self._brand_logo_label
+        if lbl is None:
+            return
+        try:
+            lbl.place_forget()
+            self.root.update_idletasks()
+            logo = self._brand_logo_src.resize((lw, lh), Image.LANCZOS)
+            base = None
+            snap = self._render_window_rgb(max(self.root.winfo_width(), 2), max(self.root.winfo_height(), 2))
+            if snap is not None:
+                base = snap.crop((x, y, x + lw, y + lh)).convert("RGBA")
+            if base is None:
+                base = Image.new("RGBA", (lw, lh), ttk.Style().lookup("TFrame", "background") or "#2b2b2b")
+            base.alpha_composite(logo)
+            self._brand_logo_photo = ImageTk.PhotoImage(base)
+            lbl.configure(image=self._brand_logo_photo)
+            lbl.place(x=x, y=y)
+            lbl.lift()
+        except Exception:
+            pass  # décoratif : jamais bloquant
 
     def setup_auto_tab(self):
         # Barre de progression et label état dans onglet AUTO

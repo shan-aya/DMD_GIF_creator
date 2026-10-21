@@ -130,3 +130,7 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                           - onglet AUTO, liste d images : aide au survol sur les 3 boutons de
                             selection (tout selectionner, tout deselectionner, inverser)
                           - version affichee 3.2.5, lanceur dmd_gif_creator_v325.py
+                v3.2.6 -- - logo Shan_ayA en bas de la colonne des onglets (bouton Quitter remonte)
+                          - le texte Shan_ayA 2026 est remplace par l icone cafe Payez-moi un cafe
+                            (bulle au survol, ouvre la page Buy Me a Coffee), FR/EN/ES
+                          - version affichee 3.2.6, lanceur dmd_gif_creator_v326.py
