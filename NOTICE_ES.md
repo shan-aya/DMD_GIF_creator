@@ -500,6 +500,7 @@ particular):
   cálculos se ejecutan con prioridad baja: el PC sigue utilizable durante un lote.
 - **Registros**: casilla "Guardar registros automáticamente" y botón "📄 Exportar
   registros" (escribe el registro de actividad en un archivo).
+- **Marca de agua DGC**: los GIF creados por la aplicación llevan una marca invisible (el bit menos significativo de los colores de la paleta de cada imagen, más un comentario `DGC1:` en el archivo) que permite saber que proceden de DMD GIF Creator; el cambio es imperceptible (±1/255 por color). El botón **🔍 Verificar un GIF…** indica si un GIF o un archivo raw565 la lleva. Es un indicio, no una prueba: la marca desaparece si el GIF se recolorea, se redimensiona o se vuelve a codificar.
 
 ---
 

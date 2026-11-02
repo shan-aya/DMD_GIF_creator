@@ -3,7 +3,12 @@ from __future__ import annotations
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v3
+# Version actuelle : v4
+#
+# v4 — 2026-11-02 — safe-modify — Filigrane invisible "DGC" sur tous les GIF produits (demande : savoir si un GIF
+#      vient de DMD GIF Creator ou d'ailleurs ; détection côté Discord). Paramètre `watermark` (défaut True, coupé
+#      seulement par les tests) de `_encode_gif_bytes` : bit de poids faible des couleurs de la palette de chaque
+#      image + extension Comment « DGC1:… », voir dgc_mark.py. Un seul point d'ancrage : aucun site d'appel modifié.
 #
 # v3 — 2026-09-24 — safe-modify — Option `shared_palette` (défaut False = comportement inchangé) : une seule
 #      palette adaptative calculée sur un échantillon de frames (≤ 32, réparties sur toute la séquence) puis
@@ -33,6 +38,11 @@ from typing import Any, Sequence
 
 from PIL import Image
 
+try:
+    from . import dgc_mark
+except ImportError:
+    import dgc_mark
+
 # Pillow compatibility: ADAPTIVE may not exist in some stubs.
 _ADAPTIVE_RESAMPLING = getattr(Image, "ADAPTIVE", None)
 if _ADAPTIVE_RESAMPLING is None:
@@ -53,6 +63,7 @@ def _encode_gif_bytes(
     disposal: int = 2,
     optimize: bool = False,
     shared_palette: bool = False,
+    watermark: bool = True,
 ) -> bytes:
     """Encode une séquence de frames en GIF (mêmes règles que
     export_frames_to_gif) et retourne les octets bruts, sans rien écrire sur
@@ -97,6 +108,9 @@ def _encode_gif_bytes(
     loop = 0 if str(loop_mode) == "infini" else int(loop_count)
     duration_ms = int(1000 / fps)
 
+    # v4 -- filigrane invisible (voir dgc_mark) : palette de chaque image + commentaire GIF
+    extra = {"comment": dgc_mark.embed_gif_frames(p_frames)} if watermark else {}
+
     buf = io.BytesIO()
     p_frames[0].save(
         buf,
@@ -107,6 +121,7 @@ def _encode_gif_bytes(
         loop=loop,
         disposal=disposal,
         optimize=optimize,
+        **extra,
     )
     return buf.getvalue()
 

@@ -134,3 +134,8 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                           - le texte Shan_ayA 2026 est remplace par l icone cafe Payez-moi un cafe
                             (bulle au survol, ouvre la page Buy Me a Coffee), FR/EN/ES
                           - version affichee 3.2.6, lanceur dmd_gif_creator_v326.py
+                v3.2.7 -- - filigrane invisible DGC sur tous les GIF produits (bit de poids faible des couleurs de la
+                            palette de chaque image + commentaire GIF DGC1:) : savoir si un GIF vient de l application
+                          - onglet PARAMETRES : bouton Verifier un GIF (GIF, raw565, raw565pack), FR/EN/ES
+                          - lien Discord (icone + libelle, bulle au survol) en pied de fenetre, a cote de l icone cafe
+                          - version affichee 3.2.7, lanceur dmd_gif_creator_v327.py

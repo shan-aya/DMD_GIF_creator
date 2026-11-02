@@ -468,6 +468,7 @@ Global application settings (not tied to any particular image or project):
   priority: the PC stays usable during a batch.
 - **Logs**: "Auto-save logs" checkbox and "📄 Export logs" button (writes the
   activity log to a file).
+- **DGC watermark**: the GIFs created by the application carry an invisible mark (the lowest bit of the palette colours of every frame, plus a `DGC1:` comment in the file) that tells they come from DMD GIF Creator; the change is imperceptible (±1/255 per colour). The **🔍 Check a GIF…** button tells whether a GIF or a raw565 file carries one. It is a hint, not a proof: the mark disappears if the GIF is recoloured, resized or re-encoded.
 
 ---
 

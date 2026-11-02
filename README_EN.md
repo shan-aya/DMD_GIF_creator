@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · 🇬🇧 **English** · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.2.6
+# DMD GIF Creator 128x32 — v3.2.7
 
 Create GIFs optimized for 128×32 DMD displays (arcade cabinet, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) from **images**, a **video**
@@ -15,7 +15,7 @@ processing of whole folders.
 
 ## Download
 
-**Windows**: download `dmd_gif_creator_v326.exe` from the
+**Windows**: download `dmd_gif_creator_v327.exe` from the
 [latest Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) and run
 it — nothing to install.
 
@@ -27,7 +27,7 @@ processing (anti-ransomware protection), it is a false positive: see "Antivirus"
 **From the sources** ([`dmd_gif_creator/`](./dmd_gif_creator) folder):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v326.py
+    python dmd_gif_creator/dmd_gif_creator_v327.py
 
 `opencv-contrib-python` (not `opencv-python`) is required for the automatic tracking of
 the VIDEO tab; the two packages must not be installed at the same time.
@@ -94,6 +94,10 @@ fitted automatically to the text length.
 - **HELP**: the full guide inside the application.
 
 ## What's new
+
+**v3.2.7**
+- **Invisible "DGC" watermark**: the GIFs created by the application carry an invisible mark (imperceptible, ±1/255 per colour) that tells they come from DMD GIF Creator. A **🔍 Check a GIF…** button (SETTINGS tab) tells whether a GIF or a raw565 file carries one. It is a hint, not a proof.
+- **Link to the support Discord server** (FR/EN) at the bottom of the window, next to the ☕ icon.
 
 **v3.2.6**
 - **Shan_ayA logo and support link**: the logo now appears at the bottom of the tab column (the

@@ -1,6 +1,6 @@
 [🇫🇷 Français](./README.md) · [🇬🇧 English](./README_EN.md) · 🇪🇸 **Español**
 
-# DMD GIF Creator 128x32 — v3.2.6
+# DMD GIF Creator 128x32 — v3.2.7
 
 Cree GIF optimizados para pantallas DMD 128×32 (máquina arcade, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) a partir de **imágenes**, de
@@ -15,7 +15,7 @@ procesamiento por lotes de carpetas enteras.
 
 ## Descarga
 
-**Windows**: descargue `dmd_gif_creator_v326.exe` desde la
+**Windows**: descargue `dmd_gif_creator_v327.exe` desde la
 [última Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) y
 ejecútelo — no hace falta instalar nada.
 
@@ -27,7 +27,7 @@ positivo: vea «Antivirus» en la [guía](./NOTICE_ES.md#buenas-prácticas-y-lim
 **Desde las fuentes** (carpeta [`dmd_gif_creator/`](./dmd_gif_creator)):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v326.py
+    python dmd_gif_creator/dmd_gif_creator_v327.py
 
 `opencv-contrib-python` (y no `opencv-python`) es necesario para el seguimiento
 automático de la pestaña VIDEO; los dos paquetes no deben instalarse a la vez.
@@ -96,6 +96,10 @@ Matrix, glitch…), con una duración ajustada automáticamente a la longitud de
 - **AYUDA**: la guía completa dentro de la aplicación.
 
 ## Novedades
+
+**v3.2.7**
+- **Marca de agua invisible «DGC»**: los GIF creados por la aplicación llevan una marca invisible (imperceptible, ±1/255 por color) que permite saber que proceden de DMD GIF Creator. Un botón **🔍 Verificar un GIF…** (pestaña AJUSTES) indica si un GIF o un archivo raw565 la lleva. Es un indicio, no una prueba.
+- **Enlace al servidor de Discord de ayuda** (FR/EN) al pie de la ventana, junto al icono ☕.
 
 **v3.2.6**
 - **Logo Shan_ayA y enlace de apoyo**: el logo aparece al final de la columna de pestañas (el botón

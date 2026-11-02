@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.2.6
+Version: 3.2.7
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,7 +27,10 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v121
+# Version actuelle : v122
+#
+# v122 — 2026-11-02 — safe-modify — Pied de fenêtre : lien « Rejoindre le Discord » (icône 💬 + libellé, bulle au survol,
+#      clés discord_label / tooltip_discord des 3 lang_*.json) à droite de l'icône café ; ouvre discord.gg/CYAyGJSvp4.
 #
 # v121 — 2026-10-21 — safe-modify — Pied de la colonne des onglets : le texte « Shan_ayA 2026 » (footer) est
 #      remplacé par l'icône ☕ « Payez-moi un café » (bulle au survol, clé tooltip_coffee des 3 lang_*.json,
@@ -2605,6 +2608,12 @@ try:
 except ImportError:
     from dmd_gif_exporter import export_frames_to_gif, estimate_gif_size
 
+# v145 -- filigrane invisible DGC : bouton « Vérifier un GIF » (PARAMÈTRES)
+try:
+    from . import dgc_mark
+except ImportError:
+    import dgc_mark
+
 # v87 -- score qualité 0-100 des GIF exportés (aide à la relecture d'un lot)
 try:
     from . import dmd_quality as dq
@@ -2833,6 +2842,10 @@ class DMDConverter:
             self._coffee_text_label.configure(text=lang_manager.get("coffee_label", "Payez-moi un café"))
         except Exception:
             pass
+        try:  # v122 : libellé du lien Discord
+            self._discord_text_label.configure(text=lang_manager.get("discord_label", "Rejoindre le Discord"))
+        except Exception:
+            pass
 
         # Mettre à jour onglets — libellés centrés sur la largeur EN PIXELS du plus
         # long (onglets en colonne latérale depuis v21). Le padding par nombre de
@@ -2979,7 +2992,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.2.6"
+    APP_VERSION = "3.2.7"
 
     # ========================================================================
 
@@ -3095,6 +3108,23 @@ class DMDConverter:
         for _w in (_coffee_icon, self._coffee_text_label):
             _w.bind("<Button-1>", lambda e: webbrowser.open_new_tab("https://buymeacoffee.com/shan_aya"))
             add_help_tooltip(_w, "tooltip_coffee", wraplength=400)
+
+        # v122 : lien vers le serveur Discord d'aide, à droite de l'icône café (même présentation)
+        self._discord_label = ttk.Frame(footer)
+        self._discord_label.pack(side=tk.LEFT, padx=(0, 10), pady=(2, 0))
+        _discord_icon = ttk.Label(
+            self._discord_label, text="💬", font=("Segoe UI Emoji", 14), foreground="#7289DA",
+            cursor="hand2", anchor="center", width=7,
+        )
+        _discord_icon.pack(side=tk.TOP)
+        self._discord_text_label = ttk.Label(
+            self._discord_label, text="Rejoindre le Discord", font=("Arial", 8, "bold"), foreground="#7289DA",
+            cursor="hand2", anchor="center", justify="center", wraplength=104,
+        )
+        self._discord_text_label.pack(side=tk.TOP)
+        for _w in (_discord_icon, self._discord_text_label):
+            _w.bind("<Button-1>", lambda e: webbrowser.open_new_tab("https://discord.gg/CYAyGJSvp4"))
+            add_help_tooltip(_w, "tooltip_discord", wraplength=400)
 
         # Progression centrée et occuppe l'espace libre restant
         progress_frame = ttk.Frame(footer)
@@ -7411,6 +7441,37 @@ class DMDConverter:
         ttk.Button(logs_frame, text="📄 Exporter logs", command=self.export_logs).pack(
             anchor=tk.W, pady=5
         )
+
+        # Filigrane DGC
+        mark_frame = ttk.LabelFrame(main_frame, text=tr("t_verify_title", "Filigrane DGC"), padding="10")
+        mark_frame.pack(fill=tk.X, pady=(10, 0))
+        ttk.Label(mark_frame, text=tr("t_verify_note",
+                                      "Les GIF créés ici portent une marque invisible « DGC » (aucun pixel visible n'est modifié). "
+                                      "Vous pouvez vérifier si un GIF ou un fichier raw565 en porte une."),
+                  wraplength=600, justify=tk.LEFT).pack(anchor=tk.W, pady=(0, 5))
+        ttk.Button(mark_frame, text=tr("t_verify_btn", "🔍 Vérifier un GIF…"), command=self.verify_dgc_files).pack(anchor=tk.W)
+
+    def verify_dgc_files(self):
+        """Indique pour chaque fichier choisi s'il porte la marque invisible DGC (voir dgc_mark)."""
+        paths = filedialog.askopenfilenames(
+            filetypes=[("GIF / raw565", "*.gif *.raw565 *.raw565pack"), ("*", "*.*")]
+        )
+        if not paths:
+            return
+        lines = []
+        for p in paths[:30]:
+            try:
+                with open(p, "rb") as f:
+                    res = dgc_mark.detect(f.read(), p)
+            except OSError as e:
+                lines.append(f"{Path(p).name} : {e}")
+                continue
+            if res:
+                ver = f" v{res['version']}" if res.get("version") else ""
+                lines.append(tr("t_verify_found", "✅ {name} : créé avec DMD GIF Creator{ver}", name=Path(p).name, ver=ver))
+            else:
+                lines.append(tr("t_verify_none", "➖ {name} : aucune marque DGC (ne prouve rien : marque retirée ou fichier d'une autre origine)", name=Path(p).name))
+        messagebox.showinfo(tr("t_verify_title", "Filigrane DGC"), "\n".join(lines))
 
     def change_language(self):
         """Change la langue de l'interface"""

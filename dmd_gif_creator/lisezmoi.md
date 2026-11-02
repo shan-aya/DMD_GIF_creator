@@ -475,6 +475,7 @@ Réglages globaux de l'application (pas liés à une image ou un projet particul
   en priorité basse : le PC reste utilisable pendant un lot.
 - **Logs** : case « Sauvegarder logs automatiquement » et bouton « 📄 Exporter logs »
   (écrit le journal d'activité dans un fichier).
+- **Filigrane DGC** : les GIF créés par l'application portent une marque invisible (le bit de poids faible des couleurs de la palette de chaque image, plus un commentaire `DGC1:` dans le fichier) qui permet de savoir qu'ils viennent de DMD GIF Creator ; la modification est imperceptible (±1/255 par couleur). Le bouton **🔍 Vérifier un GIF…** indique si un GIF ou un fichier raw565 en porte une. C'est un indice, pas une preuve : la marque disparaît si le GIF est recoloré, redimensionné ou ré-encodé.
 
 ---
 
