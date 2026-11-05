@@ -634,7 +634,7 @@ def _manual_box(win: Sequence[float], w: int, h: int, size_from: tuple | None = 
     if size_from is not None:
         bw, bh = size_from[2], size_from[3]
     else:
-        bw = int(round(max(8.0, min(1.0, float(win[2]))) * w))
+        bw = int(round(max(8.0 / w, min(1.0, float(win[2]))) * w))
         bh = int(round(bw / target))
         if bh > h:                                   # trop haute pour l'image : on réduit en gardant le 4:1
             bh = h

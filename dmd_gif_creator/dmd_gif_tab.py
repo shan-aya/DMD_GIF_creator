@@ -12,7 +12,9 @@ from __future__ import annotations
 #      choix du cadrage (auto / suivi du sujet / bandes noires / remplir), export avec les durées d'origine.
 # ============================================
 
+import dataclasses
 import threading
+import time
 import tkinter as tk
 import webbrowser
 from pathlib import Path
@@ -69,6 +71,8 @@ class GifTab:
         self.win_s = [0.0, 0.0]
         self.win_e = [1.0, 1.0]
         self._geo = None
+        self._drag_img = None       # aperçu immédiat du cadre en cours de déplacement (case de droite)
+        self._pending = False       # un réglage a changé pendant une conversion : on relance à la fin
         self.status = tk.StringVar(value=self.tr("gif_status_idle", "Ouvrez ou déposez un GIF animé."))
         self.info = tk.StringVar(value="")
         self._build()
@@ -225,6 +229,8 @@ class GifTab:
             return
         self._clamp_win()
         self._draw_overlay()
+        if self._win_active():
+            self._quick_preview()
         if final and self._win_active():
             self.reprocess()
 
@@ -238,6 +244,35 @@ class GifTab:
         p[1] = (ev.y - oy) / (s * H) - nh / 2
         self._clamp_win()
         self._draw_overlay()
+        self._quick_preview()
+
+    def _quick_preview(self):
+        """Aperçu immédiat (une image, fixe) du cadre en cours de déplacement dans la case de droite, sans attendre
+        la conversion complète (relancée au relâchement de la souris)."""
+        if self.plan is None or self.src is None:
+            return
+        now = time.monotonic()
+        if now - getattr(self, "_qp_t", 0.0) < 0.05:            # ~20 images/s max
+            return
+        self._qp_t = now
+        try:
+            W, H = self.src.frames[0].size
+            _, _, _, nw, _ = self._win_dims()
+            p = self.win_e if self.win_target.get() == "end" else self.win_s
+            box = gc._manual_box((p[0], p[1], nw), W, H)
+            tmp = dataclasses.replace(self.plan, layout="fill", crop=box, windows=None, timeline=None, scroll=None)
+            j = min(len(self.src.frames) - 1, len(self.src.frames) // 2)
+            self._drag_img = gc.render_frame(self.src.frames[j], tmp, 0)
+            self._show_right(self._drag_img)
+        except Exception:  # noqa: BLE001 -- aperçu d'aide : jamais bloquant
+            self._drag_img = None
+
+    def _show_right(self, img):
+        pic = DMDEngine.render_led_style(img, scale=4, led_ratio=0.525, glow=True,
+                                         brightness=self.app.led_brightness_var.get())
+        self._photos[1] = ImageTk.PhotoImage(pic)
+        self.cv[1].delete("all")
+        self.cv[1].create_image(260, 75, image=self._photos[1])
 
     def _win_press(self, ev):
         self._win_move(ev)
@@ -328,8 +363,12 @@ class GifTab:
         return crop, opts
 
     def reprocess(self):
-        if self.src is None or self.busy:
+        if self.src is None:
             return
+        if self.busy:                   # une conversion tourne : on en relance une dès qu'elle finit (rien n'est perdu)
+            self._pending = True
+            return
+        self._pending = False
         self.busy = True
         self.status.set(self.tr("gif_working", "Conversion en cours…"))
         crop, opts = self._options()
@@ -360,6 +399,11 @@ class GifTab:
 
     def _done(self, plan, frames, gif, score, err):
         self.busy = False
+        if getattr(self, "_pending", False):        # des réglages ont changé pendant le calcul : résultat périmé
+            self._pending = False
+            self.reprocess()
+            return
+        self._drag_img = None
         if err is not None:
             self.status.set(str(err))
             return
@@ -399,7 +443,8 @@ class GifTab:
             return
         i = self._idx % len(self.result_frames)
         si = min(gc.plan_source_index(self.plan, i), len(self.src.frames) - 1) if self.plan else i
-        for k, img in enumerate((self.src.frames[si], self.result_frames[i])):
+        right = self._drag_img if getattr(self, "_drag_img", None) is not None else self.result_frames[i]
+        for k, img in enumerate((self.src.frames[si], right)):
             c = self.cv[k]
             if k == 0:
                 w, h = img.size
