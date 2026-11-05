@@ -139,3 +139,6 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                           - onglet PARAMETRES : bouton Verifier un GIF (GIF, raw565, raw565pack), FR/EN/ES
                           - lien Discord (icone + libelle, bulle au survol) en pied de fenetre, a cote de l icone cafe
                           - version affichee 3.2.7, lanceur dmd_gif_creator_v327.py
+                v3.2.8 -- + nouvel onglet GIF : conversion d un GIF anime existant au format DMD 128x32 (auto / manuel)
+                        + cadrage intelligent : suivi du sujet principal, bandes noires ou remplissage
+                        + moteur dmd_gif_convert.py partage avec le bot Discord (CLI + rapport JSON)

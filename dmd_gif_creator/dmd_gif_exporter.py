@@ -3,7 +3,13 @@ from __future__ import annotations
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v4
+# Version actuelle : v5
+#
+# v5 — 2026-11-05 — safe-modify — Paramètre optionnel `durations_ms` (durée de CHAQUE image, en ms) pour
+#      `_encode_gif_bytes`, `export_frames_to_gif` et `estimate_gif_size` : permet à l'onglet GIF (conversion d'un GIF
+#      existant, dmd_gif_convert) de garder le timing d'origine. Défaut None = comportement strictement inchangé
+#      (durée unique 1000/fps) — mêmes octets qu'en v4. `fps` reste obligatoire et validé (il n'est pas utilisé pour
+#      la durée quand `durations_ms` est fourni).
 #
 # v4 — 2026-11-02 — safe-modify — Filigrane invisible "DGC" sur tous les GIF produits (demande : savoir si un GIF
 #      vient de DMD GIF Creator ou d'ailleurs ; détection côté Discord). Paramètre `watermark` (défaut True, coupé
@@ -64,6 +70,7 @@ def _encode_gif_bytes(
     optimize: bool = False,
     shared_palette: bool = False,
     watermark: bool = True,
+    durations_ms: Sequence[int] | None = None,
 ) -> bytes:
     """Encode une séquence de frames en GIF (mêmes règles que
     export_frames_to_gif) et retourne les octets bruts, sans rien écrire sur
@@ -106,7 +113,16 @@ def _encode_gif_bytes(
             )
 
     loop = 0 if str(loop_mode) == "infini" else int(loop_count)
-    duration_ms = int(1000 / fps)
+    if durations_ms is None:
+        duration_ms: int | list[int] = int(1000 / fps)
+    else:
+        # v5 -- une durée par image (timing d'origine d'un GIF converti)
+        if len(durations_ms) != len(frames):
+            raise ValueError(
+                "_encode_gif_bytes: 'durations_ms' doit avoir autant d'éléments que 'frames' "
+                f"({len(durations_ms)} != {len(frames)})"
+            )
+        duration_ms = [max(10, int(d)) for d in durations_ms]
 
     # v4 -- filigrane invisible (voir dgc_mark) : palette de chaque image + commentaire GIF
     extra = {"comment": dgc_mark.embed_gif_frames(p_frames)} if watermark else {}
@@ -137,13 +153,14 @@ def export_frames_to_gif(
     disposal: int = 2,
     optimize: bool = False,
     shared_palette: bool = False,
+    durations_ms: Sequence[int] | None = None,
 ) -> None:
     """
     Exporte une séquence de frames PIL (RGB/anything convertissable) en GIF.
 
     - Conversion en palette (mode "P") avec palette adaptative
       (par frame, ou une seule pour toute la séquence si shared_palette)
-    - Duration = 1000/fps
+    - Duration = 1000/fps (ou une durée par image si durations_ms, v5)
     - loop: 0 si loop_mode == "infini", sinon loop_count
     """
     data = _encode_gif_bytes(
@@ -155,6 +172,7 @@ def export_frames_to_gif(
         disposal=disposal,
         optimize=optimize,
         shared_palette=shared_palette,
+        durations_ms=durations_ms,
     )
 
     out = Path(output_path)
@@ -171,6 +189,7 @@ def estimate_gif_size(
     loop_count: int,
     disposal: int = 2,
     optimize: bool = False,
+    durations_ms: Sequence[int] | None = None,
 ) -> int:
     """Encode les frames en mémoire avec les MÊMES paramètres qu'un export
     réel et retourne la taille exacte résultante en octets, sans écrire sur
@@ -184,5 +203,6 @@ def estimate_gif_size(
             loop_count=loop_count,
             disposal=disposal,
             optimize=optimize,
+            durations_ms=durations_ms,
         )
     )

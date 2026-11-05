@@ -27,7 +27,13 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v122
+# Version actuelle : v123
+#
+# v123 — 2026-11-05 — safe-modify — Nouvel onglet « GIF » (conversion d'un GIF animé existant en GIF DMD 128×32 :
+#      mode automatique + réglages manuels, cadrage auto / suivi du sujet / bandes noires / remplir, aperçu LED
+#      avant/après, export avec durées d'origine). Code Tk dans dmd_gif_tab.py, moteur Tk-free dans dmd_gif_convert.py
+#      (partagé avec le bot Discord). Ici : import, onglet, setup_gif_tab et routage d'un .gif déposé quand l'onglet
+#      GIF est actif (sinon comportement inchangé).
 #
 # v122 — 2026-11-02 — safe-modify — Pied de fenêtre : lien « Rejoindre le Discord » (icône 💬 + libellé, bulle au survol,
 #      clés discord_label / tooltip_discord des 3 lang_*.json) à droite de l'icône café ; ouvre discord.gg/CYAyGJSvp4.
@@ -2557,6 +2563,10 @@ try:
     from .dmd_engine import DMDEngine as ModularDMDEngine
 except ImportError:
     from dmd_engine import DMDEngine as ModularDMDEngine
+try:
+    from .dmd_gif_tab import GifTab
+except ImportError:
+    from dmd_gif_tab import GifTab
 
 DMDEngine = ModularDMDEngine
 
@@ -3060,6 +3070,7 @@ class DMDConverter:
         self.auto_frame = ttk.Frame(self.notebook)
         self.manual_frame = ttk.Frame(self.notebook)
         self.video_frame = ttk.Frame(self.notebook)
+        self.gif_frame = ttk.Frame(self.notebook)
         self.textscroll_frame = ttk.Frame(self.notebook)
         self.params_frame = ttk.Frame(self.notebook)
         self.debug_frame = ttk.Frame(self.notebook)
@@ -3068,6 +3079,7 @@ class DMDConverter:
         self.notebook.add(self.auto_frame, text="AUTO")
         self.notebook.add(self.manual_frame, text="MANUEL")
         self.notebook.add(self.video_frame, text="VIDEO")
+        self.notebook.add(self.gif_frame, text="GIF")
         self.notebook.add(self.textscroll_frame, text="TEXTSCROLL")
         self.notebook.add(self.params_frame, text="PARAMETRES")
         self.notebook.add(self.debug_frame, text="DEBUG")
@@ -3079,6 +3091,7 @@ class DMDConverter:
         self.setup_auto_tab()
         self.setup_manual_tab()
         self.setup_video_tab()
+        self.setup_gif_tab()
         self.setup_textscroll_tab()
         self.setup_params_tab()
         self.setup_debug_tab()
@@ -4328,6 +4341,10 @@ class DMDConverter:
     # ========================================================================
     # ONGLET VIDEO
     # ========================================================================
+
+    def setup_gif_tab(self):
+        """v123 -- onglet GIF : conversion d'un GIF animé existant (voir dmd_gif_tab.GifTab)."""
+        self.gif_tab = GifTab(self, self.gif_frame, tr)
 
     def setup_video_tab(self):
         """Configuration onglet VIDEO : import vidéo, trim, zone d'intérêt
@@ -8077,6 +8094,16 @@ class DMDConverter:
         image_exts = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".raw565"}
         video_exts = set(VIDEO_EXTS)
         paths = self.root.tk.splitlist(event.data)
+
+        # v123 -- onglet GIF actif : un .gif déposé est converti (au lieu d'être ajouté à la liste d'images)
+        try:
+            if self.notebook.select() == str(self.gif_frame):
+                gifs = [p for p in paths if Path(p).is_file() and Path(p).suffix.lower() == ".gif"]
+                if gifs:
+                    self.gif_tab.load_path(gifs[0])
+                    return
+        except tk.TclError:
+            pass
 
         added_total = 0
         folders = []
