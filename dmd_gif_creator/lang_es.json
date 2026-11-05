@@ -485,5 +485,11 @@
   "gif_working": "Convirtiendo…",
   "gif_result": "Encuadre: {layout}{extra} — nota {score}/100 ({rating}) — {kb} KB",
   "gif_saved": "Guardado: {p}",
-  "tab_gif": "GIF"
+  "tab_gif": "GIF",
+  "gif_scroll": "Desplazamiento inteligente",
+  "gif_win_manual": "Marco 128×32 manual (arrastrar sobre «Antes»)",
+  "gif_win_start": "Inicio",
+  "gif_win_end": "Fin",
+  "gif_win_size": "Tamaño:",
+  "gif_scroll_back": "Ida y vuelta"
 }

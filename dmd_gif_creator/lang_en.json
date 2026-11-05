@@ -485,5 +485,11 @@
   "gif_working": "Converting…",
   "gif_result": "Framing: {layout}{extra} — score {score}/100 ({rating}) — {kb} KB",
   "gif_saved": "Saved: {p}",
-  "tab_gif": "GIF"
+  "tab_gif": "GIF",
+  "gif_scroll": "Smart scroll",
+  "gif_win_manual": "Manual 128×32 frame (drag on \"Before\")",
+  "gif_win_start": "Start",
+  "gif_win_end": "End",
+  "gif_win_size": "Size:",
+  "gif_scroll_back": "Back and forth"
 }

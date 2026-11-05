@@ -485,5 +485,11 @@
   "gif_working": "Conversion en cours…",
   "gif_result": "Cadrage : {layout}{extra} — note {score}/100 ({rating}) — {kb} Ko",
   "gif_saved": "Enregistré : {p}",
-  "tab_gif": "GIF"
+  "tab_gif": "GIF",
+  "gif_scroll": "Scroll intelligent",
+  "gif_win_manual": "Cadre 128×32 manuel (glisser sur « Avant »)",
+  "gif_win_start": "Départ",
+  "gif_win_end": "Arrivée",
+  "gif_win_size": "Taille :",
+  "gif_scroll_back": "Aller-retour"
 }

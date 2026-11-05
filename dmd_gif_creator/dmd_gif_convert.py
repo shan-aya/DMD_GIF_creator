@@ -82,6 +82,14 @@ MAX_BYTES_OK = 256 * 1024   # au-delà : « trop lourd »
 LOW_SCORE = 50              # score dmd_quality <= 50 (Poor/Bad) : contraste/occupation faibles
 
 # Cadrage intelligent (suivi du sujet) -- NumPy seul, pas d'OpenCV (le bot n'a que Pillow + NumPy)
+SCROLL_MIN_DIFF = 0.15      # scroll seulement si le ratio du contenu s'écarte de >= 15 % du 4:1
+SCROLL_MIN_TRAVEL = 8       # course mini (px DMD) pour parler de défilement
+SCROLL_HOLD_MS = 800        # pause au début et à la fin du défilement
+SCROLL_BASE_MS = 45         # durée d'un pas d'1 px DMD (modulée par la densité du contenu : 0,7x à 1,5x)
+SCROLL_STEP_MIN, SCROLL_STEP_MAX = 40, 90
+SCROLL_BACK_FACTOR = 0.75   # le retour (aller-retour) est un peu plus vif
+SCROLL_REVERSE_GAIN = 1.15  # on démarre par l'extrémité la plus chargée si elle l'est 15 % de plus que l'autre
+SCROLL_MAX_FRAMES = 300
 FOLLOW_MIN_FRAMES = 4       # moins d'images : pas de suivi
 FOLLOW_MARGIN = 1.10        # marge autour de l'étendue du sujet
 FOLLOW_MAX_AREA = 0.65      # suivi seulement si la fenêtre fait <= 65 % de la zone de contenu (sinon : gain nul)
@@ -375,11 +383,28 @@ class Plan:
     warnings: list = field(default_factory=list)
     windows: list | None = None     # layout "follow" : fenêtre (x, y, w, h) PAR image (taille constante)
     follow: dict | None = None      # diagnostic du suivi (zoom, couverture, trajet, coupures)
+    timeline: list | None = None    # layout "scroll" : [(index image source, durée ms)] -- une entrée par image de SORTIE
+    scroll: dict | None = None      # diagnostic du scroll (axe, course, sens, durées)
 
     def to_dict(self) -> dict:
         return {"layout": self.layout, "crop": list(self.crop) if self.crop else None, "background": self.bg_kind,
                 "key_background": self.key_background, "lost_pct": round(self.lost_pct, 1), "mode": self.mode,
-                "settings": dict(self.settings), "warnings": list(self.warnings), "follow": self.follow}
+                "settings": dict(self.settings), "warnings": list(self.warnings), "follow": self.follow,
+                "scroll": self.scroll}
+
+
+def plan_durations(src: "GifData", plan: Plan) -> list:
+    """Durées (ms) des images de SORTIE : celles de la source, sauf scroll (chronologie propre)."""
+    if plan.layout == "scroll" and plan.timeline:
+        return [int(d) for _, d in plan.timeline]
+    return list(src.durations)
+
+
+def plan_source_index(plan: Plan, i: int) -> int:
+    """Index de l'image source qui sert l'image de sortie i (aperçu « avant »)."""
+    if plan.layout == "scroll" and plan.timeline:
+        return int(plan.timeline[min(i, len(plan.timeline) - 1)][0])
+    return i
 
 
 def _make_thumbs(src: GifData, key_color: Sequence[int] | None):
@@ -601,6 +626,125 @@ def _auto_settings(samples: Sequence[Image.Image]) -> dict:
     return base
 
 
+def _manual_box(win: Sequence[float], w: int, h: int, size_from: tuple | None = None) -> tuple:
+    """Fenêtre 4:1 posée à la main -> (x, y, largeur, hauteur) en pixels, ramenée DANS l'image.
+    win = (x, y, largeur) normalisés par la largeur/hauteur de l'image ; size_from = reprend la taille d'une autre fenêtre."""
+    target = TARGET_W / TARGET_H
+    if size_from is not None:
+        bw, bh = size_from[2], size_from[3]
+    else:
+        bw = int(round(max(8.0, min(1.0, float(win[2]))) * w))
+        bh = int(round(bw / target))
+        if bh > h:                                   # trop haute pour l'image : on réduit en gardant le 4:1
+            bh = h
+            bw = int(round(h * target))
+    bw = min(bw, w)
+    bx = int(round(float(win[0]) * w))
+    by = int(round(float(win[1]) * h))
+    return (max(0, min(w - bw, bx)), max(0, min(h - bh, by)), bw, bh)
+
+
+def _plan_scroll(src_durations: Sequence[int], energy: np.ndarray, f: int, content: tuple, back: bool = False,
+                 path: tuple | None = None):
+    """Scroll intelligent : l'image remplit l'afficheur sur un axe (largeur si le contenu est plus haut que 4:1,
+    hauteur s'il est plus large) et la fenêtre 128×32 PARCOURT l'autre axe, par pas d'1 px DMD entier.
+    Intelligence : axe choisi d'après le ratio ; on démarre par l'extrémité la plus chargée (titre, logo) ; la
+    vitesse ralentit sur les zones denses et accélère sur les zones vides ; pauses au début et à la fin ;
+    l'animation d'origine continue de tourner pendant le défilement (durée arrondie à un nombre entier de tours).
+    Retourne (fenêtres par image de sortie, chronologie [(index source, ms)], diagnostic) ou None."""
+    x0, y0, cw, ch = content
+    target = TARGET_W / TARGET_H
+    if path is not None:             # trajet posé à la main : fenêtre de départ -> fenêtre d'arrivée (même taille)
+        (sx, sy, ww, wh), (ex, ey, _w2, _h2) = path
+        axis, scale, base, span = "path", TARGET_W / ww, 0, 0
+        travel = int(round(math.hypot(ex - sx, ey - sy) * scale))
+        if travel < 1:
+            return None
+        en = np.full(travel + 1, 0.5)
+        reverse = False
+    else:
+        ratio = cw / ch if ch else target
+        if abs(ratio - target) / target < SCROLL_MIN_DIFF:
+            return None
+        if ratio < target:
+            axis, ww, wh = "y", cw, max(1, int(round(cw / target)))
+            scale, span, base, wlen = TARGET_W / ww, ch - wh, y0, wh
+        else:
+            axis, wh, ww = "x", ch, max(1, int(round(ch * target)))
+            scale, span, base, wlen = TARGET_H / wh, cw - ww, x0, ww
+        travel = int(round(span * scale))
+        if travel < SCROLL_MIN_TRAVEL:
+            return None
+        prof = energy.sum(axis=1 if axis == "y" else 0)
+        cum = np.concatenate([[0.0], np.cumsum(prof)])
+        grid = np.arange(len(cum), dtype=np.float64)
+        o = np.arange(travel + 1, dtype=np.float64)
+        s0 = (base + o / scale) / f
+        en = np.interp(s0 + wlen / f, grid, cum) - np.interp(s0, grid, cum)
+        en = en / en.max() if en.max() > 0 else np.ones_like(en)
+        reverse = bool(en[-1] > en[0] * SCROLL_REVERSE_GAIN)
+        if reverse:
+            en = en[::-1]
+
+    sz = 2 if travel > 160 else 1                    # longue course : pas de 2 px (moitié moins d'images, même vitesse)
+
+    def step_ms(j: int, factor: float = 1.0) -> int:
+        v = SCROLL_BASE_MS * (0.7 + 0.8 * float(en[j])) * factor * sz
+        return int(min(SCROLL_STEP_MAX * sz, max(SCROLL_STEP_MIN * sz, round(v / 10.0) * 10)))
+
+    js = list(range(sz, travel, sz)) + [travel]
+    segs: list[tuple[int, int]] = [(SCROLL_HOLD_MS, 0)]                       # (durée, pas parcourus depuis le départ)
+    segs += [(step_ms(j), j) for j in js]
+    segs.append((SCROLL_HOLD_MS, travel))
+    if back:
+        segs += [(step_ms(j, SCROLL_BACK_FACTOR), j) for j in reversed([0] + js[:-1])]
+    t_src = max(1, int(sum(src_durations)))
+    total = sum(d for d, _ in segs)
+    med = sorted(src_durations)[len(src_durations) // 2] if src_durations else 100
+    animated = len(src_durations) > 1 and t_src >= 2 * med
+    if animated:                                    # nombre entier de tours de la source (bouclage propre), si raisonnable
+        loops = math.ceil(total / t_src)
+        if loops * t_src <= total * 1.5:
+            segs[-1] = (segs[-1][0] + loops * t_src - total, segs[-1][1])
+            total = loops * t_src
+    dt = 40 if med < 50 else 50
+    seg_end = np.cumsum([d for d, _ in segs])
+    src_end = np.cumsum([max(1, int(d)) for d in src_durations]) if src_durations else np.array([1])
+    while True:
+        out: list[list[int]] = []
+        t = 0
+        while t < total:
+            step = min(dt, total - t)
+            k = int(np.searchsorted(seg_end, t, side="right"))
+            k = min(k, len(segs) - 1)
+            si = int(np.searchsorted(src_end, t % t_src, side="right")) if animated else 0
+            si = min(si, len(src_durations) - 1) if src_durations else 0
+            pos = segs[k][1]
+            if out and out[-1][0] == si and out[-1][1] == pos:
+                out[-1][2] += step
+            else:
+                out.append([si, pos, step])
+            t += step
+        if len(out) <= SCROLL_MAX_FRAMES:
+            break
+        dt = int(dt * 1.5 / 10) * 10 + 10
+    windows, timeline = [], []
+    for si, pos, d in out:
+        if axis == "path":
+            tt = pos / travel
+            windows.append((int(round(sx + (ex - sx) * tt)), int(round(sy + (ey - sy) * tt)), ww, wh))
+            timeline.append((si, int(d)))
+            continue
+        ro = (travel - pos) if reverse else pos
+        off = base + int(round(ro / scale))
+        off = max(base, min(base + span, off))
+        windows.append((x0, off, ww, wh) if axis == "y" else (off, y0, ww, wh))
+        timeline.append((si, int(d)))
+    info = {"axis": axis, "travel_px": travel, "reversed": reverse, "back": bool(back), "frames": len(out),
+            "duration_ms": int(total), "scale": round(float(scale), 3)}
+    return windows, timeline, info
+
+
 def _settings_for(mode: str, options: dict | None, samples: Sequence[Image.Image]) -> dict:
     opts = dict(options or {})
     if mode == "auto":
@@ -659,6 +803,7 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
     crop = None
     follow_windows = None
     follow_info = None
+    scroll_windows = scroll_timeline = scroll_info = None
     layout = "native" if native and letterbox is None and opts.get("crop_mode") in (None, "auto", "native") else "fit"
     lost_pct = 0.0
     if native and layout == "native":
@@ -686,7 +831,29 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
                 want_fill = True
             ratio = cw / ch if ch else 4.0
             target = TARGET_W / TARGET_H
-            if abs(ratio - target) / target >= 0.03 and want_fill is not False:
+            # Cadre 128×32 posé à la main (onglet GIF, mode manuel + « remplir ») : coordonnées normalisées
+            # (x, y, largeur) de la fenêtre de départ ; « window_end » = fenêtre d'arrivée (scroll de l'une à l'autre).
+            manual_placed = False
+            if want_fill is True and opts.get("window"):
+                b0 = _manual_box(opts["window"], w, h)
+                if opts.get("scroll") and opts.get("window_end"):
+                    b1 = _manual_box(opts["window_end"], w, h, size_from=b0)
+                    res_sc = _plan_scroll(src.durations, energy, f, (x0, y0, cw, ch), bool(opts.get("scroll_back")),
+                                          path=(b0, b1))
+                    if res_sc is not None:
+                        scroll_windows, scroll_timeline, scroll_info = res_sc
+                        layout, crop, lost_pct, manual_placed = "scroll", None, 0.0, True
+                if not manual_placed:
+                    layout, crop, lost_pct, manual_placed = "fill", b0, 0.0, True
+            # Scroll intelligent : seulement avec « remplir » (forcé) et si l'option est demandée
+            if not manual_placed and opts.get("scroll") and want_fill is True:
+                res_sc = _plan_scroll(src.durations, energy, f, (x0, y0, cw, ch), bool(opts.get("scroll_back")))
+                if res_sc is not None:
+                    scroll_windows, scroll_timeline, scroll_info = res_sc
+                    layout, crop, lost_pct = "scroll", None, 0.0
+                else:
+                    warnings.append("scroll_unavailable")
+            if not manual_placed and layout != "scroll" and abs(ratio - target) / target >= 0.03 and want_fill is not False:
                 # fenêtre 4:1 dans la zone de contenu, centrée sur le barycentre de la lumière
                 if ratio > target:
                     ww, wh = int(round(ch * target)), ch
@@ -711,7 +878,7 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
             # Cadrage intelligent : seulement si ni « remplir » ni bandes noires forcés, et si l'image « entière » ne
             # convient pas (layout encore "fit") -- ou si le suivi est demandé explicitement (options["follow"]=True).
             follow_opt = opts.get("follow")
-            if (letterbox is None and crop_mode not in ("letterbox", "fill") and follow_opt is not False
+            if (not manual_placed and layout != "scroll" and letterbox is None and crop_mode not in ("letterbox", "fill") and follow_opt is not False
                     and len(src.frames) >= FOLLOW_MIN_FRAMES
                     and (layout in ("fit", "fill") or follow_opt is True or crop_mode == "follow")):
                 res = _plan_follow(thumbs, alph, f, (w, h), (x0, y0, cw, ch), bg_kind in ("black", "transparent") or bool(key),
@@ -735,6 +902,9 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
         if follow_windows is not None:
             x, y, cw_, ch_ = follow_windows[i]
             fr = fr.crop((x, y, x + cw_, y + ch_))
+        elif scroll_windows is not None:
+            x, y, cw_, ch_ = scroll_windows[len(scroll_windows) // 2]
+            fr = fr.crop((x, y, x + cw_, y + ch_))
         elif crop is not None:
             x, y, cw_, ch_ = crop
             fr = fr.crop((x, y, x + cw_, y + ch_))
@@ -743,7 +913,8 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
     settings["pixel_perfect"] = pixel_perfect
     settings["invert"] = bool(invert)
     return Plan(layout, tuple(int(v) for v in crop) if crop else None, bg_kind, bg_color, bool(key), settings,
-                lost_pct, mode, warnings, follow_windows, follow_info)
+                lost_pct, mode, warnings, scroll_windows if scroll_windows is not None else follow_windows, follow_info,
+                scroll_timeline, scroll_info)
 
 
 def _optimize_light(img: Image.Image, s: dict) -> Image.Image:
@@ -768,7 +939,7 @@ def render_frame(frame: Image.Image, plan: Plan, index: int = 0) -> Image.Image:
     img = ImageOps.invert(frame) if s.get("invert") else frame
     if plan.key_background and plan.bg_color is not None:
         img = _key_background(img, plan.bg_color)
-    if plan.layout == "follow" and plan.windows:
+    if plan.layout in ("follow", "scroll") and plan.windows:
         x, y, cw, ch = plan.windows[min(index, len(plan.windows) - 1)]
         img = img.crop((x, y, x + cw, y + ch))
     elif plan.layout != "native" and plan.crop is not None:
@@ -787,8 +958,15 @@ def render_frame(frame: Image.Image, plan: Plan, index: int = 0) -> Image.Image:
 
 
 def render_frames(src: GifData, plan: Plan, progress: Callable[[int, str], None] | None = None) -> list:
-    n = len(src.frames)
     out = []
+    if plan.layout == "scroll" and plan.timeline:        # une image de sortie par entrée de la chronologie
+        n = len(plan.timeline)
+        for i, (si, _d) in enumerate(plan.timeline):
+            out.append(render_frame(src.frames[si], plan, i))
+            if progress and (i % 8 == 0 or i == n - 1):
+                progress(int(100 * (i + 1) / n), "render")
+        return out
+    n = len(src.frames)
     for i, fr in enumerate(src.frames):
         out.append(render_frame(fr, plan, i))
         if progress and (i % 8 == 0 or i == n - 1):
@@ -855,8 +1033,9 @@ def convert_gif_to_dmd(data: bytes, mode: str = "auto", options: dict | None = N
 
     plan = plan_conversion(src, mode, options, letterbox)
     frames = render_frames(src, plan, progress)
-    gif = encode_frames(frames, src.durations, plan.settings)
-    q = dq.evaluate_frames(frames, src.durations)
+    durs = plan_durations(src, plan)
+    gif = encode_frames(frames, durs, plan.settings)
+    q = dq.evaluate_frames(frames, durs)
     report.update({
         "converted": True,
         "variant": "letterbox" if letterbox is True else "auto",
@@ -867,7 +1046,7 @@ def convert_gif_to_dmd(data: bytes, mode: str = "auto", options: dict | None = N
         "score_before": _naive_score(src),
         "elapsed_ms": int((time.perf_counter() - t0) * 1000),
     })
-    return ConvertResult(True, gif, frames, list(src.durations), report, plan)
+    return ConvertResult(True, gif, frames, durs, report, plan)
 
 
 # --- Ligne de commande --------------------------------------------------------------------------------
@@ -884,6 +1063,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--letterbox", action="store_true", help="force les bandes noires (contenu entier)")
     ap.add_argument("--follow", action="store_true", help="force le cadrage intelligent (suivi du sujet)")
     ap.add_argument("--no-follow", action="store_true", help="désactive le cadrage intelligent")
+    ap.add_argument("--scroll", action="store_true",
+                    help="« remplir » avec scroll intelligent (la fenêtre 128×32 parcourt le contenu)")
+    ap.add_argument("--scroll-back", action="store_true", help="avec --scroll : aller-retour (sans saut à la boucle)")
     ap.add_argument("--also-letterbox", metavar="PATH",
                     help="si le cadrage auto recadre (remplir / suivi), écrit aussi la variante bandes noires ici")
     ap.add_argument("--json", action="store_true", help="rapport JSON sur la sortie standard")
@@ -910,6 +1092,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                  "À convertir : %s (%s)" % ("oui" if v.needs_conversion else "non", ", ".join(v.reasons) or "OK"))
             return 0
         opts = {"follow": True} if a.follow else ({"follow": False} if a.no_follow else None)
+        if a.scroll and not a.letterbox:
+            opts = dict(opts or {}, crop_mode="fill", scroll=True, scroll_back=bool(a.scroll_back))
         res = convert_gif_to_dmd(data, "auto", opts, True if a.letterbox else None, a.force, limits)
         rep = res.report
         if res.converted:
@@ -918,7 +1102,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(res.gif_bytes)
             rep["output_path"] = str(out)
-            if a.also_letterbox and not a.letterbox and res.plan and res.plan.layout in ("fill", "follow"):
+            if a.also_letterbox and not a.letterbox and res.plan and res.plan.layout in ("fill", "follow", "scroll"):
                 alt = convert_gif_to_dmd(data, "auto", None, True, True, limits)
                 alt_path = Path(a.also_letterbox)
                 alt_path.parent.mkdir(parents=True, exist_ok=True)

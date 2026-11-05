@@ -60,6 +60,15 @@ class GifTab:
         self.cleanup = tk.DoubleVar(value=gc.DEFAULT_SETTINGS["cleanup_power"])
         self.colors = tk.IntVar(value=gc.DEFAULT_SETTINGS["color_count"])
         self.pp = tk.BooleanVar(value=True)
+        self.scroll_var = tk.BooleanVar(value=True)
+        self.scroll_back_var = tk.BooleanVar(value=False)
+        # cadre 128×32 posé à la main (mode manuel + « Remplir ») ; positions normalisées (0-1) du coin haut-gauche
+        self.win_on = tk.BooleanVar(value=False)
+        self.win_target = tk.StringVar(value="start")
+        self.win_zoom = tk.DoubleVar(value=1.0)          # part de la taille maximale du cadre
+        self.win_s = [0.0, 0.0]
+        self.win_e = [1.0, 1.0]
+        self._geo = None
         self.status = tk.StringVar(value=self.tr("gif_status_idle", "Ouvrez ou déposez un GIF animé."))
         self.info = tk.StringVar(value="")
         self._build()
@@ -97,7 +106,7 @@ class GifTab:
 
         opt = ttk.LabelFrame(m, text=tr("gif_settings", "Réglages"))
         opt.pack(fill=tk.X)
-        row = ttk.Frame(opt)
+        row = self.row = ttk.Frame(opt)
         row.pack(fill=tk.X, padx=6, pady=4)
         ttk.Checkbutton(row, text=tr("gif_auto", "Mode automatique"), variable=self.auto_var,
                         command=self._on_mode).pack(side=tk.LEFT)
@@ -105,9 +114,35 @@ class GifTab:
         self.crop_cb = ttk.Combobox(row, state="readonly", width=22, textvariable=self.crop_var,
                                     values=[tr(*CROP_LABELS[k]) for k in CROP_MODES])
         self.crop_cb.pack(side=tk.LEFT)
-        self.crop_cb.bind("<<ComboboxSelected>>", lambda e: self.reprocess())
+        self.crop_cb.bind("<<ComboboxSelected>>", lambda e: (self._on_crop(), self.reprocess()))
+        self.scroll_cb = ttk.Checkbutton(row, text=tr("gif_scroll", "Scroll intelligent"),
+                                         variable=self.scroll_var,
+                                         command=lambda: (self._refresh_win_ui(), self.reprocess()))
+        self.scroll_back_cb = ttk.Checkbutton(row, text=tr("gif_scroll_back", "Aller-retour"),
+                                              variable=self.scroll_back_var, command=self.reprocess)
+        self._on_crop()
         self.btn_apply = ttk.Button(row, text=tr("gif_apply", "Appliquer"), command=self.reprocess)
         self.btn_apply.pack(side=tk.LEFT, padx=10)
+
+        self.row2 = ttk.Frame(opt)
+        self.win_chk = ttk.Checkbutton(self.row2, text=tr("gif_win_manual", "Cadre 128×32 manuel (glisser sur « Avant »)"),
+                                       variable=self.win_on, command=self._on_win)
+        self.win_chk.pack(side=tk.LEFT)
+        self.win_rb_s = ttk.Radiobutton(self.row2, text=tr("gif_win_start", "Départ"), value="start",
+                                        variable=self.win_target, command=self._draw_overlay)
+        self.win_rb_e = ttk.Radiobutton(self.row2, text=tr("gif_win_end", "Arrivée"), value="end",
+                                        variable=self.win_target, command=self._draw_overlay)
+        self.win_rb_s.pack(side=tk.LEFT, padx=(12, 2))
+        self.win_rb_e.pack(side=tk.LEFT, padx=2)
+        ttk.Label(self.row2, text=tr("gif_win_size", "Taille :")).pack(side=tk.LEFT, padx=(12, 4))
+        self.win_scale = ttk.Scale(self.row2, from_=0.1, to=1.0, variable=self.win_zoom, length=150)
+        self.win_scale.pack(side=tk.LEFT)
+        self.win_scale.bind("<B1-Motion>", lambda e: self._on_zoom(False))
+        self.win_scale.bind("<ButtonRelease-1>", lambda e: self._on_zoom(True))
+        self.cv[0].bind("<Button-1>", self._win_press)
+        self.cv[0].bind("<B1-Motion>", self._win_press)
+        self.cv[0].bind("<ButtonRelease-1>", self._win_release)
+        self.cv[0].bind("<MouseWheel>", self._win_wheel)
 
         grid = ttk.Frame(opt)
         grid.pack(fill=tk.X, padx=6, pady=4)
@@ -129,6 +164,110 @@ class GifTab:
         self.manual_widgets.append(c)
         self._on_mode()
 
+    def _crop_key(self):
+        labels = [self.tr(*CROP_LABELS[k]) for k in CROP_MODES]
+        return CROP_MODES[labels.index(self.crop_var.get())] if self.crop_var.get() in labels else "auto"
+
+    def _on_crop(self):
+        """Les options de scroll n'apparaissent qu'avec « Remplir » ; le cadre manuel, en plus, qu'en mode manuel."""
+        if self._crop_key() == "fill":
+            self.scroll_cb.pack(side=tk.LEFT, padx=(12, 0), after=self.crop_cb)
+            self.scroll_back_cb.pack(side=tk.LEFT, padx=(6, 0), after=self.scroll_cb)
+        else:
+            self.scroll_cb.pack_forget()
+            self.scroll_back_cb.pack_forget()
+        if hasattr(self, "row2"):
+            self._refresh_win_ui()
+
+    # ------------------------------------------------------------------ cadre 128×32 manuel
+    def _win_active(self):
+        return (self._crop_key() == "fill" and not self.auto_var.get() and self.win_on.get() and self.src is not None)
+
+    def _refresh_win_ui(self):
+        avail = self._crop_key() == "fill" and not self.auto_var.get()
+        if avail:
+            self.row2.pack(fill=tk.X, padx=6, pady=(0, 2), after=self.row)
+        else:
+            self.row2.pack_forget()
+        has_end = self.win_on.get() and self.scroll_var.get()
+        self.win_rb_e.configure(state=tk.NORMAL if has_end else tk.DISABLED)
+        if not has_end and self.win_target.get() == "end":
+            self.win_target.set("start")
+        self._draw_overlay()
+
+    def _win_dims(self):
+        """(W, H, nw_max, nw, nh) -- image de travail, largeur max du cadre et taille actuelle (normalisées)."""
+        W, H = self.src.frames[0].size
+        nwmax = min(1.0, 4.0 * H / W)
+        nw = max(8.0 / W, nwmax * float(self.win_zoom.get()))
+        return W, H, nwmax, nw, nw * W / (4.0 * H)
+
+    def _reset_win(self):
+        if self.src is None:
+            return
+        self.win_zoom.set(1.0)
+        _, _, _, nw, nh = self._win_dims()
+        self.win_s = [0.0, 0.0]
+        self.win_e = [max(0.0, 1.0 - nw), max(0.0, 1.0 - nh)]
+
+    def _clamp_win(self):
+        _, _, _, nw, nh = self._win_dims()
+        for p in (self.win_s, self.win_e):
+            p[0] = min(max(0.0, p[0]), max(0.0, 1.0 - nw))
+            p[1] = min(max(0.0, p[1]), max(0.0, 1.0 - nh))
+
+    def _on_win(self):
+        self._refresh_win_ui()
+        self.reprocess()
+
+    def _on_zoom(self, final):
+        if self.src is None:
+            return
+        self._clamp_win()
+        self._draw_overlay()
+        if final and self._win_active():
+            self.reprocess()
+
+    def _win_move(self, ev):
+        if not self._win_active() or not self._geo:
+            return
+        ox, oy, s, W, H = self._geo
+        _, _, _, nw, nh = self._win_dims()
+        p = self.win_e if self.win_target.get() == "end" else self.win_s
+        p[0] = (ev.x - ox) / (s * W) - nw / 2
+        p[1] = (ev.y - oy) / (s * H) - nh / 2
+        self._clamp_win()
+        self._draw_overlay()
+
+    def _win_press(self, ev):
+        self._win_move(ev)
+
+    def _win_release(self, ev):
+        if self._win_active():
+            self.reprocess()
+
+    def _win_wheel(self, ev):
+        if self._win_active():
+            self.win_zoom.set(min(1.0, max(0.1, self.win_zoom.get() + (0.05 if ev.delta > 0 else -0.05))))
+            self._on_zoom(True)
+
+    def _draw_overlay(self):
+        c = self.cv[0]
+        c.delete("ov")
+        if not self._win_active() or not self._geo:
+            return
+        ox, oy, s, W, H = self._geo
+        _, _, _, nw, nh = self._win_dims()
+        pts = [("start", self.win_s, "#2ecc71")]
+        if self.scroll_var.get():
+            pts.append(("end", self.win_e, "#ff9f1a"))
+        for name, p, col in pts:
+            x1, y1 = ox + p[0] * W * s, oy + p[1] * H * s
+            x2, y2 = x1 + nw * W * s, y1 + nh * H * s
+            sel = self.win_target.get() == name
+            c.create_rectangle(x1, y1, x2, y2, outline=col, width=3 if sel else 1, tags="ov")
+            c.create_text(x1 + 3, y1 + 2, anchor="nw", text=("D" if name == "start" else "A"), fill=col, tags="ov")
+
     def _on_mode(self):
         st = tk.DISABLED if self.auto_var.get() else tk.NORMAL
         for w in self.manual_widgets:
@@ -136,6 +275,7 @@ class GifTab:
                 w.configure(state=st)
             except tk.TclError:
                 pass
+        self._refresh_win_ui()
         if self.src is not None:
             self.reprocess()
 
@@ -165,14 +305,21 @@ class GifTab:
             else self.tr("gif_ok", "Déjà au bon format (reconversion possible).")
         self.info.set(head + "\n" + verdict)
         self.result_frames = None
+        self._reset_win()
         self._show_before()
         self.reprocess()
 
     # ------------------------------------------------------------------ traitement
     def _options(self):
-        crop = CROP_MODES[[self.tr(*CROP_LABELS[k]) for k in CROP_MODES].index(self.crop_var.get())] \
-            if self.crop_var.get() in [self.tr(*CROP_LABELS[k]) for k in CROP_MODES] else "auto"
+        crop = self._crop_key()
         opts = {"crop_mode": crop}
+        if crop == "fill" and self.scroll_var.get():
+            opts.update(scroll=True, scroll_back=bool(self.scroll_back_var.get()))
+        if self._win_active():
+            _, _, _, nw, _ = self._win_dims()
+            opts["window"] = (self.win_s[0], self.win_s[1], nw)
+            if self.scroll_var.get():
+                opts["window_end"] = (self.win_e[0], self.win_e[1], nw)
         if not self.auto_var.get():
             opts.update(contrast=float(self.contrast.get()), saturation=float(self.saturation.get()),
                         brightness=float(self.brightness.get()), black_threshold=int(self.black.get()),
@@ -195,8 +342,9 @@ class GifTab:
             try:
                 plan = gc.plan_conversion(src, mode, opts, True if crop == "letterbox" else None)
                 frames = gc.render_frames(src, plan)
-                gif = gc.encode_frames(frames, src.durations, plan.settings)
-                score = gc.dq.evaluate_frames(frames, src.durations)
+                durs = gc.plan_durations(src, plan)
+                gif = gc.encode_frames(frames, durs, plan.settings)
+                score = gc.dq.evaluate_frames(frames, durs)
                 box["r"] = (plan, frames, gif, score, None)
             except Exception as e:  # noqa: BLE001 -- affichée à l'utilisateur
                 box["r"] = (None, None, None, None, e)
@@ -215,17 +363,23 @@ class GifTab:
         if err is not None:
             self.status.set(str(err))
             return
-        self.plan, self.result_frames, self.result_durations, self.gif_bytes = plan, frames, list(self.src.durations), gif
+        self.plan, self.result_frames, self.result_durations, self.gif_bytes = plan, frames, gc.plan_durations(self.src, plan), gif
         layout = {"native": "d'origine", "fit": "bandes noires si besoin", "fill": "recadré plein écran",
-                  "follow": "suivi du sujet"}.get(plan.layout, plan.layout)
+                  "follow": "suivi du sujet", "scroll": "remplir + scroll intelligent"}.get(plan.layout, plan.layout)
         extra = ""
+        if plan.scroll:
+            sc = plan.scroll
+            axis_txt = {"y": "vertical", "x": "horizontal"}.get(sc["axis"], "départ → arrivée")
+            extra = (f" ({axis_txt}, {sc['travel_px']} px"
+                     f"{', départ inversé' if sc['reversed'] else ''}{', aller-retour' if sc['back'] else ''}, "
+                     f"{sc['duration_ms'] / 1000:.1f} s)")
         if plan.follow:
             extra = f" (zoom ×{plan.follow['d']}, sujet gardé à {int(plan.follow['coverage'] * 100)} %)"
         self.status.set(self.tr("gif_result", "Cadrage : {layout}{extra} — note {score}/100 ({rating}) — {kb} Ko",
                                 layout=layout, extra=extra, score=score.score, rating=score.rating,
                                 kb=max(1, len(gif) // 1024)))
         self.btn_export.configure(state=tk.NORMAL)
-        self.btn_lb.configure(state=tk.NORMAL if plan.layout in ("fill", "follow") else tk.DISABLED)
+        self.btn_lb.configure(state=tk.NORMAL if plan.layout in ("fill", "follow", "scroll") else tk.DISABLED)
         self._idx = 0
         self._play()
 
@@ -243,20 +397,25 @@ class GifTab:
         if not self.result_frames or self.src is None:
             return
         i = self._idx % len(self.result_frames)
-        for k, img in enumerate((self.src.frames[i], self.result_frames[i])):
+        si = min(gc.plan_source_index(self.plan, i), len(self.src.frames) - 1) if self.plan else i
+        for k, img in enumerate((self.src.frames[si], self.result_frames[i])):
             c = self.cv[k]
             if k == 0:
                 w, h = img.size
                 s = min(520 / w, 150 / h)
-                pic = img.resize((max(1, int(w * s)), max(1, int(h * s))), Image.Resampling.BILINEAR)
+                pw, ph = max(1, int(w * s)), max(1, int(h * s))
+                pic = img.resize((pw, ph), Image.Resampling.BILINEAR)
+                self._geo = (260 - pw / 2, 75 - ph / 2, pw / w, w, h)
             else:
                 pic = DMDEngine.render_led_style(img, scale=4, led_ratio=0.525, glow=True,
                                                  brightness=self.app.led_brightness_var.get())
             self._photos[k] = ImageTk.PhotoImage(pic)
             c.delete("all")
             c.create_image(260, 75, image=self._photos[k])
+            if k == 0:
+                self._draw_overlay()
         self._idx = (i + 1) % len(self.result_frames)
-        self._job = self.root.after(max(20, int(self.src.durations[i])), self._play)
+        self._job = self.root.after(max(20, int(self.result_durations[i])), self._play)
 
     # ------------------------------------------------------------------ export
     def _save(self, data: bytes, suffix: str):
@@ -278,6 +437,6 @@ class GifTab:
         try:
             plan = gc.plan_conversion(self.src, "auto" if self.auto_var.get() else "manual", opts, True)
             frames = gc.render_frames(self.src, plan)
-            self._save(gc.encode_frames(frames, self.src.durations, plan.settings), "_dmd_bandes")
+            self._save(gc.encode_frames(frames, gc.plan_durations(self.src, plan), plan.settings), "_dmd_bandes")
         except Exception as e:  # noqa: BLE001
             messagebox.showerror("GIF", str(e))

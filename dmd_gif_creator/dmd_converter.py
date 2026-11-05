@@ -2869,6 +2869,7 @@ class DMDConverter:
                 lang_manager.get("tab_auto"),
                 lang_manager.get("tab_manual"),
                 lang_manager.get("tab_video"),
+                lang_manager.get("tab_gif"),
                 lang_manager.get("tab_textscroll"),
                 lang_manager.get("tab_params"),
                 lang_manager.get("tab_debug"),
