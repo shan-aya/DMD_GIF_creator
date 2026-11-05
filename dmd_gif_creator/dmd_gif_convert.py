@@ -144,9 +144,10 @@ class GifError(Exception):
     """GIF refusé ou illisible. `code` : not_gif, too_large, too_many_frames, too_big_dimensions, too_heavy_total,
     unreadable, empty."""
 
-    def __init__(self, code: str, message: str):
+    def __init__(self, code: str, message: str, detail: str = ""):
         super().__init__(message)
         self.code = code
+        self.detail = detail          # partie variable du message (chiffres, cause) : l'interface la replace dans son texte traduit
 
 
 @dataclass
@@ -188,7 +189,7 @@ def load_gif(data: bytes, limits: GifLimits | None = None) -> GifData:
     if not data:
         raise GifError("empty", "Fichier vide")
     if len(data) > limits.max_bytes:
-        raise GifError("too_large", f"Fichier trop gros ({len(data)} octets > {limits.max_bytes})")
+        raise GifError("too_large", f"Fichier trop gros ({len(data)} octets > {limits.max_bytes})", f"{len(data)} > {limits.max_bytes}")
     if data[:6] not in (b"GIF87a", b"GIF89a"):
         raise GifError("not_gif", "Ce fichier n'est pas un GIF")
     try:
@@ -196,15 +197,15 @@ def load_gif(data: bytes, limits: GifLimits | None = None) -> GifData:
         w, h = im.size
         n = int(getattr(im, "n_frames", 1))
     except Exception as e:  # noqa: BLE001 -- tout échec de décodage = GIF illisible
-        raise GifError("unreadable", f"GIF illisible : {e}") from e
+        raise GifError("unreadable", f"GIF illisible : {e}", str(e)) from e
     if w <= 0 or h <= 0 or w * h > limits.max_pixels:
-        raise GifError("too_big_dimensions", f"Dimensions trop grandes ({w}×{h})")
+        raise GifError("too_big_dimensions", f"Dimensions trop grandes ({w}×{h})", f"{w}×{h}")
     if n > limits.max_frames:
-        raise GifError("too_many_frames", f"Trop d'images ({n} > {limits.max_frames})")
+        raise GifError("too_many_frames", f"Trop d'images ({n} > {limits.max_frames})", f"{n} > {limits.max_frames}")
     scale = max(1, math.ceil(max(w, h) / limits.max_work_side))
     ww, wh = math.ceil(w / scale), math.ceil(h / scale)
     if n * ww * wh > limits.max_total_pixels:
-        raise GifError("too_heavy_total", f"GIF trop lourd à traiter ({n} images de {w}×{h})")
+        raise GifError("too_heavy_total", f"GIF trop lourd à traiter ({n} images de {w}×{h})", f"{n} × {w}×{h}")
 
     frames, durations, alphas = [], [], []
     any_alpha = False
@@ -226,7 +227,7 @@ def load_gif(data: bytes, limits: GifLimits | None = None) -> GifData:
             alphas.append(a)
             durations.append(_norm_duration(im.info.get("duration", 100)))
     except Exception as e:  # noqa: BLE001
-        raise GifError("unreadable", f"GIF illisible (image {len(frames) + 1}) : {e}") from e
+        raise GifError("unreadable", f"GIF illisible (image {len(frames) + 1}) : {e}", f"#{len(frames) + 1} : {e}") from e
     if not frames:
         raise GifError("empty", "GIF sans image")
     try:

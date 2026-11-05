@@ -28,7 +28,7 @@ import struct
 import sys
 
 # A maintenir avec APP_VERSION de DMD GIF Creator (rappel dans le script de bump).
-GIF_APP_VERSION = (3, 2, 7)
+GIF_APP_VERSION = (3, 2, 8)
 
 _MAGIC = 0xD6
 _FORMAT = 1
@@ -170,7 +170,7 @@ def _table_votes(tables) -> list[list[int]]:
 
 
 def detect_gif(data: bytes):
-    """-> {"layers": [...], "version": "3.2.7"} ou None."""
+    """-> {"layers": [...], "version": "3.2.8"} ou None."""
     tables, comments = parse_gif(data)
     layers = []
     version = None

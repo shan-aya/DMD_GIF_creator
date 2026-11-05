@@ -5,6 +5,7 @@ from __future__ import annotations
 # ============================================
 # Version actuelle : v28
 #
+# v30 — 2026-11-05 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD GIF Creator v3.2.8".
 # v29 — 2026-11-05 — safe-modify — En-tête « DMD Creator » -> « DMD GIF Creator » : clé TEXT_MAP "DMD GIF Creator v3.2.7".
 # v28 — 2026-11-02 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.2.7".
 # v27 — 2026-10-21 — safe-modify — Clé TEXT_MAP de l'en-tête passée à "DMD Creator v3.2.6".
@@ -474,7 +475,7 @@ TEXT_MAP: Dict[str, str] = {
     "✅ Traiter sélection": "process_sel",
     "📂 Charger": "load",
     "✂️ Crop 128×32": "crop",
-    "DMD GIF Creator v3.2.7": "app_header",
+    "DMD GIF Creator v3.2.8": "app_header",
     "💾 Exporter GIF": "export_gif",
     "📚 Multi-images": "multi_images",
     "🎬 Morphing": "morphing",

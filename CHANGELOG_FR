@@ -139,6 +139,17 @@ Release 3 -->   v3.0 -- + renommage : DMD GIF Converter -> DMD GIF Creator
                           - onglet PARAMETRES : bouton Verifier un GIF (GIF, raw565, raw565pack), FR/EN/ES
                           - lien Discord (icone + libelle, bulle au survol) en pied de fenetre, a cote de l icone cafe
                           - version affichee 3.2.7, lanceur dmd_gif_creator_v327.py
-                v3.2.8 -- + nouvel onglet GIF : conversion d un GIF anime existant au format DMD 128x32 (auto / manuel)
-                        + cadrage intelligent : suivi du sujet principal, bandes noires ou remplissage
-                        + moteur dmd_gif_convert.py partage avec le bot Discord (CLI + rapport JSON)
+                v3.2.8 -- - nouvel onglet GIF : conversion d un GIF anime existant au format DMD 128x32, durees d origine
+                            conservees ; mode automatique (choix seul entre image entiere + bandes noires et scroll plein
+                            ecran, au score de qualite, marge 5 points) ou reglages manuels ; apercu LED avant/apres
+                          - cadrage : automatique, suivi du sujet, bandes noires, remplir ; export du GIF et de la variante
+                            bandes noires (filigrane DGC conserve)
+                          - scroll intelligent : axe, sens (extremite la plus chargee d abord), vitesse adaptee au contenu,
+                            pauses aux extremites, pas de pixels entiers, aller-retour, curseur de vitesse x0,5 a x3
+                          - cadre 128x32 manuel (depart / arrivee) pose a la souris sur l apercu, apercu LED en direct
+                          - Depuis un lien... et lancement dmd_gif_creator_v328.py --open <GIF ou URL>
+                          - fenetre 4:1 mise a l echelle exacte (BOX) : plus de colonnes noires dues au diviseur entier
+                          - moteur dmd_gif_convert.py (sans Tk) partage avec le bot du serveur Discord (CLI + rapport JSON)
+                          - entete de la fenetre : DMD GIF Creator (et non plus DMD Creator) ; libelles et erreurs de l onglet
+                            GIF traduits FR/EN/ES, onglet reconstruit au changement de langue
+                          - version affichee 3.2.8, lanceur dmd_gif_creator_v328.py, dgc_mark.GIF_APP_VERSION 3.2.8

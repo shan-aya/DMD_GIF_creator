@@ -1,10 +1,10 @@
 [🇫🇷 Français](./README.md) · [🇬🇧 English](./README_EN.md) · 🇪🇸 **Español**
 
-# DMD GIF Creator 128x32 — v3.2.7
+# DMD GIF Creator 128x32 — v3.2.8
 
 Cree GIF optimizados para pantallas DMD 128×32 (máquina arcade, pinball,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) a partir de **imágenes**, de
-un **vídeo** o de **texto animado**, con análisis automático, edición manual avanzada y
+un **vídeo**, de un **GIF existente** o de **texto animado**, con análisis automático, edición manual avanzada y
 procesamiento por lotes de carpetas enteras.
 
 (Antes « DMD GIF Converter ».)
@@ -15,7 +15,7 @@ procesamiento por lotes de carpetas enteras.
 
 ## Descarga
 
-**Windows**: descargue `dmd_gif_creator_v327.exe` desde la
+**Windows**: descargue `dmd_gif_creator_v328.exe` desde la
 [última Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) y
 ejecútelo — no hace falta instalar nada.
 
@@ -27,7 +27,7 @@ positivo: vea «Antivirus» en la [guía](./NOTICE_ES.md#buenas-prácticas-y-lim
 **Desde las fuentes** (carpeta [`dmd_gif_creator/`](./dmd_gif_creator)):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v327.py
+    python dmd_gif_creator/dmd_gif_creator_v328.py
 
 `opencv-contrib-python` (y no `opencv-python`) es necesario para el seguimiento
 automático de la pestaña VIDEO; los dos paquetes no deben instalarse a la vez.
@@ -81,6 +81,12 @@ encuadre: seguimiento automático de un sujeto, encuadre automático con zoom o 
 manuales (zona y zoom que evolucionan en el tiempo). La calidad automática ajusta
 contraste, saturación y brillo según el vídeo, y el peso del GIF se estima en directo.
 
+### GIF — convertir un GIF existente
+
+![Pestaña GIF](./screenshots/gif_es.png)
+
+Abra (o arrastre) un GIF animado, aunque sea grande o tenga un formato inadecuado: la pestaña lo convierte en un GIF DMD 128×32 conservando sus duraciones, con una vista previa LED antes/después. En **modo automático** la aplicación elige sola entre la imagen completa con bandas negras y un **desplazamiento a pantalla completa**, según la nota de calidad. Con **Rellenar**: **desplazamiento inteligente** (eje, sentido y velocidad adaptados al contenido, pausas en los extremos, ida y vuelta, control de velocidad) o **marco 128×32 manual** (inicio y fin con el ratón). El mismo motor sirve al bot del servidor de Discord (`/gif`).
+
 ### TEXTSCROLL — texto animado
 
 ![Pestaña TEXTSCROLL](./screenshots/textscroll_es.png)
@@ -96,6 +102,14 @@ Matrix, glitch…), con una duración ajustada automáticamente a la longitud de
 - **AYUDA**: la guía completa dentro de la aplicación.
 
 ## Novedades
+
+**v3.2.8**
+- **Nueva pestaña GIF**: convierte un GIF animado existente en un GIF DMD 128×32, conservando sus duraciones. Modo **automático** (elige solo entre la imagen completa y un desplazamiento a pantalla completa, según la nota de calidad) o ajustes manuales, encuadre automático / seguimiento del sujeto / bandas negras / rellenar, vista previa LED antes/después, exportación del GIF y de la variante con bandas negras.
+- **Desplazamiento inteligente**: eje, sentido y velocidad adaptados al contenido, pausas en los extremos, **ida y vuelta** sin salto al repetir, control de **velocidad** (×0,5 a ×3).
+- **Marco 128×32 manual**: un marco **Inicio** (y **Fin** con el desplazamiento) colocado con el ratón sobre la vista previa, vista LED actualizada mientras arrastra.
+- **Desde un enlace…** e inicio con `--open <GIF o dirección>`: abre la pestaña GIF con el GIF precargado.
+- Cabecera de la ventana: «DMD GIF Creator» (ya no «DMD Creator»).
+- En el servidor de Discord, el comando **`/gif`** usa este mismo motor: envíe un GIF de cualquier tamaño, el bot lo convierte, el equipo lo valida y lo publica.
 
 **v3.2.7**
 - **Marca de agua invisible «DGC»**: los GIF creados por la aplicación llevan una marca invisible (imperceptible, ±1/255 por color) que permite saber que proceden de DMD GIF Creator. Un botón **🔍 Verificar un GIF…** (pestaña AJUSTES) indica si un GIF o un archivo raw565 la lleva. Es un indicio, no una prueba.

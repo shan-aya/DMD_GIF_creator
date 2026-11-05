@@ -24,13 +24,14 @@ concreto.
 2. [Pestaña AUTO — análisis y propuestas de IA](#pestaña-auto--análisis-y-propuestas-de-ia)
 3. [Pestaña MANUAL — edición avanzada](#pestaña-manual--edición-avanzada)
 4. [Pestaña VIDEO — GIF a partir de un vídeo](#pestaña-video--gif-a-partir-de-un-vídeo)
-5. [Pestaña TEXTSCROLL — texto animado](#pestaña-textscroll--texto-animado)
-6. [Pestaña AJUSTES](#pestaña-ajustes)
-7. [Pestaña DEBUG](#pestaña-debug)
-8. [Pestaña AYUDA](#pestaña-ayuda)
-9. [Función transversal: Modo DMD / Forzar pixel-perfect](#función-transversal-modo-dmd--forzar-pixel-perfect)
-10. [Función transversal: Puntuación de calidad y ventana Revisar](#función-transversal-puntuación-de-calidad-y-ventana-revisar)
-11. [Buenas prácticas y limitaciones conocidas](#buenas-prácticas-y-limitaciones-conocidas)
+5. [Pestaña GIF — convertir un GIF existente](#pestaña-gif--convertir-un-gif-existente)
+6. [Pestaña TEXTSCROLL — texto animado](#pestaña-textscroll--texto-animado)
+7. [Pestaña AJUSTES](#pestaña-ajustes)
+8. [Pestaña DEBUG](#pestaña-debug)
+9. [Pestaña AYUDA](#pestaña-ayuda)
+10. [Función transversal: Modo DMD / Forzar pixel-perfect](#función-transversal-modo-dmd--forzar-pixel-perfect)
+11. [Función transversal: Puntuación de calidad y ventana Revisar](#función-transversal-puntuación-de-calidad-y-ventana-revisar)
+12. [Buenas prácticas y limitaciones conocidas](#buenas-prácticas-y-limitaciones-conocidas)
 
 ---
 
@@ -38,7 +39,7 @@ concreto.
 
 Al iniciar, la aplicación muestra una columna de pestañas a la izquierda:
 
-**AUTO** · **MANUAL** · **VIDEO** · **TEXTSCROLL** · **AJUSTES** · **DEBUG** · **AYUDA**
+**AUTO** · **MANUAL** · **VIDEO** · **GIF** · **TEXTSCROLL** · **AJUSTES** · **DEBUG** · **AYUDA**
 
 Cada pestaña corresponde a una forma diferente de producir una animación GIF 128×32:
 
@@ -47,6 +48,7 @@ Cada pestaña corresponde a una forma diferente de producir una animación GIF 1
 | AUTO | Cargue una o varias imágenes (logotipos, ilustraciones...), la IA analiza cada una y propone 6 renders listos para usar. La forma más rápida de procesar un lote de imágenes. |
 | MANUAL | Cargue una imagen y ajuste usted mismo cada parámetro (efectos, animación, dibujo) — control total, sin automatismos. |
 | VIDEO | Cargue un vídeo, elija el fragmento y el encuadre (seguimiento automático o a mano) y obtenga un GIF 128×32. |
+| GIF | Cargue un GIF animado existente, sea cual sea su tamaño: se convierte a 128×32 (automático o ajustado a mano, desplazamiento inteligente, marco manual). |
 | TEXTSCROLL | Escriba texto y elija una fuente/efecto/animación — no necesita imagen de origen. |
 | AJUSTES | Idioma, tema, ajustes de exportación y rendimiento de la aplicación. |
 | DEBUG | Registro de actividad de la aplicación, útil para diagnosticar un problema. |
@@ -429,6 +431,50 @@ conservará.
   anima en **Vista Previa Animación (Vídeo)** — en Modo DMD, con la lupa 🔍 y el
   cursor 💡 Brillo LED, como en las otras pestañas.
 - **💾 Exportar GIF**: guarda el GIF.
+
+---
+
+## Pestaña GIF — convertir un GIF existente
+
+Convierte un GIF animado **existente** — de cualquier tamaño o forma — en un GIF DMD 128×32, conservando sus duraciones originales. Es el mismo motor que el bot del servidor de Discord (comando `/gif`).
+
+![Pestaña GIF](dmd_gif_creator/images/onglet_gif.png)
+
+### 1. Abrir un GIF
+
+- **Abrir un GIF…** o **arrastrar y soltar** un `.gif` en la ventana mientras la pestaña GIF está visible.
+- **Desde un enlace…**: descarga un GIF desde una dirección `http`/`https` (25 MB máximo), por ejemplo el enlace de un archivo enviado en Discord.
+- Inicio con un GIF precargado: `dmd_gif_creator_v328.py --open <archivo o dirección>` abre directamente la pestaña GIF.
+- Bajo las vistas previas, una línea de información indica el tamaño, el número de imágenes, el peso y el veredicto: **hay que convertir** (con los motivos: tamaño, fondo no negro, demasiados colores, demasiado pesado…) o **ya tiene el formato correcto**.
+
+### 2. Vistas previas
+
+- **Antes**: el GIF original. **Después (vista LED)**: el resultado tal como lo mostrará el DMD, a tamaño exacto (4 × el panel), animado con las duraciones originales.
+- Debajo: el encuadre elegido, la **nota de calidad /100** y el peso del GIF.
+
+### 3. Modo automático o manual
+
+- **Modo automático** (marcado por defecto): la aplicación elige los ajustes (contraste, saturación, limpieza, colores) y el encuadre. Compara, según la nota de calidad, la imagen completa con bandas negras y un **desplazamiento a pantalla completa**, y conserva el desplazamiento si gana por al menos 5 puntos.
+- Desmarcado, los ajustes pasan a ser manuales: **Contraste**, **Saturación**, **Brillo**, **Umbral de negro**, **Limpieza**, **Colores**, **Pixel perfect**.
+
+### 4. Encuadre
+
+- **Automático** · **Seguir al sujeto** (ventana 4:1 que sigue al sujeto sin sacudidas) · **Bandas negras** (imagen completa) · **Rellenar (recortar)**.
+- Con **Rellenar**:
+  - **Desplazamiento inteligente**: la imagen llena la pantalla en un eje y la ventana 128×32 recorre el otro. El eje, el sentido (se empieza por el extremo más cargado) y la velocidad (más lenta en zonas densas) se eligen según el contenido, con una pausa en ambos extremos y pasos de píxeles enteros. La animación original sigue reproduciéndose durante el desplazamiento.
+  - **Ida y vuelta**: el desplazamiento vuelve a su punto de partida (sin salto al repetir el GIF). También disponible con el encuadre Automático.
+  - **Velocidad del desplazamiento**: control de ×0,5 a ×3.
+  - **Marco 128×32 manual** (modo automático desmarcado): aparece un marco verde **Inicio** en la vista *Antes*; arrástrelo con el ratón y cambie su tamaño con la rueda o el control **Tamaño**. Con el desplazamiento aparece un marco naranja **Fin**: el desplazamiento va de uno a otro. La vista *Después* se actualiza mientras arrastra.
+- **Aplicar** relanza la conversión; también se relanza sola cuando cambia un ajuste.
+
+### 5. Exportar
+
+- **Exportar GIF DMD…**: guarda el resultado (`<nombre>_dmd.gif`), con la marca de agua invisible «DGC».
+- **Exportar variante con bandas negras…**: guarda la versión «imagen completa con bandas negras» (`<nombre>_dmd_bandes.gif`); disponible cuando el encuadre recortó la imagen.
+
+### Límites
+
+Hasta 25 MB, 600 imágenes y 4096×4096 píxeles; un origen muy grande se reduce antes del procesamiento. Un contenido oscuro sobre fondo claro se invierte automáticamente cuando es posible (un mensaje lo indica).
 
 ---
 

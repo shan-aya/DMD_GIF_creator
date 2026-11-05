@@ -1,10 +1,10 @@
 🇫🇷 **Français** · [🇬🇧 English](./README_EN.md) · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.2.7
+# DMD GIF Creator 128x32 — v3.2.8
 
 Créez des GIF optimisés pour les écrans DMD 128×32 (borne d'arcade, flipper,
 [RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) à partir d'**images**, d'une
-**vidéo** ou de **texte animé**, avec analyse automatique, édition manuelle avancée et
+**vidéo**, d'un **GIF existant** ou de **texte animé**, avec analyse automatique, édition manuelle avancée et
 traitement par lot de dossiers entiers.
 
 (Anciennement « DMD GIF Converter ».)
@@ -15,7 +15,7 @@ traitement par lot de dossiers entiers.
 
 ## Téléchargement
 
-**Windows** : téléchargez `dmd_gif_creator_v327.exe` dans la
+**Windows** : téléchargez `dmd_gif_creator_v328.exe` dans la
 [dernière Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) et
 lancez-le — aucune installation nécessaire.
 
@@ -27,7 +27,7 @@ c'est un faux positif : voir « Antivirus » dans la [notice](./NOTICE_FR.md#bon
 **Depuis les sources** (dossier [`dmd_gif_creator/`](./dmd_gif_creator)) :
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v327.py
+    python dmd_gif_creator/dmd_gif_creator_v328.py
 
 `opencv-contrib-python` (et non `opencv-python`) est nécessaire pour le suivi
 automatique de l'onglet VIDEO ; les deux paquets ne doivent pas être installés en même
@@ -81,6 +81,12 @@ suivi automatique d'un sujet, cadrage auto avec zoom, ou points manuels (zone et
 qui évoluent dans le temps). La qualité automatique ajuste contraste, saturation et
 luminosité d'après la vidéo, et le poids du GIF est estimé en direct.
 
+### GIF — convertir un GIF existant
+
+![Onglet GIF](./screenshots/gif_fr.png)
+
+Ouvrez (ou déposez) un GIF animé, même grand ou au mauvais format : l'onglet le convertit en GIF DMD 128×32 en gardant ses durées, avec un aperçu LED avant/après. En **mode automatique**, l'application choisit seule entre l'image entière avec bandes noires et un **scroll plein écran**, au score de qualité. Avec **Remplir** : **scroll intelligent** (axe, sens et vitesse adaptés au contenu, pauses aux extrémités, aller-retour, curseur de vitesse) ou **cadre 128×32 manuel** (départ et arrivée à la souris). Le même moteur sert le bot du serveur Discord (`/gif`).
+
 ### TEXTSCROLL — texte animé
 
 ![Onglet TEXTSCROLL](./screenshots/textscroll_fr.png)
@@ -96,6 +102,14 @@ glitch…), avec une durée ajustée automatiquement à la longueur du texte.
 - **AIDE** : le guide complet dans l'application.
 
 ## Nouveautés
+
+**v3.2.8**
+- **Nouvel onglet GIF** : convertit un GIF animé existant en GIF DMD 128×32, en gardant ses durées. Mode **automatique** (choix seul entre l'image entière et un scroll plein écran, au score de qualité) ou réglages manuels, cadrage automatique / suivi du sujet / bandes noires / remplir, aperçu LED avant/après, export du GIF et de la variante bandes noires.
+- **Scroll intelligent** : axe, sens et vitesse adaptés au contenu, pauses aux extrémités, **aller-retour** sans saut à la boucle, curseur de **vitesse** (×0,5 à ×3).
+- **Cadre 128×32 manuel** : un cadre **Départ** (et **Arrivée** avec le scroll) posé à la souris sur l'aperçu, aperçu LED mis à jour pendant le déplacement.
+- **Depuis un lien…** et lancement `--open <GIF ou adresse>` : ouvre l'onglet GIF avec le GIF préchargé.
+- En-tête de la fenêtre : « DMD GIF Creator » (et non plus « DMD Creator »).
+- Sur le serveur Discord, la commande **`/gif`** utilise ce même moteur : envoyez un GIF de n'importe quelle taille, le bot le convertit, le staff le valide et le publie.
 
 **v3.2.7**
 - **Filigrane invisible « DGC »** : les GIF créés par l'application portent une marque invisible (imperceptible, ±1/255 par couleur) qui permet de savoir qu'ils viennent de DMD GIF Creator. Un bouton **🔍 Vérifier un GIF…** (onglet PARAMÈTRES) dit si un GIF ou un fichier raw565 en porte une. C'est un indice, pas une preuve.

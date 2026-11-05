@@ -39,8 +39,9 @@ CROP_LABELS = {
 
 
 class GifTab:
-    def __init__(self, app, parent, tr):
+    def __init__(self, app, parent, tr, lang_fn=None):
         self.app, self.parent, self.tr = app, parent, tr
+        self.lang_fn = lang_fn or (lambda: "fr")      # langue courante de l'appli (raisons du verdict)
         self.root = app.root
         self.src = None            # GifData
         self.path = None
@@ -77,6 +78,7 @@ class GifTab:
         self._pending = False       # un réglage a changé pendant une conversion : on relance à la fin
         self.status = tk.StringVar(value=self.tr("gif_status_idle", "Ouvrez ou déposez un GIF animé."))
         self.info = tk.StringVar(value="")
+        self._verdict = None
         self._build()
 
     # ------------------------------------------------------------------ UI
@@ -329,6 +331,12 @@ class GifTab:
         if self.src is not None:
             self.reprocess()
 
+    def _err_text(self, e) -> str:
+        """Message d'erreur dans la langue de l'appli (code + détail du moteur) ; repli : texte brut."""
+        if isinstance(e, gc.GifError):
+            return self.tr("gif_err_" + e.code, str(e), detail=getattr(e, "detail", ""))
+        return str(e)
+
     # ------------------------------------------------------------------ fichier
     def open_dialog(self):
         p = filedialog.askopenfilename(title=self.tr("gif_open", "Ouvrir un GIF…"),
@@ -391,21 +399,48 @@ class GifTab:
             data = Path(path).read_bytes()
             self.src = gc.load_gif(data)
         except (gc.GifError, OSError) as e:
-            messagebox.showerror("GIF", str(e))
+            messagebox.showerror("GIF", self._err_text(e))
             return
         self.path = str(path)
-        v = gc.analyze_gif(self.src)
-        lang = "fr"
-        why = ", ".join(gc.reason_text(r, lang) for r in v.reasons) if v.reasons else ""
-        head = Path(path).name + f" — {self.src.width}×{self.src.height}, {len(self.src.frames)} images, " \
-                                 f"{self.src.n_bytes // 1024} Ko"
-        verdict = self.tr("gif_needs", "À convertir : {why}", why=why) if v.needs_conversion \
-            else self.tr("gif_ok", "Déjà au bon format (reconversion possible).")
-        self.info.set(head + "\n" + verdict)
+        self._verdict = gc.analyze_gif(self.src)
+        self._refresh_info()
         self.result_frames = None
         self._reset_win()
         self._show_before()
         self.reprocess()
+
+    def _refresh_info(self):
+        """Ligne d'information du GIF chargé (nom, taille, verdict), dans la langue courante."""
+        if self.src is None or getattr(self, "_verdict", None) is None:
+            return
+        v = self._verdict
+        why = ", ".join(gc.reason_text(r, self.lang_fn()) for r in v.reasons) if v.reasons else ""
+        head = self.tr("gif_head", "{name} — {w}×{h}, {n} images, {kb} Ko", name=Path(self.path).name, w=self.src.width,
+                       h=self.src.height, n=len(self.src.frames), kb=self.src.n_bytes // 1024)
+        verdict = self.tr("gif_needs", "À convertir : {why}", why=why) if v.needs_conversion \
+            else self.tr("gif_ok", "Déjà au bon format (reconversion possible).")
+        self.info.set(head + "\n" + verdict)
+
+    def retranslate(self):
+        """Changement de langue de l'appli : l'onglet est reconstruit (libellés) en gardant l'état (GIF, réglages, cadrage)."""
+        crop = self._crop_key()
+        if self._job:
+            try:
+                self.root.after_cancel(self._job)
+            except tk.TclError:
+                pass
+            self._job = None
+        for w in self.parent.winfo_children():
+            w.destroy()
+        if hasattr(self, "row2"):          # _on_crop() ne doit pas toucher aux widgets détruits pendant la reconstruction
+            del self.row2
+        self._photos = [None, None]
+        self._build()
+        self.crop_var.set(self.tr(*CROP_LABELS[crop]))
+        self._on_crop()
+        self._refresh_info()
+        if self.src is not None and not self.busy:
+            self.reprocess()                     # statut et aperçu dans la nouvelle langue
 
     # ------------------------------------------------------------------ traitement
     def _options(self):
@@ -472,21 +507,23 @@ class GifTab:
             return
         self._drag_img = None
         if err is not None:
-            self.status.set(str(err))
+            self.status.set(self._err_text(err))
             return
         self.plan, self.result_frames, self.result_durations, self.gif_bytes = plan, frames, gc.plan_durations(self.src, plan), gif
-        layout = {"native": "d'origine", "fit": "bandes noires si besoin", "fill": "recadré plein écran",
-                  "follow": "suivi du sujet", "scroll": "remplir + scroll intelligent"}.get(plan.layout, plan.layout)
+        layout = self.tr("gif_layout_" + plan.layout, plan.layout)
         extra = ""
         if plan.scroll:
             sc = plan.scroll
-            axis_txt = {"y": "vertical", "x": "horizontal"}.get(sc["axis"], "départ → arrivée")
-            auto_txt = f"choisi par l'auto : note {sc['score_fit']} → {sc['score_scroll']}, " if sc.get("auto") else ""
+            axis_txt = self.tr("gif_axis_" + {"y": "y", "x": "x"}.get(sc["axis"], "path"), sc["axis"])
+            auto_txt = self.tr("gif_auto_choice", "choisi par l'auto : note {a} → {b}, ", a=sc["score_fit"],
+                               b=sc["score_scroll"]) if sc.get("auto") else ""
             extra = (f" ({auto_txt}{axis_txt}, {sc['travel_px']} px"
-                     f"{', départ inversé' if sc['reversed'] else ''}{', aller-retour' if sc['back'] else ''}, "
+                     f"{self.tr('gif_reversed', ', départ inversé') if sc['reversed'] else ''}"
+                     f"{self.tr('gif_back', ', aller-retour') if sc['back'] else ''}, "
                      f"{sc['duration_ms'] / 1000:.1f} s)")
         if plan.follow:
-            extra = f" (zoom ×{plan.follow['d']}, sujet gardé à {int(plan.follow['coverage'] * 100)} %)"
+            extra = self.tr("gif_follow_info", " (zoom ×{d}, sujet gardé à {pct} %)", d=plan.follow["d"],
+                            pct=int(plan.follow["coverage"] * 100))
         self.status.set(self.tr("gif_result", "Cadrage : {layout}{extra} — note {score}/100 ({rating}) — {kb} Ko",
                                 layout=layout, extra=extra, score=score.score, rating=score.rating,
                                 kb=max(1, len(gif) // 1024)))

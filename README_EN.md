@@ -1,10 +1,10 @@
 [🇫🇷 Français](./README.md) · 🇬🇧 **English** · [🇪🇸 Español](./README_ES.md)
 
-# DMD GIF Creator 128x32 — v3.2.7
+# DMD GIF Creator 128x32 — v3.2.8
 
 Create GIFs optimized for 128×32 DMD displays (arcade cabinet, pinball,
-[RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) from **images**, a **video**
-or **animated text**, with automatic analysis, advanced manual editing and batch
+[RecalBox DMD](https://github.com/shan-aya/RecalBoxDMD)) from **images**, a **video**, an
+**existing GIF** or **animated text**, with automatic analysis, advanced manual editing and batch
 processing of whole folders.
 
 (Formerly "DMD GIF Converter".)
@@ -15,7 +15,7 @@ processing of whole folders.
 
 ## Download
 
-**Windows**: download `dmd_gif_creator_v327.exe` from the
+**Windows**: download `dmd_gif_creator_v328.exe` from the
 [latest Release](https://github.com/shan-aya/DMD_GIF_creator/releases/latest) and run
 it — nothing to install.
 
@@ -27,7 +27,7 @@ processing (anti-ransomware protection), it is a false positive: see "Antivirus"
 **From the sources** ([`dmd_gif_creator/`](./dmd_gif_creator) folder):
 
     pip install pillow numpy tkinterdnd2 markdown opencv-contrib-python
-    python dmd_gif_creator/dmd_gif_creator_v327.py
+    python dmd_gif_creator/dmd_gif_creator_v328.py
 
 `opencv-contrib-python` (not `opencv-python`) is required for the automatic tracking of
 the VIDEO tab; the two packages must not be installed at the same time.
@@ -79,6 +79,12 @@ automatic subject tracking, auto framing with zoom, or manual points (area and z
 that change over time). Automatic quality adjusts contrast, saturation and brightness
 from the video, and the GIF size is estimated live.
 
+### GIF — convert an existing GIF
+
+![GIF tab](./screenshots/gif_en.png)
+
+Open (or drop) an animated GIF, even a large one or in the wrong format: the tab converts it into a 128×32 DMD GIF keeping its durations, with a before/after LED preview. In **automatic mode** the application chooses by itself between the whole image with black bars and a **full-screen scroll**, by quality score. With **Fill**: **smart scroll** (axis, direction and speed adapted to the content, pauses at both ends, back and forth, speed slider) or a **manual 128×32 frame** (start and end set with the mouse). The same engine serves the Discord server bot (`/gif`).
+
 ### TEXTSCROLL — animated text
 
 ![TEXTSCROLL tab](./screenshots/textscroll_en.png)
@@ -94,6 +100,14 @@ fitted automatically to the text length.
 - **HELP**: the full guide inside the application.
 
 ## What's new
+
+**v3.2.8**
+- **New GIF tab**: converts an existing animated GIF into a 128×32 DMD GIF, keeping its durations. **Automatic** mode (chooses by itself between the whole image and a full-screen scroll, by quality score) or manual settings, framing automatic / subject tracking / black bars / fill, before/after LED preview, export of the GIF and of the black-bars variant.
+- **Smart scroll**: axis, direction and speed adapted to the content, pauses at both ends, **back and forth** with no jump at the loop, **speed** slider (×0.5 to ×3).
+- **Manual 128×32 frame**: a **Start** frame (and **End** with the scroll) set with the mouse on the preview, LED preview updated while you drag.
+- **From a link…** and launch with `--open <GIF or address>`: opens the GIF tab with the GIF preloaded.
+- Window header: "DMD GIF Creator" (no longer "DMD Creator").
+- On the Discord server, the **`/gif`** command uses this same engine: send a GIF of any size, the bot converts it, the staff validates it and publishes it.
 
 **v3.2.7**
 - **Invisible "DGC" watermark**: the GIFs created by the application carry an invisible mark (imperceptible, ±1/255 per colour) that tells they come from DMD GIF Creator. A **🔍 Check a GIF…** button (SETTINGS tab) tells whether a GIF or a raw565 file carries one. It is a hint, not a proof.

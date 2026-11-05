@@ -4,7 +4,7 @@
 DMD GIF Creator
 Shan_ayA 2026
 
-Version: 3.2.7
+Version: 3.2.8
 
 Application multilingue complète de conversion d'images en GIF optimisés pour écrans DMD 128x32
 avec moteur comparatif , édition manuelle avancée et génération de texte animé.
@@ -27,7 +27,12 @@ Dépendances:
 # ============================================
 # safe-modify — Historique des modifications
 # ============================================
-# Version actuelle : v123
+# Version actuelle : v124
+#
+# v124 — 2026-11-05 — safe-modify — Version 3.2.8 : APP_VERSION, docstring, lanceur dmd_gif_creator_v328.py, en-tête « DMD GIF Creator »
+#      (app_header des 3 lang_*.json + clé TEXT_MAP de dmd_ui_constants.py), dgc_mark.GIF_APP_VERSION. Onglet GIF : libellés
+#      dynamiques et erreurs du moteur traduits FR/EN/ES (clés gif_layout_*, gif_axis_*, gif_err_*, gif_head…), reconstruction de
+#      l'onglet au changement de langue (GifTab.retranslate, appelée depuis apply_translations), langue du verdict = langue de l'appli.
 #
 # v123 — 2026-11-05 — safe-modify — Nouvel onglet « GIF » (conversion d'un GIF animé existant en GIF DMD 128×32 :
 #      mode automatique + réglages manuels, cadrage auto / suivi du sujet / bandes noires / remplir, aperçu LED
@@ -2892,6 +2897,11 @@ class DMDConverter:
 
         # Mettre à jour tous les widgets
         self._update_widget_texts()
+        if getattr(self, "gif_tab", None) is not None:      # onglet GIF : libellés reconstruits dans la nouvelle langue
+            try:
+                self.gif_tab.retranslate()
+            except Exception as e:  # noqa: BLE001 -- ne jamais bloquer le changement de langue
+                logger.warning(f"onglet GIF : traduction non appliquée ({e})")
 
         # Recharger le contenu de l'onglet AIDE dans la nouvelle langue (le
         # widget peut ne pas encore exister lors du tout premier appel, fait
@@ -3003,7 +3013,7 @@ class DMDConverter:
     # ========================================================================
     # VERSION DU LOGICIEL
     # ========================================================================
-    APP_VERSION = "3.2.7"
+    APP_VERSION = "3.2.8"
 
     # ========================================================================
 
@@ -4345,7 +4355,7 @@ class DMDConverter:
 
     def open_gif_in_tab(self, target):
         """Sélectionne l'onglet GIF et y précharge un GIF (chemin local ou adresse http/https) -- lancement par
-        `dmd_gif_creator_v327.py --open <GIF|URL>` (lien proposé par le bot Discord)."""
+        `dmd_gif_creator_v328.py --open <GIF|URL>` (lien proposé par le bot Discord)."""
         self.notebook.select(self.gif_frame)
         if str(target).lower().startswith(("http://", "https://")):
             self.gif_tab.load_url(str(target))
@@ -4354,7 +4364,7 @@ class DMDConverter:
 
     def setup_gif_tab(self):
         """v123 -- onglet GIF : conversion d'un GIF animé existant (voir dmd_gif_tab.GifTab)."""
-        self.gif_tab = GifTab(self, self.gif_frame, tr)
+        self.gif_tab = GifTab(self, self.gif_frame, tr, lambda: lang_manager.current_lang)
 
     def setup_video_tab(self):
         """Configuration onglet VIDEO : import vidéo, trim, zone d'intérêt

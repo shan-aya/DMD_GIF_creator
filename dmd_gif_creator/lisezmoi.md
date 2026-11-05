@@ -17,13 +17,14 @@ usage concret.
 2. [Onglet AUTO — analyse et propositions IA](#onglet-auto--analyse-et-propositions-ia)
 3. [Onglet MANUEL — édition avancée](#onglet-manuel--édition-avancée)
 4. [Onglet VIDEO — GIF à partir d'une vidéo](#onglet-video--gif-à-partir-dune-vidéo)
-5. [Onglet TEXTSCROLL — texte animé](#onglet-textscroll--texte-animé)
-6. [Onglet PARAMÈTRES](#onglet-paramètres)
-7. [Onglet DEBUG](#onglet-debug)
-8. [Onglet AIDE](#onglet-aide)
-9. [Notion transversale : Mode DMD / Forcer pixel-perfect](#notion-transversale--mode-dmd--forcer-pixel-perfect)
-10. [Notion transversale : Score qualité et fenêtre Revoir](#notion-transversale--score-qualité-et-fenêtre-revoir)
-11. [Bonnes pratiques et limites connues](#bonnes-pratiques-et-limites-connues)
+5. [Onglet GIF — convertir un GIF existant](#onglet-gif--convertir-un-gif-existant)
+6. [Onglet TEXTSCROLL — texte animé](#onglet-textscroll--texte-animé)
+7. [Onglet PARAMÈTRES](#onglet-paramètres)
+8. [Onglet DEBUG](#onglet-debug)
+9. [Onglet AIDE](#onglet-aide)
+10. [Notion transversale : Mode DMD / Forcer pixel-perfect](#notion-transversale--mode-dmd--forcer-pixel-perfect)
+11. [Notion transversale : Score qualité et fenêtre Revoir](#notion-transversale--score-qualité-et-fenêtre-revoir)
+12. [Bonnes pratiques et limites connues](#bonnes-pratiques-et-limites-connues)
 
 ---
 
@@ -31,7 +32,7 @@ usage concret.
 
 Au lancement, l'application affiche une colonne d'onglets sur la gauche :
 
-**AUTO** · **MANUEL** · **VIDEO** · **TEXTSCROLL** · **PARAMÈTRES** · **DEBUG** · **AIDE**
+**AUTO** · **MANUEL** · **VIDEO** · **GIF** · **TEXTSCROLL** · **PARAMÈTRES** · **DEBUG** · **AIDE**
 
 Chaque onglet correspond à une méthode différente pour produire une animation GIF
 128×32 :
@@ -41,6 +42,7 @@ Chaque onglet correspond à une méthode différente pour produire une animation
 | AUTO | Vous chargez une ou plusieurs images (logos, artworks...), l'IA analyse chacune et propose 6 rendus prêts à l'emploi. Le plus rapide pour traiter un lot d'images. |
 | MANUEL | Vous chargez une image et réglez vous-même chaque paramètre (effets, animation, dessin) — contrôle total, sans automatisme. |
 | VIDEO | Vous chargez une vidéo, choisissez le passage et le cadrage (suivi automatique ou à la main), et obtenez un GIF 128×32. |
+| GIF | Vous chargez un GIF animé existant, quelle que soit sa taille : il est converti en 128×32 (automatique ou réglé à la main, scroll intelligent, cadre manuel). |
 | TEXTSCROLL | Vous tapez du texte et choisissez une police/un effet/une animation — pas besoin d'image source. |
 | PARAMÈTRES | Langue, thème, réglages d'export et de performance de l'application. |
 | DEBUG | Journal d'activité de l'application (logs), utile pour diagnostiquer un problème. |
@@ -408,6 +410,50 @@ En mode **✋ Manuel** :
   dans **Aperçu Animation (Vidéo)** — avec, en Mode DMD, la loupe 🔍 et le curseur
   💡 Luminosité LED comme dans les autres onglets.
 - **💾 Exporter GIF** : enregistre le GIF.
+
+---
+
+## Onglet GIF — convertir un GIF existant
+
+Convertit un GIF animé **existant** — de n'importe quelle taille ou forme — en GIF DMD 128×32, en gardant ses durées d'origine. C'est le même moteur que celui du bot du serveur Discord (commande `/gif`).
+
+![Onglet GIF](images/onglet_gif.png)
+
+### 1. Ouvrir un GIF
+
+- **Ouvrir un GIF…** ou **glisser-déposer** un `.gif` sur la fenêtre pendant que l'onglet GIF est affiché.
+- **Depuis un lien…** : télécharge un GIF à partir d'une adresse `http`/`https` (25 Mo maximum), par exemple le lien d'un fichier envoyé sur Discord.
+- Lancement avec un GIF préchargé : `dmd_gif_creator_v328.py --open <fichier ou adresse>` ouvre directement l'onglet GIF.
+- Sous les aperçus, une ligne d'information donne la taille, le nombre d'images, le poids et le verdict : **à convertir** (avec les raisons : dimensions, fond non noir, trop de couleurs, trop lourd…) ou **déjà au bon format**.
+
+### 2. Aperçus
+
+- **Avant** : le GIF d'origine. **Après (aperçu LED)** : le résultat tel que le DMD l'affichera, en taille exacte (4 × la dalle), animé aux durées d'origine.
+- Sous les aperçus : le cadrage retenu, la **note qualité /100** et le poids du GIF.
+
+### 3. Mode automatique ou manuel
+
+- **Mode automatique** (coché par défaut) : l'application choisit les réglages (contraste, saturation, nettoyage, couleurs) et le cadrage. Elle compare, au score de qualité, l'image entière avec bandes noires et un **scroll plein écran**, et garde le scroll s'il gagne d'au moins 5 points.
+- Décoché, les réglages deviennent manuels : **Contraste**, **Saturation**, **Luminosité**, **Seuil de noir**, **Nettoyage**, **Couleurs**, **Pixel perfect**.
+
+### 4. Cadrage
+
+- **Automatique** · **Suivre le sujet** (fenêtre 4:1 qui suit le sujet sans à-coups) · **Bandes noires** (image entière) · **Remplir (recadrer)**.
+- Avec **Remplir** :
+  - **Scroll intelligent** : l'image remplit l'écran sur un axe et la fenêtre 128×32 parcourt l'autre. L'axe, le sens (on part de l'extrémité la plus chargée) et la vitesse (plus lent sur les zones denses) sont choisis d'après le contenu, avec une pause aux deux extrémités et des pas de pixels entiers. L'animation d'origine continue de tourner pendant le défilement.
+  - **Aller-retour** : le défilement revient à son point de départ (aucun saut quand le GIF reboucle). Disponible aussi en cadrage Automatique.
+  - **Vitesse du scroll** : curseur de ×0,5 à ×3.
+  - **Cadre 128×32 manuel** (mode automatique décoché) : un cadre vert **Départ** apparaît sur l'aperçu *Avant* ; déplacez-le à la souris, changez sa taille à la molette ou avec le curseur **Taille**. Avec le scroll, un cadre orange **Arrivée** apparaît : le défilement va de l'un à l'autre. L'aperçu *Après* se met à jour pendant le déplacement.
+- **Appliquer** relance la conversion ; elle se relance aussi toute seule quand un réglage change.
+
+### 5. Exporter
+
+- **Exporter le GIF DMD…** : enregistre le résultat (`<nom>_dmd.gif`), avec le filigrane invisible « DGC ».
+- **Exporter la variante bandes noires…** : enregistre la version « image entière avec bandes noires » (`<nom>_dmd_bandes.gif`) ; disponible quand le cadrage a recadré l'image.
+
+### Limites
+
+GIF de 25 Mo, 600 images et 4096×4096 pixels au plus ; une source très grande est réduite avant le traitement. Un contenu sombre sur fond clair est inversé automatiquement quand c'est possible (un message l'indique).
 
 ---
 

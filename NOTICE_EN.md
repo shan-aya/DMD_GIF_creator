@@ -22,13 +22,14 @@ describes, tab by tab, every function of the interface and how to use it.
 2. [AUTO tab — AI analysis and proposals](#auto-tab--ai-analysis-and-proposals)
 3. [MANUAL tab — advanced editing](#manual-tab--advanced-editing)
 4. [VIDEO tab — GIF from a video](#video-tab--gif-from-a-video)
-5. [TEXTSCROLL tab — animated text](#textscroll-tab--animated-text)
-6. [SETTINGS tab](#settings-tab)
-7. [DEBUG tab](#debug-tab)
-8. [HELP tab](#help-tab)
-9. [Cross-cutting feature: DMD mode / Force pixel-perfect](#cross-cutting-feature-dmd-mode--force-pixel-perfect)
-10. [Cross-cutting feature: Quality score and Review window](#cross-cutting-feature-quality-score-and-review-window)
-11. [Best practices and known limitations](#best-practices-and-known-limitations)
+5. [GIF tab — convert an existing GIF](#gif-tab--convert-an-existing-gif)
+6. [TEXTSCROLL tab — animated text](#textscroll-tab--animated-text)
+7. [SETTINGS tab](#settings-tab)
+8. [DEBUG tab](#debug-tab)
+9. [HELP tab](#help-tab)
+10. [Cross-cutting feature: DMD mode / Force pixel-perfect](#cross-cutting-feature-dmd-mode--force-pixel-perfect)
+11. [Cross-cutting feature: Quality score and Review window](#cross-cutting-feature-quality-score-and-review-window)
+12. [Best practices and known limitations](#best-practices-and-known-limitations)
 
 ---
 
@@ -36,7 +37,7 @@ describes, tab by tab, every function of the interface and how to use it.
 
 On launch, the application shows a column of tabs on the left:
 
-**AUTO** · **MANUAL** · **VIDEO** · **TEXTSCROLL** · **SETTINGS** · **DEBUG** · **HELP**
+**AUTO** · **MANUAL** · **VIDEO** · **GIF** · **TEXTSCROLL** · **SETTINGS** · **DEBUG** · **HELP**
 
 Each tab corresponds to a different way of producing a 128×32 GIF animation:
 
@@ -45,6 +46,7 @@ Each tab corresponds to a different way of producing a 128×32 GIF animation:
 | AUTO | Load one or several images (logos, artwork...), the AI analyzes each one and proposes 6 ready-to-use renders. The fastest way to process a batch of images. |
 | MANUAL | Load an image and adjust every parameter yourself (effects, animation, drawing) — full control, no automation. |
 | VIDEO | Load a video, choose the section and the framing (automatic tracking or by hand), and get a 128×32 GIF. |
+| GIF | You load an existing animated GIF, whatever its size: it is converted to 128×32 (automatic or hand-tuned, smart scroll, manual frame). |
 | TEXTSCROLL | Type text and pick a font/effect/animation — no source image needed. |
 | SETTINGS | Language, theme, export and performance settings for the application. |
 | DEBUG | Application activity log, useful for diagnosing an issue. |
@@ -400,6 +402,50 @@ In **✋ Manual** mode:
   it in **Animation Preview (Video)** — in DMD mode, with the 🔍 magnifier and the
   💡 LED brightness slider, as in the other tabs.
 - **💾 Export GIF**: saves the GIF.
+
+---
+
+## GIF tab — convert an existing GIF
+
+Converts an **existing** animated GIF — of any size or shape — into a 128×32 DMD GIF, keeping its original frame durations. It is the same engine as the Discord server bot (the `/gif` command).
+
+![GIF tab](dmd_gif_creator/images/onglet_gif.png)
+
+### 1. Open a GIF
+
+- **Open a GIF…** or **drag and drop** a `.gif` onto the window while the GIF tab is shown.
+- **From a link…**: downloads a GIF from an `http`/`https` address (25 MB max), for example the link of a file sent on Discord.
+- Launch with a preloaded GIF: `dmd_gif_creator_v328.py --open <file or address>` opens the GIF tab directly.
+- Under the previews, an information line gives the size, number of frames, weight and the verdict: **needs conversion** (with the reasons: size, background not black, too many colors, too heavy…) or **already in the right format**.
+
+### 2. Previews
+
+- **Before**: the original GIF. **After (LED preview)**: the result as the DMD will show it, at exact size (4 × the panel), animated with the original durations.
+- Below the previews: the framing used, the **quality score /100** and the GIF weight.
+
+### 3. Automatic or manual mode
+
+- **Automatic mode** (ticked by default): the application chooses the settings (contrast, saturation, cleanup, colors) and the framing. It compares, by quality score, the whole image with black bars against a **full-screen scroll**, and keeps the scroll if it wins by at least 5 points.
+- Unticked, the settings become manual: **Contrast**, **Saturation**, **Brightness**, **Black threshold**, **Cleanup**, **Colors**, **Pixel perfect**.
+
+### 4. Framing
+
+- **Automatic** · **Follow the subject** (a 4:1 window that follows the subject smoothly) · **Black bars** (whole image) · **Fill (crop)**.
+- With **Fill**:
+  - **Smart scroll**: the image fills the screen on one axis and the 128×32 window travels along the other. The axis, the direction (it starts from the busiest end) and the speed (slower on dense areas) are chosen from the content, with a pause at both ends and whole-pixel steps. The original animation keeps playing during the scroll.
+  - **Back and forth**: the scroll returns to its starting point (no jump when the GIF loops). Also available with Automatic framing.
+  - **Scroll speed**: slider from ×0.5 to ×3.
+  - **Manual 128×32 frame** (automatic mode unticked): a green **Start** frame appears on the *Before* preview; drag it with the mouse, resize it with the wheel or the **Size** slider. With the scroll, an orange **End** frame appears: the scroll goes from one to the other. The *After* preview updates while you drag.
+- **Apply** restarts the conversion; it also restarts by itself when a setting changes.
+
+### 5. Export
+
+- **Export DMD GIF…**: saves the result (`<name>_dmd.gif`), with the invisible "DGC" watermark.
+- **Export black-bars variant…**: saves the "whole image with black bars" version (`<name>_dmd_bandes.gif`); available when the framing cropped the image.
+
+### Limits
+
+Up to 25 MB, 600 frames and 4096×4096 pixels; a very large source is reduced before processing. Dark content on a light background is inverted automatically when possible (a message says so).
 
 ---
 
