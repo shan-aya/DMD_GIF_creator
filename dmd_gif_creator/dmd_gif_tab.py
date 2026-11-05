@@ -370,7 +370,8 @@ class GifTab:
         if plan.scroll:
             sc = plan.scroll
             axis_txt = {"y": "vertical", "x": "horizontal"}.get(sc["axis"], "départ → arrivée")
-            extra = (f" ({axis_txt}, {sc['travel_px']} px"
+            auto_txt = f"choisi par l'auto : note {sc['score_fit']} → {sc['score_scroll']}, " if sc.get("auto") else ""
+            extra = (f" ({auto_txt}{axis_txt}, {sc['travel_px']} px"
                      f"{', départ inversé' if sc['reversed'] else ''}{', aller-retour' if sc['back'] else ''}, "
                      f"{sc['duration_ms'] / 1000:.1f} s)")
         if plan.follow:

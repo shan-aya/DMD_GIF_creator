@@ -90,6 +90,7 @@ SCROLL_STEP_MIN, SCROLL_STEP_MAX = 40, 90
 SCROLL_BACK_FACTOR = 0.75   # le retour (aller-retour) est un peu plus vif
 SCROLL_REVERSE_GAIN = 1.15  # on démarre par l'extrémité la plus chargée si elle l'est 15 % de plus que l'autre
 SCROLL_MAX_FRAMES = 300
+AUTO_SCROLL_MARGIN = 8      # auto : le scroll plein écran doit battre l'image entière d'au moins 8 points de note
 FOLLOW_MIN_FRAMES = 4       # moins d'images : pas de suivi
 FOLLOW_MARGIN = 1.10        # marge autour de l'étendue du sujet
 FOLLOW_MAX_AREA = 0.65      # suivi seulement si la fenêtre fait <= 65 % de la zone de contenu (sinon : gain nul)
@@ -804,6 +805,7 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
     follow_windows = None
     follow_info = None
     scroll_windows = scroll_timeline = scroll_info = None
+    auto_scroll = None
     layout = "native" if native and letterbox is None and opts.get("crop_mode") in (None, "auto", "native") else "fit"
     lost_pct = 0.0
     if native and layout == "native":
@@ -888,6 +890,11 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
                     layout = "follow"
                     crop = None
                     lost_pct = 100.0 * (1.0 - follow_info["coverage"])
+            # Auto : si l'image « entière » laisse des bandes noires (layout encore "fit"), un scroll plein écran est
+            # candidat ; la décision se prend plus bas, au SCORE de rendu (comme l'onglet AUTO : resize vs fill).
+            if (layout == "fit" and not manual_placed and letterbox is None and crop_mode in (None, "auto")
+                    and opts.get("scroll") is not False and follow_windows is None):
+                auto_scroll = _plan_scroll(src.durations, energy, f, (x0, y0, cw, ch), bool(opts.get("scroll_back")))
             # Pas de « calage » de la fenêtre (pp_snap_crop peut ROGNER du contenu en mode bandes noires) : le
             # pixel-perfect est assuré par adaptive_resize (diviseur entier, ou échelle exacte si > 3 % de perte).
             if crop is not None and tuple(crop) == (0, 0, w, h):
@@ -912,9 +919,49 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
     settings = _settings_for(mode, opts, samples)
     settings["pixel_perfect"] = pixel_perfect
     settings["invert"] = bool(invert)
-    return Plan(layout, tuple(int(v) for v in crop) if crop else None, bg_kind, bg_color, bool(key), settings,
+    plan = Plan(layout, tuple(int(v) for v in crop) if crop else None, bg_kind, bg_color, bool(key), settings,
                 lost_pct, mode, warnings, scroll_windows if scroll_windows is not None else follow_windows, follow_info,
                 scroll_timeline, scroll_info)
+    if auto_scroll is not None:
+        try:
+            alt = _auto_scroll_plan(src, plan, auto_scroll, mode, opts, key_color)
+        except Exception:  # noqa: BLE001 -- décision d'aide : en cas de souci on garde les bandes noires
+            alt = None
+        if alt is not None:
+            return alt
+    return plan
+
+
+def _sample_positions(n: int, k: int = 8) -> list:
+    return sorted({int(round(i * (n - 1) / max(1, k - 1))) for i in range(min(n, k))}) if n > 1 else [0]
+
+
+def _auto_scroll_plan(src: GifData, fit_plan: Plan, cand: tuple, mode: str, opts: dict, key_color):
+    """Compare (note de rendu dmd_quality, sur échantillon) « image entière + bandes noires » et « plein écran avec
+    scroll » ; renvoie le plan scroll s'il gagne d'au moins AUTO_SCROLL_MARGIN points, sinon None."""
+    windows, timeline, info = cand
+    s_samples = []
+    for k in _sample_positions(len(timeline), 5):
+        fr = src.frames[timeline[k][0]]
+        if key_color is not None:
+            fr = _key_background(fr, key_color)
+        x, y, cw_, ch_ = windows[k]
+        s_samples.append(fr.crop((x, y, x + cw_, y + ch_)))
+    settings = _settings_for(mode, opts, s_samples)
+    settings["pixel_perfect"] = fit_plan.settings.get("pixel_perfect", True)
+    settings["invert"] = fit_plan.settings.get("invert", False)
+    scroll_plan = dataclasses.replace(fit_plan, layout="scroll", crop=None, settings=settings, lost_pct=0.0,
+                                      windows=windows, timeline=timeline, scroll=info)
+    fit_idx = _sample_positions(len(src.frames), 8)
+    fit_frames = [render_frame(src.frames[i], fit_plan, i) for i in fit_idx]
+    sc_idx = _sample_positions(len(timeline), 8)
+    sc_frames = [render_frame(src.frames[timeline[k][0]], scroll_plan, k) for k in sc_idx]
+    s_fit = dq.evaluate_frames(fit_frames, [max(1, src.total_ms // len(fit_frames))] * len(fit_frames)).score
+    s_sc = dq.evaluate_frames(sc_frames, [max(1, info["duration_ms"] // len(sc_frames))] * len(sc_frames)).score
+    if s_sc < s_fit + AUTO_SCROLL_MARGIN:
+        return None
+    scroll_plan.scroll = dict(info, auto=True, score_fit=int(s_fit), score_scroll=int(s_sc))
+    return scroll_plan
 
 
 def _optimize_light(img: Image.Image, s: dict) -> Image.Image:
@@ -1066,6 +1113,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--scroll", action="store_true",
                     help="« remplir » avec scroll intelligent (la fenêtre 128×32 parcourt le contenu)")
     ap.add_argument("--scroll-back", action="store_true", help="avec --scroll : aller-retour (sans saut à la boucle)")
+    ap.add_argument("--no-scroll", action="store_true",
+                    help="auto : interdit le scroll plein écran (garde l'image entière + bandes noires)")
     ap.add_argument("--also-letterbox", metavar="PATH",
                     help="si le cadrage auto recadre (remplir / suivi), écrit aussi la variante bandes noires ici")
     ap.add_argument("--json", action="store_true", help="rapport JSON sur la sortie standard")
@@ -1092,7 +1141,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                  "À convertir : %s (%s)" % ("oui" if v.needs_conversion else "non", ", ".join(v.reasons) or "OK"))
             return 0
         opts = {"follow": True} if a.follow else ({"follow": False} if a.no_follow else None)
-        if a.scroll and not a.letterbox:
+        if a.no_scroll:
+            opts = dict(opts or {}, scroll=False)
+        elif a.scroll and not a.letterbox:
             opts = dict(opts or {}, crop_mode="fill", scroll=True, scroll_back=bool(a.scroll_back))
         res = convert_gif_to_dmd(data, "auto", opts, True if a.letterbox else None, a.force, limits)
         rep = res.report
