@@ -85,18 +85,19 @@ class GifTab:
         m = ttk.Frame(self.parent, padding=10)
         m.pack(fill=tk.BOTH, expand=True)
 
+        # deux rangées : ouverture (en haut), export (en dessous) -- libellés complets, rien n'est tronqué
         top = ttk.Frame(m)
         top.pack(fill=tk.X)
         ttk.Button(top, text=tr("gif_open", "Ouvrir un GIF…"), command=self.open_dialog).pack(side=tk.LEFT)
         ttk.Button(top, text=tr("gif_open_link", "Depuis un lien…"), command=self.open_link_dialog).pack(side=tk.LEFT, padx=(6, 0))
-        self.btn_export = ttk.Button(top, text=tr("gif_export", "Exporter le GIF DMD…"), command=self.export,
+        top2 = ttk.Frame(m)
+        top2.pack(fill=tk.X, pady=(6, 0))
+        self.btn_export = ttk.Button(top2, text=tr("gif_export", "Exporter le GIF DMD…"), command=self.export,
                                      state=tk.DISABLED)
-        self.btn_export.pack(side=tk.LEFT, padx=6)
-        self.btn_lb = ttk.Button(top, text=tr("gif_export_lb", "Exporter la variante bandes noires…"),
+        self.btn_export.pack(side=tk.LEFT)
+        self.btn_lb = ttk.Button(top2, text=tr("gif_export_lb", "Exporter la variante bandes noires…"),
                                  command=self.export_letterbox, state=tk.DISABLED)
-        self.btn_lb.pack(side=tk.LEFT)
-        ttk.Button(top, text=tr("gif_open_app", "Retouche manuelle (site de l'appli)"),
-                   command=lambda: webbrowser.open(gc.APP_PAGE)).pack(side=tk.RIGHT)
+        self.btn_lb.pack(side=tk.LEFT, padx=(6, 0))
 
         prev = ttk.Frame(m)
         prev.pack(fill=tk.X, pady=8)
