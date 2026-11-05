@@ -90,7 +90,7 @@ SCROLL_STEP_MIN, SCROLL_STEP_MAX = 40, 90
 SCROLL_BACK_FACTOR = 0.75   # le retour (aller-retour) est un peu plus vif
 SCROLL_REVERSE_GAIN = 1.15  # on démarre par l'extrémité la plus chargée si elle l'est 15 % de plus que l'autre
 SCROLL_MAX_FRAMES = 300
-AUTO_SCROLL_MARGIN = 8      # auto : le scroll plein écran doit battre l'image entière d'au moins 8 points de note
+AUTO_SCROLL_MARGIN = 5      # auto : le scroll plein écran doit battre l'image entière d'au moins 5 points de note
 FOLLOW_MIN_FRAMES = 4       # moins d'images : pas de suivi
 FOLLOW_MARGIN = 1.10        # marge autour de l'étendue du sujet
 FOLLOW_MAX_AREA = 0.65      # suivi seulement si la fenêtre fait <= 65 % de la zone de contenu (sinon : gain nul)
@@ -996,6 +996,11 @@ def render_frame(frame: Image.Image, plan: Plan, index: int = 0) -> Image.Image:
     img = _optimize_light(img, s) if small else DMDEngine.optimize_for_dmd(img, s)
     if plan.layout == "native":
         canvas = img if img.size == (TARGET_W, TARGET_H) else img.resize((TARGET_W, TARGET_H), Image.Resampling.NEAREST)
+    elif (plan.layout in ("scroll", "follow", "fill") and img.width > TARGET_W
+          and abs(img.width / img.height - TARGET_W / TARGET_H) < 0.1):
+        # Fenêtre déjà au ratio 4:1 (plein écran voulu) : échelle EXACTE vers 128×32. adaptive_resize en pixel-perfect
+        # prendrait un diviseur entier (ex. 498/4 = 124 px) et laisserait 2 colonnes noires de chaque côté.
+        canvas = img.resize((TARGET_W, TARGET_H), Image.Resampling.BOX)
     else:
         resized, rw, rh = DMDEngine.adaptive_resize(img, TARGET_W, TARGET_H, mode="fit",
                                                     pixel_perfect=bool(s.get("pixel_perfect", True)))
