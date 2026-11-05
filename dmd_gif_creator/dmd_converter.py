@@ -3036,7 +3036,7 @@ class DMDConverter:
             text=re.sub(
                 r"v\d+\.\d+(?:\.\d+)?",
                 f"v{self.APP_VERSION}",
-                f"DMD Creator v{self.APP_VERSION}",
+                f"DMD GIF Creator v{self.APP_VERSION}",
             ),
             font=("Arial", 12, "bold"),
         ).pack(side=tk.LEFT)
