@@ -627,6 +627,25 @@ def _auto_settings(samples: Sequence[Image.Image]) -> dict:
     return base
 
 
+def _exact_bbox(src: "GifData", key_color, k: int = 12):
+    """Boîte EXACTE (pleine résolution, sans marge) du contenu, sur k images réparties. Sert au scroll : la fenêtre
+    ne doit jamais déborder sur le noir autour du contenu (la boîte des vignettes + marge laisserait des bandes)."""
+    w, h = src.frames[0].size
+    m = np.zeros((h, w), dtype=bool)
+    for i in _sample_positions(len(src.frames), k):
+        fr = src.frames[i]
+        if key_color is not None:
+            fr = _key_background(fr, key_color)
+        m |= np.asarray(fr).max(axis=2) > CONTENT_LEVEL
+        if src.alphas is not None:
+            m |= np.asarray(src.alphas[i]) > 0
+    m = _drop_isolated(m)
+    rows, cols = np.flatnonzero(m.any(axis=1)), np.flatnonzero(m.any(axis=0))
+    if rows.size == 0 or cols.size == 0:
+        return None
+    return int(cols[0]), int(rows[0]), int(cols[-1]) - int(cols[0]) + 1, int(rows[-1]) - int(rows[0]) + 1
+
+
 def _manual_box(win: Sequence[float], w: int, h: int, size_from: tuple | None = None) -> tuple:
     """Fenêtre 4:1 posée à la main -> (x, y, largeur, hauteur) en pixels, ramenée DANS l'image.
     win = (x, y, largeur) normalisés par la largeur/hauteur de l'image ; size_from = reprend la taille d'une autre fenêtre."""
@@ -849,7 +868,8 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
                     layout, crop, lost_pct, manual_placed = "fill", b0, 0.0, True
             # Scroll intelligent : seulement avec « remplir » (forcé) et si l'option est demandée
             if not manual_placed and opts.get("scroll") and want_fill is True:
-                res_sc = _plan_scroll(src.durations, energy, f, (x0, y0, cw, ch), bool(opts.get("scroll_back")))
+                res_sc = _plan_scroll(src.durations, energy, f, _exact_bbox(src, key_color) or (x0, y0, cw, ch),
+                                      bool(opts.get("scroll_back")))
                 if res_sc is not None:
                     scroll_windows, scroll_timeline, scroll_info = res_sc
                     layout, crop, lost_pct = "scroll", None, 0.0
@@ -894,7 +914,8 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
             # candidat ; la décision se prend plus bas, au SCORE de rendu (comme l'onglet AUTO : resize vs fill).
             if (layout == "fit" and not manual_placed and letterbox is None and crop_mode in (None, "auto")
                     and opts.get("scroll") is not False and follow_windows is None):
-                auto_scroll = _plan_scroll(src.durations, energy, f, (x0, y0, cw, ch), bool(opts.get("scroll_back")))
+                auto_scroll = _plan_scroll(src.durations, energy, f, _exact_bbox(src, key_color) or (x0, y0, cw, ch),
+                                           bool(opts.get("scroll_back")))
             # Pas de « calage » de la fenêtre (pp_snap_crop peut ROGNER du contenu en mode bandes noires) : le
             # pixel-perfect est assuré par adaptive_resize (diviseur entier, ou échelle exacte si > 3 % de perte).
             if crop is not None and tuple(crop) == (0, 0, w, h):
