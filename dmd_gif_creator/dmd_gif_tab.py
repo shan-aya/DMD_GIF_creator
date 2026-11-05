@@ -88,6 +88,7 @@ class GifTab:
         top = ttk.Frame(m)
         top.pack(fill=tk.X)
         ttk.Button(top, text=tr("gif_open", "Ouvrir un GIF…"), command=self.open_dialog).pack(side=tk.LEFT)
+        ttk.Button(top, text=tr("gif_open_link", "Depuis un lien…"), command=self.open_link_dialog).pack(side=tk.LEFT, padx=(6, 0))
         self.btn_export = ttk.Button(top, text=tr("gif_export", "Exporter le GIF DMD…"), command=self.export,
                                      state=tk.DISABLED)
         self.btn_export.pack(side=tk.LEFT, padx=6)
@@ -333,6 +334,54 @@ class GifTab:
                                        filetypes=[("GIF", "*.gif"), ("*", "*.*")])
         if p:
             self.load_path(p)
+
+    def open_link_dialog(self):
+        from tkinter import simpledialog
+        url = simpledialog.askstring("GIF", self.tr("gif_link_prompt", "Adresse (https) du GIF, par exemple le lien "
+                                                    "du fichier envoyé sur Discord :"), parent=self.root)
+        if url and url.strip():
+            self.load_url(url.strip())
+
+    def load_url(self, url):
+        """Télécharge un GIF (http/https, 25 Mo maxi) dans un fichier temporaire puis le charge dans l'onglet."""
+        import tempfile
+        import urllib.parse
+        import urllib.request
+        if urllib.parse.urlparse(url).scheme not in ("http", "https"):
+            messagebox.showerror("GIF", self.tr("gif_link_bad", "Adresse non valide (http ou https attendu)."))
+            return
+        self.status.set(self.tr("gif_downloading", "Téléchargement du GIF…"))
+        box: dict = {}
+
+        def work():
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "DMD-GIF-Creator"})
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    data = r.read(25 * 1024 * 1024 + 1)
+                if len(data) > 25 * 1024 * 1024:
+                    raise OSError("GIF > 25 Mo")
+                if not data.startswith((b"GIF87a", b"GIF89a")):
+                    raise OSError("not a GIF")
+                name = Path(urllib.parse.urlparse(url).path).name or "gif"
+                if not name.lower().endswith(".gif"):
+                    name += ".gif"
+                p = Path(tempfile.mkdtemp(prefix="dmdgif_")) / name
+                p.write_bytes(data)
+                box["p"] = p
+            except Exception as e:  # noqa: BLE001
+                box["e"] = e
+
+        def poll():
+            if "p" in box:
+                self.load_path(box["p"])
+            elif "e" in box:
+                self.status.set("")
+                messagebox.showerror("GIF", str(box["e"]))
+            else:
+                self.root.after(100, poll)
+
+        threading.Thread(target=work, daemon=True).start()
+        self.root.after(100, poll)
 
     def load_path(self, path):
         if self.busy:

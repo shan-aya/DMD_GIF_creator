@@ -4343,6 +4343,15 @@ class DMDConverter:
     # ONGLET VIDEO
     # ========================================================================
 
+    def open_gif_in_tab(self, target):
+        """Sélectionne l'onglet GIF et y précharge un GIF (chemin local ou adresse http/https) -- lancement par
+        `dmd_gif_creator_v327.py --open <GIF|URL>` (lien proposé par le bot Discord)."""
+        self.notebook.select(self.gif_frame)
+        if str(target).lower().startswith(("http://", "https://")):
+            self.gif_tab.load_url(str(target))
+        else:
+            self.gif_tab.load_path(target)
+
     def setup_gif_tab(self):
         """v123 -- onglet GIF : conversion d'un GIF animé existant (voir dmd_gif_tab.GifTab)."""
         self.gif_tab = GifTab(self, self.gif_frame, tr)

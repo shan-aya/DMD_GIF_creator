@@ -492,5 +492,9 @@
   "gif_win_end": "Arrivée",
   "gif_win_size": "Taille :",
   "gif_scroll_speed": "Vitesse du scroll :",
+  "gif_open_link": "Depuis un lien…",
+  "gif_link_prompt": "Adresse (https) du GIF, par exemple le lien du fichier envoyé sur Discord :",
+  "gif_link_bad": "Adresse non valide (http ou https attendu).",
+  "gif_downloading": "Téléchargement du GIF…",
   "gif_scroll_back": "Aller-retour"
 }

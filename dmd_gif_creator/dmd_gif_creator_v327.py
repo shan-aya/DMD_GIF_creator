@@ -33,7 +33,14 @@ from dmd_converter import (
 
 
 def main() -> None:
+    # --open <GIF ou URL> : ouvre l'onglet GIF avec ce GIF préchargé (lien du bot Discord)
+    target = None
+    if "--open" in sys.argv:
+        i = sys.argv.index("--open")
+        target = sys.argv[i + 1] if i + 1 < len(sys.argv) else None
     app = DMDConverter()
+    if target:
+        app.root.after(600, lambda: app.open_gif_in_tab(target))
     app.run()
 
 
