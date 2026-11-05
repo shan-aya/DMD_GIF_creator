@@ -273,6 +273,14 @@ class GifTab:
         self._photos[1] = ImageTk.PhotoImage(pic)
         self.cv[1].delete("all")
         self.cv[1].create_image(260, 75, image=self._photos[1])
+        self._frame_outline(self.cv[1], self._photos[1])
+
+    @staticmethod
+    def _frame_outline(c, photo):
+        """Cadre gris autour de la zone 128×32 : le fond noir de la case (plus haute que l'aperçu) ne doit pas passer
+        pour des bandes noires du rendu."""
+        w, h = photo.width(), photo.height()
+        c.create_rectangle(260 - w // 2 - 1, 75 - h // 2 - 1, 260 + w // 2, 75 + h // 2, outline="#555555")
 
     def _win_press(self, ev):
         self._win_move(ev)
@@ -460,6 +468,8 @@ class GifTab:
             c.create_image(260, 75, image=self._photos[k])
             if k == 0:
                 self._draw_overlay()
+            else:
+                self._frame_outline(c, self._photos[k])
         self._idx = (i + 1) % len(self.result_frames)
         self._job = self.root.after(max(20, int(self.result_durations[i])), self._play)
 
