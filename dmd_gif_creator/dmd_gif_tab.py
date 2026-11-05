@@ -176,12 +176,14 @@ class GifTab:
 
     def _on_crop(self):
         """Les options de scroll n'apparaissent qu'avec « Remplir » ; le cadre manuel, en plus, qu'en mode manuel."""
-        if self._crop_key() == "fill":
+        key = self._crop_key()
+        self.scroll_cb.pack_forget()
+        self.scroll_back_cb.pack_forget()
+        if key == "fill":
             self.scroll_cb.pack(side=tk.LEFT, padx=(12, 0), after=self.crop_cb)
             self.scroll_back_cb.pack(side=tk.LEFT, padx=(6, 0), after=self.scroll_cb)
-        else:
-            self.scroll_cb.pack_forget()
-            self.scroll_back_cb.pack_forget()
+        elif key == "auto":                  # en auto, « Aller-retour » s'applique si l'auto choisit un scroll
+            self.scroll_back_cb.pack(side=tk.LEFT, padx=(12, 0), after=self.crop_cb)
         if hasattr(self, "row2"):
             self._refresh_win_ui()
 
@@ -352,6 +354,8 @@ class GifTab:
         opts = {"crop_mode": crop}
         if crop == "fill" and self.scroll_var.get():
             opts.update(scroll=True, scroll_back=bool(self.scroll_back_var.get()))
+        if crop == "auto" and self.scroll_back_var.get():
+            opts["scroll_back"] = True
         if self._win_active():
             _, _, _, nw, _ = self._win_dims()
             opts["window"] = (self.win_s[0], self.win_s[1], nw)

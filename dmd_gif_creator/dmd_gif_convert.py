@@ -1138,7 +1138,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--no-follow", action="store_true", help="désactive le cadrage intelligent")
     ap.add_argument("--scroll", action="store_true",
                     help="« remplir » avec scroll intelligent (la fenêtre 128×32 parcourt le contenu)")
-    ap.add_argument("--scroll-back", action="store_true", help="avec --scroll : aller-retour (sans saut à la boucle)")
+    ap.add_argument("--scroll-back", action="store_true", help="scroll en aller-retour (sans saut à la boucle), avec --scroll ou si l'auto choisit un scroll")
     ap.add_argument("--no-scroll", action="store_true",
                     help="auto : interdit le scroll plein écran (garde l'image entière + bandes noires)")
     ap.add_argument("--also-letterbox", metavar="PATH",
@@ -1171,6 +1171,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             opts = dict(opts or {}, scroll=False)
         elif a.scroll and not a.letterbox:
             opts = dict(opts or {}, crop_mode="fill", scroll=True, scroll_back=bool(a.scroll_back))
+        elif a.scroll_back and not a.letterbox:      # seul : l'auto choisit, et si c'est un scroll il sera aller-retour
+            opts = dict(opts or {}, scroll_back=True)
         res = convert_gif_to_dmd(data, "auto", opts, True if a.letterbox else None, a.force, limits)
         rep = res.report
         if res.converted:
