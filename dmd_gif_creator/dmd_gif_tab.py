@@ -104,7 +104,7 @@ class GifTab:
             # « Avant » : 520×150 (sources de toute forme) ; « Après » : EXACTEMENT l'aperçu LED (4 × 128 par 4 × 32)
             c = tk.Canvas(f, width=520 if i == 0 else 512, height=150 if i == 0 else 128, bg="#000000",
                           highlightthickness=0)
-            c.pack(padx=4, pady=4)
+            c.pack(padx=4, pady=4, expand=True)        # expand sans fill : la case reste centrée dans son cadre
             self.cv.append(c)
 
         ttk.Label(m, textvariable=self.info, justify=tk.LEFT, wraplength=1000).pack(fill=tk.X)
