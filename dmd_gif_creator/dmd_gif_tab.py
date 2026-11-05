@@ -101,7 +101,9 @@ class GifTab:
         for i, key in enumerate((("gif_before", "Avant"), ("gif_after", "Après (aperçu LED)"))):
             f = ttk.LabelFrame(prev, text=tr(*key))
             f.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=4)
-            c = tk.Canvas(f, width=520, height=150, bg="#000000", highlightthickness=0)
+            # « Avant » : 520×150 (sources de toute forme) ; « Après » : EXACTEMENT l'aperçu LED (4 × 128 par 4 × 32)
+            c = tk.Canvas(f, width=520 if i == 0 else 512, height=150 if i == 0 else 128, bg="#000000",
+                          highlightthickness=0)
             c.pack(padx=4, pady=4)
             self.cv.append(c)
 
@@ -272,15 +274,7 @@ class GifTab:
                                          brightness=self.app.led_brightness_var.get())
         self._photos[1] = ImageTk.PhotoImage(pic)
         self.cv[1].delete("all")
-        self.cv[1].create_image(260, 75, image=self._photos[1])
-        self._frame_outline(self.cv[1], self._photos[1])
-
-    @staticmethod
-    def _frame_outline(c, photo):
-        """Cadre gris autour de la zone 128×32 : le fond noir de la case (plus haute que l'aperçu) ne doit pas passer
-        pour des bandes noires du rendu."""
-        w, h = photo.width(), photo.height()
-        c.create_rectangle(260 - w // 2 - 1, 75 - h // 2 - 1, 260 + w // 2, 75 + h // 2, outline="#555555")
+        self.cv[1].create_image(256, 64, image=self._photos[1])
 
     def _win_press(self, ev):
         self._win_move(ev)
@@ -465,11 +459,9 @@ class GifTab:
                                                  brightness=self.app.led_brightness_var.get())
             self._photos[k] = ImageTk.PhotoImage(pic)
             c.delete("all")
-            c.create_image(260, 75, image=self._photos[k])
+            c.create_image(260 if k == 0 else 256, 75 if k == 0 else 64, image=self._photos[k])
             if k == 0:
                 self._draw_overlay()
-            else:
-                self._frame_outline(c, self._photos[k])
         self._idx = (i + 1) % len(self.result_frames)
         self._job = self.root.after(max(20, int(self.result_durations[i])), self._play)
 
