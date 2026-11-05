@@ -64,6 +64,8 @@ class GifTab:
         self.pp = tk.BooleanVar(value=True)
         self.scroll_var = tk.BooleanVar(value=True)
         self.scroll_back_var = tk.BooleanVar(value=False)
+        self.speed_var = tk.DoubleVar(value=1.0)          # multiplicateur de vitesse du scroll (1 = auto)
+        self.speed_txt = tk.StringVar(value="×1.0")
         # cadre 128×32 posé à la main (mode manuel + « Remplir ») ; positions normalisées (0-1) du coin haut-gauche
         self.win_on = tk.BooleanVar(value=False)
         self.win_target = tk.StringVar(value="start")
@@ -129,6 +131,13 @@ class GifTab:
         self._on_crop()
         self.btn_apply = ttk.Button(row, text=tr("gif_apply", "Appliquer"), command=self.reprocess)
         self.btn_apply.pack(side=tk.LEFT, padx=10)
+        ttk.Label(row, text=tr("gif_scroll_speed", "Vitesse du scroll :")).pack(side=tk.LEFT, padx=(8, 4))
+        sp = ttk.Scale(row, from_=gc.SCROLL_SPEED_MIN, to=gc.SCROLL_SPEED_MAX, variable=self.speed_var, length=130)
+        sp.pack(side=tk.LEFT)
+        sp.bind("<ButtonRelease-1>", lambda e: self.reprocess())
+        ttk.Label(row, textvariable=self.speed_txt, width=5).pack(side=tk.LEFT)
+        self.speed_var.trace_add("write", lambda *a: self.speed_txt.set(f"×{self.speed_var.get():.1f}"))
+        self.speed_txt.set(f"×{self.speed_var.get():.1f}")
 
         self.row2 = ttk.Frame(opt)
         self.win_chk = ttk.Checkbutton(self.row2, text=tr("gif_win_manual", "Cadre 128×32 manuel (glisser sur « Avant »)"),
@@ -354,6 +363,8 @@ class GifTab:
         opts = {"crop_mode": crop}
         if crop == "fill" and self.scroll_var.get():
             opts.update(scroll=True, scroll_back=bool(self.scroll_back_var.get()))
+        if abs(float(self.speed_var.get()) - 1.0) > 0.04:
+            opts["scroll_speed"] = round(float(self.speed_var.get()), 2)
         if crop == "auto" and self.scroll_back_var.get():
             opts["scroll_back"] = True
         if self._win_active():

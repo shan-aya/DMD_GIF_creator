@@ -491,5 +491,6 @@
   "gif_win_start": "Start",
   "gif_win_end": "End",
   "gif_win_size": "Size:",
+  "gif_scroll_speed": "Scroll speed:",
   "gif_scroll_back": "Back and forth"
 }

@@ -90,7 +90,8 @@ SCROLL_STEP_MIN, SCROLL_STEP_MAX = 40, 90
 SCROLL_BACK_FACTOR = 0.75   # le retour (aller-retour) est un peu plus vif
 SCROLL_REVERSE_GAIN = 1.15  # on démarre par l'extrémité la plus chargée si elle l'est 15 % de plus que l'autre
 SCROLL_MAX_FRAMES = 300
-AUTO_SCROLL_MARGIN = 5      # auto : le scroll plein écran doit battre l'image entière d'au moins 5 points de note
+SCROLL_SPEED_MIN, SCROLL_SPEED_MAX = 0.5, 3.0   # multiplicateur de vitesse de défilement (1,0 = vitesse auto)
+AUTO_SCROLL_MARGIN = 5     # auto : le scroll plein écran doit battre l'image entière d'au moins 5 points de note
 FOLLOW_MIN_FRAMES = 4       # moins d'images : pas de suivi
 FOLLOW_MARGIN = 1.10        # marge autour de l'étendue du sujet
 FOLLOW_MAX_AREA = 0.65      # suivi seulement si la fenêtre fait <= 65 % de la zone de contenu (sinon : gain nul)
@@ -665,7 +666,7 @@ def _manual_box(win: Sequence[float], w: int, h: int, size_from: tuple | None = 
 
 
 def _plan_scroll(src_durations: Sequence[int], energy: np.ndarray, f: int, content: tuple, back: bool = False,
-                 path: tuple | None = None):
+                 path: tuple | None = None, speed: float = 1.0):
     """Scroll intelligent : l'image remplit l'afficheur sur un axe (largeur si le contenu est plus haut que 4:1,
     hauteur s'il est plus large) et la fenêtre 128×32 PARCOURT l'autre axe, par pas d'1 px DMD entier.
     Intelligence : axe choisi d'après le ratio ; on démarre par l'extrémité la plus chargée (titre, logo) ; la
@@ -706,11 +707,14 @@ def _plan_scroll(src_durations: Sequence[int], energy: np.ndarray, f: int, conte
         if reverse:
             en = en[::-1]
 
-    sz = 2 if travel > 160 else 1                    # longue course : pas de 2 px (moitié moins d'images, même vitesse)
+    speed = min(SCROLL_SPEED_MAX, max(SCROLL_SPEED_MIN, float(speed or 1.0)))
+    # longue course ou vitesse élevée : pas de 2 px (moitié moins d'images, même vitesse)
+    sz = 2 if (travel > 160 or speed > 1.4) else 1
 
     def step_ms(j: int, factor: float = 1.0) -> int:
-        v = SCROLL_BASE_MS * (0.7 + 0.8 * float(en[j])) * factor * sz
-        return int(min(SCROLL_STEP_MAX * sz, max(SCROLL_STEP_MIN * sz, round(v / 10.0) * 10)))
+        v = SCROLL_BASE_MS * (0.7 + 0.8 * float(en[j])) * factor * sz / speed
+        lo = SCROLL_STEP_MIN * sz if speed <= 1.0 else 20 * sz       # plancher abaissé quand l'utilisateur accélère
+        return int(min(SCROLL_STEP_MAX * sz / min(speed, 1.0), max(lo, round(v / 10.0) * 10)))
 
     js = list(range(sz, travel, sz)) + [travel]
     segs: list[tuple[int, int]] = [(SCROLL_HOLD_MS, 0)]                       # (durée, pas parcourus depuis le départ)
@@ -860,7 +864,7 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
                 if opts.get("scroll") and opts.get("window_end"):
                     b1 = _manual_box(opts["window_end"], w, h, size_from=b0)
                     res_sc = _plan_scroll(src.durations, energy, f, (x0, y0, cw, ch), bool(opts.get("scroll_back")),
-                                          path=(b0, b1))
+                                          path=(b0, b1), speed=opts.get("scroll_speed") or 1.0)
                     if res_sc is not None:
                         scroll_windows, scroll_timeline, scroll_info = res_sc
                         layout, crop, lost_pct, manual_placed = "scroll", None, 0.0, True
@@ -869,7 +873,7 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
             # Scroll intelligent : seulement avec « remplir » (forcé) et si l'option est demandée
             if not manual_placed and opts.get("scroll") and want_fill is True:
                 res_sc = _plan_scroll(src.durations, energy, f, _exact_bbox(src, key_color) or (x0, y0, cw, ch),
-                                      bool(opts.get("scroll_back")))
+                                      bool(opts.get("scroll_back")), speed=opts.get("scroll_speed") or 1.0)
                 if res_sc is not None:
                     scroll_windows, scroll_timeline, scroll_info = res_sc
                     layout, crop, lost_pct = "scroll", None, 0.0
@@ -915,7 +919,7 @@ def plan_conversion(src: GifData, mode: str = "auto", options: dict | None = Non
             if (layout == "fit" and not manual_placed and letterbox is None and crop_mode in (None, "auto")
                     and opts.get("scroll") is not False and follow_windows is None):
                 auto_scroll = _plan_scroll(src.durations, energy, f, _exact_bbox(src, key_color) or (x0, y0, cw, ch),
-                                           bool(opts.get("scroll_back")))
+                                           bool(opts.get("scroll_back")), speed=opts.get("scroll_speed") or 1.0)
             # Pas de « calage » de la fenêtre (pp_snap_crop peut ROGNER du contenu en mode bandes noires) : le
             # pixel-perfect est assuré par adaptive_resize (diviseur entier, ou échelle exacte si > 3 % de perte).
             if crop is not None and tuple(crop) == (0, 0, w, h):
@@ -1139,6 +1143,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--scroll", action="store_true",
                     help="« remplir » avec scroll intelligent (la fenêtre 128×32 parcourt le contenu)")
     ap.add_argument("--scroll-back", action="store_true", help="scroll en aller-retour (sans saut à la boucle), avec --scroll ou si l'auto choisit un scroll")
+    ap.add_argument("--scroll-speed", type=float, default=None, metavar="X",
+                    help="multiplicateur de vitesse du scroll (0,5 à 3 ; 1 = vitesse automatique)")
     ap.add_argument("--no-scroll", action="store_true",
                     help="auto : interdit le scroll plein écran (garde l'image entière + bandes noires)")
     ap.add_argument("--also-letterbox", metavar="PATH",
@@ -1173,6 +1179,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             opts = dict(opts or {}, crop_mode="fill", scroll=True, scroll_back=bool(a.scroll_back))
         elif a.scroll_back and not a.letterbox:      # seul : l'auto choisit, et si c'est un scroll il sera aller-retour
             opts = dict(opts or {}, scroll_back=True)
+        if a.scroll_speed:
+            opts = dict(opts or {}, scroll_speed=a.scroll_speed)
         res = convert_gif_to_dmd(data, "auto", opts, True if a.letterbox else None, a.force, limits)
         rep = res.report
         if res.converted:

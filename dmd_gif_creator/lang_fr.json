@@ -491,5 +491,6 @@
   "gif_win_start": "Départ",
   "gif_win_end": "Arrivée",
   "gif_win_size": "Taille :",
+  "gif_scroll_speed": "Vitesse du scroll :",
   "gif_scroll_back": "Aller-retour"
 }
